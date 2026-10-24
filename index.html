@@ -397,6 +397,9 @@
   [data-theme=terminal] .bar > div{background:var(--accent)}
 
   /* ---------- telefon ---------- */
+  /* iPhone: pola z czcionką mniejszą niż 16 px powodują automatyczne powiększenie strony przy pisaniu */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  @media (max-width:760px),(pointer:coarse){ input,select,textarea{font-size:16px !important} }
   /* ---------- KONTO ---------- */
   #authGate{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;overflow-y:auto;background:var(--bg);background-image:var(--bg-img);
     padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -865,7 +868,7 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v16 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v17 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -881,7 +884,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v16 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v17 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
