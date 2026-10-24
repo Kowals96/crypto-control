@@ -174,7 +174,7 @@
   .notif-panel.open{display:block}
   .notif-item{padding:.6rem .25rem;border-bottom:1px solid var(--border);font-size:.85rem}
   .notif-item:last-child{border-bottom:none}
-  .task-buy strong{color:var(--green)} .task-sell strong{color:var(--orange)}
+  .task-buy strong{color:var(--green)} .task-sell strong{color:var(--orange)} .task-info strong{color:var(--accent)}
 
   /* ---------- treść ---------- */
   .container{max-width:1200px;margin:0 auto;padding:1.5rem}
@@ -402,6 +402,16 @@
   @media (max-width:760px),(pointer:coarse){ input,select,textarea{font-size:16px !important} }
   #updBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1500;display:flex;align-items:center;gap:.75rem;
     background:var(--card-solid);border:1px solid var(--border-strong);border-radius:var(--radius);padding:.6rem .7rem .6rem 1rem;font-size:.85rem;box-shadow:var(--shadow);max-width:calc(100vw - 32px)}
+  .fab{display:none}
+  @media (max-width:760px){
+    .fab{display:grid;place-items:center;position:fixed;z-index:200;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+      right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));
+      background:var(--btn-bg);background-color:var(--accent);color:var(--accent-ink);box-shadow:0 10px 24px -8px color-mix(in srgb,var(--accent) 70%,#000)}
+    .fab svg{width:26px;height:26px;stroke-width:2.6}
+    .fab:active{transform:scale(.94)}
+    body.nav-open .fab,body.gate-open .fab,body.tab-edit .fab{display:none}
+    footer{padding-bottom:calc(5.5rem + env(safe-area-inset-bottom,0px))}
+  }
   /* ---------- KONTO ---------- */
   #authGate{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;overflow-y:auto;background:var(--bg);background-image:var(--bg-img);
     padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -419,6 +429,16 @@
   .gate-choice .action{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:.8rem 1rem;width:100%}
   .gate-choice .action span{font-size:.75rem;font-weight:500;opacity:.8;margin-top:.15rem}
   #cloudFoot{margin-top:.35rem;line-height:1.35}
+  .strat-list{display:grid;gap:.45rem}
+  .strat-item{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--sunken)}
+  .strat-item > summary{padding:.6rem .85rem}
+  .strat-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:.6rem .8rem;padding:.2rem .85rem .85rem}
+  .strat-fields label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.25rem}
+  .strat-fields select,.strat-fields input{max-width:100% !important;width:100%;box-sizing:border-box}
+  .strat-note{grid-column:1 / -1}
+  .imp-table td{vertical-align:middle} .imp-dim{opacity:.55}
+  .bio-btn{display:inline-flex;align-items:center;gap:.5rem;margin:.4rem 0 0;padding:.7rem 1.2rem}
+  .bio-btn svg{width:22px;height:22px}
   /* ---------- PLAN (AI) ---------- */
   textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:.9rem;line-height:1.55;color:var(--text);background:var(--input);
     border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.75rem .85rem;resize:vertical;margin-top:.5rem}
@@ -447,7 +467,7 @@
   .mk-grid > *{min-width:0}
   @media (max-width:1359px){
     .mk-side,.mk-main{display:contents}
-    #mkWatchCard{order:1} #mkChartCard{order:2} .mk-2col{order:3} #mkFc{order:4} #mkInfo{order:5} #mkMovers{order:6} .mk-main > .info{order:7}
+    #mkWatchCard{order:1} #mkChartCard{order:2} .mk-2col{order:3} #mkFc{order:4} #mkInfo{order:5} #mkMacro{order:6} #mkMovers{order:7} .mk-main > .info{order:8}
   }
   @media (min-width:1360px){
     .mk-grid{grid-template-columns:minmax(0,1fr) 370px}
@@ -531,7 +551,7 @@
 <style>
   /* iPhone: treść nie wchodzi pod zegar, wycięcie ekranu ani pasek gestów */
   header{padding-top:calc(1rem + env(safe-area-inset-top,0px))}
-  footer{padding-bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))}
+  @media (min-width:761px){ footer{padding-bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))} }
   @media (max-width:760px){
     header{padding-top:calc(.75rem + env(safe-area-inset-top,0px));padding-left:max(1rem,env(safe-area-inset-left,0px));padding-right:max(1rem,env(safe-area-inset-right,0px))}
     nav#sidebar{padding-top:calc(1.25rem + env(safe-area-inset-top,0px));padding-bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))}
@@ -559,17 +579,16 @@
     <button data-tab="risk">Zyski i ryzyko</button>
     <button data-tab="budget">Dopłata</button>
     <button data-tab="journal">Dziennik / PIT</button>
-    <button data-tab="edit">Edytuj / Dodaj</button>
+    <button data-tab="edit">Kupno / Sprzedaż</button>
     <button data-tab="plan">Plan</button>
-    <button data-tab="new">Nowe projekty</button>
     <button data-tab="tasks">Zadania</button>
-    <button data-tab="offers">Propozycje</button>
     <button data-tab="savings">Oszczędności</button>
     <button data-tab="settings">Ustawienia</button>
   </div>
   <div class="nav-foot">Ceny na żywo · Binance<div id="cloudFoot"></div></div>
 </nav>
 <div class="nav-backdrop" onclick="toggleNav(false)"></div>
+<button class="fab" id="fab" onclick="quickAdd()" aria-label="Dodaj zakup"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
 
 <div class="main">
 <header>
@@ -680,8 +699,8 @@
       </div>
       <div id="splitBody"></div>
       <div class="info" style="margin-top:.75rem">
-        Kalkulator dzieli kwotę tylko między monety, które plan pozwala teraz dokupić: rdzeń (BTC, ETH, SOL) zawsze, a PYTH tylko przy cenie z planu.
-        ADA i HBAR plan każe zostawić, więc ich nie dokupuje. Pieniądze trafiają najpierw tam, gdzie do celu alokacji brakuje najwięcej.
+        <strong>Podział z planu</strong> dzieli kwotę według stałych proporcji z zastosowanego planu (zakładka Plan → „Zastosuj plan”).
+        <strong>Wyrównanie do celów</strong> kieruje pieniądze tam, gdzie do celu alokacji brakuje najwięcej – tylko do monet z rolą „Rdzeń” albo z ceną poniżej progu dokupu.
         Kwoty poniżej 20 zł pomija, bo to okolice minimalnego zlecenia na giełdzie.
       </div>
     </div>
@@ -737,8 +756,8 @@
   <!-- ===================== EDYCJA ===================== -->
   <section id="edit">
     <div class="card">
-      <h2>Dodaj / zaktualizuj pozycję</h2>
-      <p class="muted" style="font-size:.9rem">Dane zapisują się lokalnie w przeglądarce. Kopię zapasową i import z CoinMarketCap znajdziesz w Ustawieniach.</p>
+      <h2>Kupno / sprzedaż – ręcznie</h2>
+      <p class="muted" style="font-size:.9rem;margin-top:0">Zakupy i sprzedaże możesz też pobrać automatycznie z giełdy – sekcja niżej.</p>
       <div class="form-row">
         <div><label for="editSymbol">Projekt</label><br><select id="editSymbol" onchange="updateEditForm()"></select></div>
         <div>
@@ -763,6 +782,10 @@
         <span>Kupione za złotówki lub inną walutę tradycyjną – zapisz w dzienniku jako koszt do PIT-38 i wlicz do budżetu miesiąca. Odznacz, jeśli płaciłeś inną kryptowalutą (np. USDT).</span></label>
       <p id="editMessage" style="font-size:.85rem"></p>
       <p class="small muted" id="modeHelp"></p>
+    </div>
+    <div class="card" id="impCard">
+      <h2>Automatyczne dodawanie transakcji</h2>
+      <div id="impBody"></div>
     </div>
   </section>
 
@@ -801,7 +824,7 @@
   <section id="market"><div id="marketBody"></div></section>
 
   <!-- ===================== PROPOZYCJE ===================== -->
-  <section id="offers"><div id="offersBody"></div></section>
+
 
   <!-- ===================== OSZCZĘDNOŚCI ===================== -->
   <section id="savings"><div id="savBody"></div></section>
@@ -870,12 +893,12 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v18 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v19 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
 
-  <section id="new"><div class="card" id="newContent"></div></section>
+
 
   <section id="tasks">
     <div class="card">
@@ -886,7 +909,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v18 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v19 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -995,6 +1018,17 @@ const STRATEGY = {
   STRK:  {id:'starknet',                bn:'STRKUSDT',   status:'lottery', note:'mikro-pozycja'},
   MYRIA: {id:'myria',                   bn:null,         status:'lottery', note:'mikro-pozycja'}
 };
+
+/* Strategia zmieniona w aplikacji (edytor w zakładce Plan) nadpisuje ustawienia domyślne powyżej */
+const STRATEGY_DEFAULT = JSON.parse(JSON.stringify(STRATEGY));
+function applyStrategyOverrides(o) {
+  Object.keys(STRATEGY).forEach(k => delete STRATEGY[k]);
+  Object.entries(STRATEGY_DEFAULT).forEach(([k, v]) => { STRATEGY[k] = JSON.parse(JSON.stringify(v)); });
+  if (!o || typeof o !== 'object' || !o.coins) return;
+  Object.keys(STRATEGY).forEach(k => { if (!(k in o.coins)) delete STRATEGY[k]; });
+  Object.entries(o.coins).forEach(([s, c]) => { if (/^[A-Z0-9]{2,12}$/.test(s) && c && typeof c === 'object') STRATEGY[s] = {...(STRATEGY_DEFAULT[s] || {}), ...c}; });
+}
+try { applyStrategyOverrides(JSON.parse(localStorage.getItem('ccStrategy'))); } catch (e) {}
 
 /* Nazwy z eksportu CoinMarketCap → symbole w aplikacji */
 const CMC_NAMES = {
@@ -1416,7 +1450,7 @@ function renderTable(rows) {
     tbody.appendChild(tr);
   });
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="${cols.length + 1}" class="muted">${rows.length ? 'Brak pozycji do pokazania.' : 'Portfel jest pusty – dodaj pozycję w zakładce „Edytuj / Dodaj”.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols.length + 1}" class="muted">${rows.length ? 'Brak pozycji do pokazania.' : 'Portfel jest pusty – dodaj pozycję w zakładce „Kupno / Sprzedaż”.'}</td></tr>`;
   }
   return hidden;
 }
@@ -1734,20 +1768,26 @@ function renderSplit() {
     el.innerHTML = `<p class="muted">${amount > 0 ? `Kwota poniżej ${MIN_ORDER_PLN} zł – za mało na sensowne zlecenie.` : 'Wpisz kwotę do podziału.'}</p>`;
     return;
   }
-  const {rows} = splitContribution(amount);
-  if (!rows.length) { el.innerHTML = '<p class="muted">Brak monet, które plan pozwala teraz dokupić.</p>'; return; }
+  const hasPlan = (goal.split || []).some(x => x.pct > 0), mode = hasPlan && goal.splitMode !== 'target' ? 'plan' : 'target';
+  const modeSeg = hasPlan ? `<div class="form-row" style="margin:0 0 .6rem"><span class="seg"><button class="${mode === 'plan' ? 'on' : ''}" onclick="goal.splitMode='plan';lsSet(LS.goal,goal);renderSplit()">Podział z planu</button><button class="${mode === 'target' ? 'on' : ''}" onclick="goal.splitMode='target';lsSet(LS.goal,goal);renderSplit()">Wyrównanie do celów</button></span></div>` : '';
+  let rows;
+  if (mode === 'plan') {
+    const total = totalPln(), after = total + amount, sp = goal.split.filter(x => x.pct > 0), ssum = sp.reduce((t, x) => t + x.pct, 0);
+    rows = sp.map(x => { const a = amount * x.pct / ssum, pp = pricePln(x.sym); return {sym: x.sym, amount: a, qty: pp > 0 ? a / pp : 0, before: total > 0 ? valuePln(x.sym) / total * 100 : 0, afterPct: after > 0 ? (valuePln(x.sym) + a) / after * 100 : 0, target: STRATEGY[x.sym]?.target ?? '—', note: x.note}; });
+  } else rows = splitContribution(amount).rows;
+  if (!rows.length) { el.innerHTML = modeSeg + '<p class="muted">Brak monet, które plan pozwala teraz dokupić.</p>'; return; }
   const usdc = holdings.USDC;
-  el.innerHTML = (usdc ? `<p class="small" style="margin-top:0">Na giełdzie masz też <strong>${fixed(usdc.qty, 2)} USDC</strong> (≈ ${zl(valuePln('USDC'))}). Zakup za USDC to wymiana krypto→krypto – nie liczy się do budżetu ani do PIT.</p>` : '') + `
+  el.innerHTML = modeSeg + (usdc ? `<p class="small" style="margin-top:0">Na giełdzie masz też <strong>${fixed(usdc.qty, 2)} USDC</strong> (≈ ${zl(valuePln('USDC'))}). Zakup za USDC to wymiana krypto→krypto – nie liczy się do budżetu ani do PIT.</p>` : '') + `
     <table>
       <thead><tr><th>Moneta</th><th class="num">Kwota</th><th class="num">≈ Ilość</th><th class="num">Udział teraz → po (cel)</th></tr></thead>
       <tbody>${rows.map(r => `<tr>
-        <td><strong>${r.sym}</strong></td>
+        <td><strong>${r.sym}</strong>${r.note ? `<br><span class="small muted">${esc(r.note)}</span>` : ''}</td>
         <td class="num">${zl(r.amount)}</td>
         <td class="num">${fmtQty(r.qty)}</td>
         <td class="num">${pct(r.before)} → ${pct(r.afterPct)} <span class="muted">(${r.target}%)</span></td>
       </tr>`).join('')}</tbody>
     </table>
-    <p class="small muted" style="margin:.5rem 0 0">Ilości liczone po bieżącej cenie; na giełdzie wyjdą trochę inne. Po zakupie zapisz go w „Edytuj / Dodaj” → Dokup.</p>`;
+    <p class="small muted" style="margin:.5rem 0 0">Ilości liczone po bieżącej cenie; na giełdzie wyjdą trochę inne. Po zakupie zapisz go w „Kupno / Sprzedaż” → Dokup.</p>`;
 }
 
 /* =========================================================
@@ -2021,7 +2061,7 @@ function renderBackupInfo() {
 function collectData() {
   return {app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
           vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
-          pit: FILED_PIT, ladder, snapshots: snaps};
+          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp)};
 }
 const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && typeof d.holdings === 'object' && Array.isArray(d.journal);
 function applyData(d) {
@@ -2037,6 +2077,8 @@ function applyData(d) {
   if (d.ui) { ui = {...UI_DEFAULTS, ...d.ui}; lsSet(LS.ui, ui); applyUi(); }
   if (d.plan && typeof d.plan === 'object' && typeof d.plan.text === 'string') { planState = {...planState, ...d.plan, analyses: Array.isArray(d.plan.analyses) ? d.plan.analyses : [], view: 0}; savePlan(); renderPlan(); }
   if (d.market && typeof d.market === 'object') { lsSet(LS.mkt, d.market); MK.watch = null; mkLoadState(); MK.shell = false; }
+  if (d.importState && typeof d.importState === 'object') lsSet(LS.imp, d.importState);
+  if ('strategy' in d) { lsSet(LS.strategy, d.strategy || null); applyStrategyOverrides(d.strategy); rebuildBnMap(); populateSymbols(); }
   lockSav();
   lsSet(LS.holdingsVer, HOLDINGS_VERSION);
   lsSet(LS.patches, HOLDINGS_PATCHES.map(p => p.id));
@@ -2112,7 +2154,7 @@ function describeRule(sym) {
     case 'hold':    return c.buyBelow
                       ? `${c.note}; dokupienie tylko przy ≤ ${usd(c.buyBelow)} (max ${c.buyPct}% pozycji)`
                       : c.note;
-    case 'reduce':  return `przy odbiciu +${c.reboundPct}% od średniej sprzedaj ${c.sellPct}%, kapitał do rdzenia`;
+    case 'reduce':  return c.reboundPct ? `przy odbiciu +${c.reboundPct}% od ${c.reboundBase ? `ceny z ${fmtDate(c.reboundAt)} (${usd(c.reboundBase)})` : 'średniej'} sprzedaj ${c.sellPct || 100}%, kapitał do rdzenia` : `wygaszaj – kapitał do rdzenia${c.note ? '; ' + c.note : ''}`;
     case 'lottery': return c.sellAt
                       ? `nie dokupuj; sprzedaj 100% przy cenie ≥ ${usd(c.sellAt)}, kapitał do rdzenia`
                       : `${c.note ? c.note + ' – ' : ''}nie dokupuj, trzymaj jako darmową opcję (bez progu sprzedaży)`;
@@ -2180,12 +2222,19 @@ const PLAN_SEED_ANALYSIS = {
       {sym: 'SOL', pct: 15, note: 'pomiń, jeśli SOL jest ponad celem 15%'},
       {sym: 'USDC', pct: 15, note: 'rezerwa – gdy osiągnie 8% portfela, ta część idzie do BTC'}
     ],
+    rules: [
+      {sym: 'BTC', kind: 'buy_below', price: 75000}, {sym: 'ETH', kind: 'buy_below', price: 2200}, {sym: 'SOL', kind: 'buy_below', price: 90}, {sym: 'PYTH', kind: 'buy_below', price: 0.055},
+      ...['DOT', 'ARB', 'JUP'].flatMap(s => [
+        {sym: s, kind: 'sell', from: 'price', value: 30, share: 33, why: '1/3 przy +30% od ceny z dnia zastosowania planu'},
+        {sym: s, kind: 'sell', from: 'price', value: 60, share: 33, why: 'kolejna 1/3 przy +60%'},
+        {sym: s, kind: 'sell', from: 'price', value: 100, share: 34, why: 'reszta przy +100%'}])
+    ],
     buy_rules: [
       'Co miesiąc, w stały dzień (np. po wypłacie), kupuj według podziału dopłaty – bez patrzenia na cenę.',
       'Dodatkowy dokup z rezerwy USDC, gdy BTC ≤ 75 000 $, ETH ≤ 2200 $ lub SOL ≤ 90 $: do 1/3 rezerwy na jeden sygnał, kolejny najwcześniej po tygodniu.',
       'Nie dokupuj pozycji „Zostaw” (poza PYTH przy ≤ 0,055 $), pozycji do wygaszenia ani loterii.',
       'Jeśli moneta rdzenia jest ponad celem o więcej niż 5 pp, jej część dopłaty kieruj do tej, która jest najbardziej poniżej celu.',
-      'Każdy zakup od razu wpisuj w „Edytuj / Dodaj” – koszt trafia do PIT-38.'
+      'Każdy zakup od razu wpisuj w „Kupno / Sprzedaż” – koszt trafia do PIT-38.'
     ],
     sell_rules: [
       'DOT, ARB, JUP: sprzedaj 1/3 pozycji przy +30% od obecnej ceny, kolejną 1/3 przy +60%, resztę przy +100% – całość wymieniaj na BTC/ETH (krypto→krypto, bez podatku). Jeśli do końca 2027 progi nie padną, przenieś resztę w 3 miesięcznych ratach.',
@@ -2268,6 +2317,7 @@ function loadPlan() {
     planState.text = strategyPlanText();
     planState.savedAt = new Date().toISOString();
   }
+  planState.analyses.forEach(a => { if (a.source === 'seed' && typeof PLAN_SEED_ANALYSIS === 'object') a.result = PLAN_SEED_ANALYSIS.result; });
   if (!planState.analyses.length && typeof PLAN_SEED_ANALYSIS === 'object' && PLAN_SEED_ANALYSIS) {
     planState.analyses = [{at: PLAN_SEED_ANALYSIS.at, model: 'Claude (w rozmowie)', source: 'seed', hash: textHash(planState.text), result: PLAN_SEED_ANALYSIS.result}];
   }
@@ -2328,6 +2378,7 @@ const PLAN_SCHEMA = `{
   "goal": {"text": "cel i horyzont w 1–2 zdaniach", "note": "realność celu przy obecnych dopłatach"},
   "allocation": [{"sym": "BTC", "group": ["opcjonalnie lista symboli, gdy wiersz obejmuje kilka monet"], "role": "Rdzeń", "target": 45, "action": "Dokupuj co miesiąc", "why": "krótko"}],
   "monthly_split": [{"sym": "BTC", "pct": 45, "note": "krótko"}],
+  "rules": [{"sym": "BTC", "kind": "buy_below", "price": 75000}, {"sym": "DOT", "kind": "sell", "from": "price | avg | abs", "value": 30, "share": 33, "why": "krótko"}],
   "buy_rules": ["..."], "sell_rules": ["..."], "risk_rules": ["..."],
   "next_steps": [{"when": "Ten tydzień", "what": "..."}],
   "checklist": ["rzeczy do odhaczania co miesiąc"],
@@ -2338,7 +2389,7 @@ function planPrompt() {
 Dostajesz plan inwestycyjny napisany przez użytkownika oraz aktualne dane jego portfela z aplikacji Crypto Control.
 Twoje zadanie: (1) uczciwie ocenić plan – mocne strony, słabe strony, ryzyka; (2) zbudować z niego kompletny, spójny plan:
 docelowa alokacja (wszystkie posiadane monety; monety bez docelowego udziału możesz zgrupować w jednym wierszu z polem "group"; suma "target" = 100),
-podział miesięcznej dopłaty (suma "pct" = 100), zasady dokupów, realizacji zysków i zarządzania ryzykiem, najbliższe kroki i comiesięczna checklista.
+podział miesięcznej dopłaty (suma "pct" = 100), konkretne progi w "rules" (kind "buy_below" = dokupuj przy cenie ≤ price w USD; kind "sell" = sprzedaj "share"% pierwotnej pozycji, gdy cena wzrośnie o "value"% od obecnej ceny (from "price") lub od średniej zakupu (from "avg"), albo osiągnie "value" USD (from "abs")), zasady dokupów, realizacji zysków i zarządzania ryzykiem, najbliższe kroki i comiesięczna checklista.
 Zasady: szanuj intencje użytkownika i zmieniaj tylko to, co ma uzasadnienie – każdą zmianę wypisz w "changes".
 Sprawdzaj, czy reguły są wykonalne przy obecnych cenach i budżecie. Uwzględnij polski PIT-38 (wymiana krypto→krypto nie jest zdarzeniem podatkowym, sprzedaż do PLN – tak; koszty przechodzą na kolejne lata).
 Nie obiecuj wyników i nie przewiduj cen jako pewnika. To materiał edukacyjny, nie porada inwestycyjna.
@@ -2501,7 +2552,7 @@ function renderPlanResult(A) {
       <h2>Miesięczna dopłata ${monthly ? zl(monthly) : ''}</h2>
       <div class="table-wrap"><table><tbody>${r.monthly_split.map(x => `<tr><td><strong>${esc(x.sym)}</strong>${x.note ? `<br><span class="small muted">${esc(x.note)}</span>` : ''}</td>
         <td class="num">${fixed(+x.pct || 0, 0)}%</td><td class="num"><strong>${monthly ? zl(monthly * (+x.pct || 0) / splitSum) : '—'}</strong></td></tr>`).join('')}</tbody></table></div>
-      <p class="small muted" style="margin:.5rem 0 0">Kwota miesięczna pochodzi z zakładki Cel. Każdy zakup wpisz w „Edytuj / Dodaj” – trafi do dziennika i PIT.</p>
+      <p class="small muted" style="margin:.5rem 0 0">Kwota miesięczna pochodzi z zakładki Cel. Każdy zakup wpisz w „Kupno / Sprzedaż” – trafi do dziennika i PIT.</p>
     </div>` : ''}
 
     <div class="plan-cols plan-rules">
@@ -2516,6 +2567,217 @@ function renderPlanResult(A) {
       ${r.checklist?.length ? `<h3 style="margin-top:1rem">Checklista na każdy miesiąc</h3>
         <div class="plan-check">${r.checklist.map((c, i) => `<label class="check"><input type="checkbox" id="planChk${i}" ${planState.checks[i] ? 'checked' : ''} onchange="planToggleCheck(${i})"><span>${esc(c)}</span></label>`).join('')}</div>` : ''}
       <p class="small muted" style="margin:.8rem 0 0">${esc(r.disclaimer || 'To materiał edukacyjny, nie porada inwestycyjna. Decyzje podejmujesz sam.')}</p>
+    </div>`;
+}
+
+
+/* =========================================================
+   STRATEGIA W APLIKACJI: edytor ról i progów + „Zastosuj plan” z analizy AI
+   ========================================================= */
+LS.strategy = 'ccStrategy';
+const ROLES = [['core', 'Rdzeń'], ['hold', 'Zostaw'], ['reduce', 'Redukcja'], ['lottery', 'Loteria'], ['stable', 'Stablecoin / rezerwa'], ['new', 'Do rozważenia']];
+const roleName = st => (ROLES.find(r => r[0] === st) || [, 'Do rozważenia'])[1];
+let stratDraft = null, stratMsg = '', stratMsgOk = true, applyPreview = null;
+
+function rebuildBnMap() {
+  Object.keys(BN_TO_SYM).forEach(k => delete BN_TO_SYM[k]);
+  Object.entries(STRATEGY).forEach(([s, c]) => { if (c.bn) BN_TO_SYM[c.bn] = s; });
+}
+function saveStrategy(coins) {
+  lsSet(LS.strategy, {coins, savedAt: Date.now()});
+  applyStrategyOverrides({coins});
+  rebuildBnMap();
+  populateSymbols(); updateEditForm();
+  generateTasks(); renderAll();
+  if (activeTab === 'risk') { renderLadder(); renderRisk(); }
+  connectWS();
+}
+function roleFromText(t) {
+  t = String(t || '').toLowerCase();
+  if (/rdze|core/.test(t)) return 'core';
+  if (/wygas|redukc|reduce|sprzeda/.test(t)) return 'reduce';
+  if (/loter|opcj|lottery/.test(t)) return 'lottery';
+  if (/rezerw|stable|gotów/.test(t)) return 'stable';
+  if (/zostaw|trzymaj|hold/.test(t)) return 'hold';
+  if (/rozważ|nowy|new|obserw/.test(t)) return 'new';
+  return null;
+}
+
+/* ---------- edytor ---------- */
+function stratStart() { stratDraft = JSON.parse(JSON.stringify(STRATEGY)); Object.keys(holdings).forEach(s => { if (!stratDraft[s]) stratDraft[s] = {status: 'new', bn: s + 'USDT', id: (typeof MK_CG !== 'undefined' && MK_CG[s]) || null}; }); }
+function stratSet(sym, k, v) {
+  const c = stratDraft[sym]; if (!c) return;
+  if (['target', 'buyBelow', 'buyPct', 'reboundPct', 'sellPct', 'sellAt'].includes(k)) { const n = parseFloat(String(v).replace(',', '.')); c[k] = n > 0 ? n : null; }
+  else if (k === 'reboundFrom') {
+    if (v === 'price') { const p = prices[sym]?.usd; if (p > 0) { c.reboundBase = +p.toPrecision(6); c.reboundAt = todayStr(); } else { stratMsg = `Brak aktualnej ceny ${sym} – spróbuj za chwilę.`; stratMsgOk = false; } }
+    else { c.reboundBase = null; c.reboundAt = null; }
+    renderStratEditor(); return;
+  }
+  else c[k] = v;
+  if (k === 'status') renderStratEditor(); else stratSum();
+}
+function stratSum() {
+  const el = document.getElementById('stratSum'); if (!el || !stratDraft) return;
+  const sum = Object.values(stratDraft).reduce((t, c) => t + (+c.target || 0), 0);
+  el.innerHTML = `Suma celów alokacji: <strong class="${Math.abs(sum - 100) < 0.5 ? 'positive' : 'negative'}">${fixed(sum, 1)}%</strong>${Math.abs(sum - 100) < 0.5 ? '' : ' – powinno być 100%'}`;
+}
+async function stratAddCoin() {
+  const inp = document.getElementById('stratAdd');
+  const s = String(inp?.value || '').trim().toUpperCase().replace(/USDT$/, '');
+  if (!/^[A-Z0-9]{2,12}$/.test(s)) { stratMsg = 'Wpisz symbol monety, np. AVAX.'; stratMsgOk = false; renderStratEditor(); return; }
+  if (stratDraft[s]) { stratMsg = `${s} już jest na liście.`; stratMsgOk = false; renderStratEditor(); return; }
+  let bn = null;
+  try { const t = await fetchJson(`https://api.binance.com/api/v3/ticker/price?symbol=${s}USDT`); if (+(t.price ?? t.lastPrice) > 0) bn = s + 'USDT'; } catch (e) {}
+  stratDraft[s] = {status: 'new', bn, id: (typeof MK_CG !== 'undefined' && MK_CG[s]) || null};
+  stratMsg = bn ? `Dodano ${s}. Ustaw rolę i zapisz strategię.` : `Dodano ${s} – nie znalazłem pary ${s}/USDT na Binance, więc cena może się nie pobierać.`; stratMsgOk = !!bn;
+  renderStratEditor();
+}
+function stratRemove(sym) { delete stratDraft[sym]; renderStratEditor(); }
+function stratSave() {
+  saveStrategy(JSON.parse(JSON.stringify(stratDraft)));
+  stratMsg = 'Strategia zapisana – zadania, kalkulator dopłaty i progi korzystają już z nowych ustawień.'; stratMsgOk = true;
+  renderStratEditor();
+}
+function stratReset() {
+  if (!confirm('Przywrócić strategię domyślną (sprzed zmian w aplikacji)?')) return;
+  try { localStorage.removeItem(LS.strategy); } catch (e) {}
+  lsSet(LS.strategy, null);
+  applyStrategyOverrides(null); rebuildBnMap(); populateSymbols(); generateTasks(); renderAll();
+  stratStart(); stratMsg = 'Przywrócono strategię domyślną.'; stratMsgOk = true; renderStratEditor();
+}
+const numIn = (sym, k, v, ph, w = 110) => `<input type="number" step="any" min="0" value="${v ?? ''}" placeholder="${ph}" style="max-width:${w}px" onchange="stratSet('${sym}','${k}',this.value)" aria-label="${ph}">`;
+function renderStratEditor() {
+  const el = document.getElementById('stratEditor');
+  if (!el) return;
+  if (!stratDraft) stratStart();
+  const order = Object.keys(stratDraft).sort((a, b) => (ROLES.findIndex(r => r[0] === stratDraft[a].status) - ROLES.findIndex(r => r[0] === stratDraft[b].status)) || valuePln(b) - valuePln(a));
+  el.innerHTML = `
+    <p class="muted" style="font-size:.88rem;margin-top:0">Tu ustawiasz, jak aplikacja traktuje każdą monetę: rolę, cel alokacji i progi. Z tych ustawień korzystają zadania, kalkulator dopłaty, tabela portfela i „Zyski i ryzyko”.</p>
+    <div class="strat-list">${order.map(sym => {
+      const c = stratDraft[sym], st = c.status || 'new';
+      const fromPrice = !!c.reboundBase;
+      return `<details class="strat-item"><summary><strong>${sym}</strong><span class="small muted">${roleName(st)}${c.target ? ' · cel ' + fixed(c.target, 0) + '%' : ''}${holdings[sym] ? '' : ' · nie masz'}</span></summary>
+        <div class="strat-fields">
+          <div><label>Rola</label><select onchange="stratSet('${sym}','status',this.value)">${ROLES.map(([v, l]) => `<option value="${v}" ${v === st ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div><label>Cel alokacji %</label>${numIn(sym, 'target', c.target, '—', 90)}</div>
+          ${['core', 'hold'].includes(st) ? `<div><label>Dokupuj przy cenie ≤ $</label>${numIn(sym, 'buyBelow', c.buyBelow, 'bez progu')}</div>
+            <div><label>Ile dokupić (% pozycji)</label>${numIn(sym, 'buyPct', c.buyPct, 'np. 30', 90)}</div>` : ''}
+          ${st === 'reduce' ? `<div><label>Sprzedaj przy odbiciu +%</label>${numIn(sym, 'reboundPct', c.reboundPct, 'np. 40', 90)}</div>
+            <div><label>Liczone od</label><select onchange="stratSet('${sym}','reboundFrom',this.value)"><option value="avg" ${!fromPrice ? 'selected' : ''}>Twojej średniej</option><option value="price" ${fromPrice ? 'selected' : ''}>${fromPrice ? `ceny z ${fmtDate(c.reboundAt)} (${usd(c.reboundBase)})` : 'dzisiejszej ceny'}</option></select></div>
+            <div><label>Sprzedaj % pozycji</label>${numIn(sym, 'sellPct', c.sellPct, 'np. 70', 90)}</div>` : ''}
+          ${st === 'lottery' ? `<div><label>Sprzedaj całość przy cenie ≥ $</label>${numIn(sym, 'sellAt', c.sellAt, 'bez progu')}</div>` : ''}
+          <div class="strat-note"><label>Notatka</label><input type="text" value="${esc(c.note || '')}" maxlength="80" onchange="stratSet('${sym}','note',this.value)" aria-label="Notatka ${sym}"></div>
+          <div style="align-self:end"><button class="action secondary" onclick="stratRemove('${sym}')">Usuń z planu</button></div>
+        </div></details>`;
+    }).join('')}</div>
+    <p class="small" id="stratSum" style="margin:.6rem 0 0"></p>
+    <div class="form-row" style="margin-top:.6rem;align-items:center">
+      <input type="text" id="stratAdd" placeholder="Dodaj monetę, np. AVAX" maxlength="14" style="max-width:190px;text-transform:uppercase" aria-label="Symbol monety">
+      <button class="action secondary" onclick="stratAddCoin()">+ Dodaj</button>
+    </div>
+    <div class="form-row" style="margin-top:.4rem">
+      <button class="action" onclick="stratSave()">Zapisz strategię</button>
+      <button class="action secondary" onclick="stratStart();stratMsg='';renderStratEditor()">Odrzuć zmiany</button>
+      <button class="action secondary" onclick="stratReset()">Przywróć domyślną</button>
+    </div>
+    <p class="small" style="color:${stratMsgOk ? 'var(--green)' : 'var(--red)'};min-height:1em;margin:.4rem 0 0">${esc(stratMsg)}</p>`;
+  stratSum();
+}
+
+/* ---------- „Zastosuj plan” z analizy AI ---------- */
+function planBuildApply(r) {
+  const coins = JSON.parse(JSON.stringify(STRATEGY)), changes = [], ladderAdd = [];
+  const ensure = s => { if (!coins[s]) coins[s] = {status: 'new', bn: s + 'USDT', id: (typeof MK_CG !== 'undefined' && MK_CG[s]) || null}; return coins[s]; };
+  const known = s => !!(coins[s] || holdings[s]);
+  (r.allocation || []).forEach(a => {
+    const group = Array.isArray(a.group) && a.group.length ? a.group : null;
+    const syms = (group || [a.sym]).map(x => String(x).toUpperCase()).filter(known);
+    const st = roleFromText(a.role || a.action);
+    syms.forEach(s => {
+      const c = ensure(s), tg = group ? null : (+a.target > 0 ? +a.target : null);
+      if ((c.target || null) !== tg) changes.push(`${s}: cel alokacji ${c.target ? c.target + '%' : '—'} → ${tg ? tg + '%' : '—'}`);
+      c.target = tg;
+      if (st && st !== c.status) { changes.push(`${s}: rola ${roleName(c.status)} → ${roleName(st)}`); c.status = st; }
+    });
+  });
+  const sells = {};
+  (r.rules || []).forEach(x => {
+    const s = String(x.sym || '').toUpperCase();
+    if (!known(s)) return;
+    if (x.kind === 'buy_below' && +x.price > 0) {
+      const c = ensure(s);
+      if (c.buyBelow !== +x.price) { changes.push(`${s}: dokupy przy cenie ≤ ${usd(+x.price)}`); c.buyBelow = +x.price; if (!c.buyPct) c.buyPct = 30; }
+    }
+    if (x.kind === 'sell') (sells[s] = sells[s] || []).push(x);
+  });
+  Object.entries(sells).forEach(([s, list]) => {
+    const pos = holdings[s], p = prices[s]?.usd;
+    const withPrice = list.map(x => {
+      const v = +x.value;
+      const price = x.from === 'abs' ? v : x.from === 'avg' ? (pos?.avg > 0 ? pos.avg * (1 + v / 100) : null) : (p > 0 ? p * (1 + v / 100) : null);
+      return {...x, price};
+    }).filter(x => x.price > 0).sort((a, b) => a.price - b.price);
+    const cs = ensure(s);
+    if (withPrice.length && cs.reboundPct) { changes.push(`${s}: dotychczasowa reguła redukcji (+${cs.reboundPct}% od ${cs.reboundBase ? 'ceny' : 'średniej'}) zastąpiona progami poniżej`); cs.reboundPct = null; cs.reboundBase = null; }
+    let remaining = 100;
+    withPrice.forEach(x => {
+      const share = Math.min(remaining, +x.share || 100);
+      const pctNow = remaining > 0 ? Math.min(100, Math.round(share / remaining * 100)) : 100;
+      remaining -= share;
+      ladderAdd.push({sym: s, price: nice(x.price), pct: pctNow, why: x.why || 'z planu AI'});
+      changes.push(`${s}: próg sprzedaży ${usdP(nice(x.price))} → sprzedaj ${pctNow}% pozycji`);
+    });
+  });
+  const split = (r.monthly_split || []).filter(x => x.sym && +x.pct > 0).map(x => ({sym: String(x.sym).toUpperCase(), pct: +x.pct, note: x.note || ''}));
+  if (split.length) changes.push(`Podział dopłaty: ${split.map(x => `${x.sym} ${x.pct}%`).join(', ')}`);
+  changes.push(`Przypomnienie o dopłacie od ${goal.dcaDay || 10}. dnia miesiąca i zadania, gdy moneta odjedzie od celu o więcej niż 5 pp`);
+  return {coins, ladderAdd, split, changes};
+}
+function planApplyPreview() {
+  const A = planState.analyses[planState.view] || planState.analyses[0];
+  if (!A) return;
+  applyPreview = planBuildApply(A.result);
+  renderPlan();
+  document.getElementById('planApplyBox')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+}
+function planApplyConfirm() {
+  if (!applyPreview) return;
+  const A = planState.analyses[planState.view] || planState.analyses[0];
+  planState.undo = {strategy: lsGet(LS.strategy), ladder: JSON.parse(JSON.stringify(ladder)), split: goal.split || null, dcaDay: goal.dcaDay || null};
+  planState.appliedAt = Date.now(); planState.appliedFrom = A.at;
+  Object.keys(ladder).forEach(s => { ladder[s] = (ladder[s] || []).filter(l => l.src !== 'plan' || l.done); if (!ladder[s].length) delete ladder[s]; });
+  applyPreview.ladderAdd.forEach(l => { (ladder[l.sym] = ladder[l.sym] || []).push({id: 'p' + Math.random().toString(36).slice(2, 9), price: l.price, pct: l.pct, why: l.why, done: false, src: 'plan'}); });
+  saveLadder();
+  goal.split = applyPreview.split.length ? applyPreview.split : goal.split;
+  goal.dcaDay = goal.dcaDay || 10;
+  goal.splitMode = 'plan';
+  lsSet(LS.goal, goal);
+  savePlan();
+  saveStrategy(applyPreview.coins);
+  applyPreview = null; stratDraft = null;
+  planMsg = 'Plan zastosowany: cele, role, progi i podział dopłaty działają już w całej aplikacji.'; planMsgOk = true;
+  renderPlan(); renderSplit();
+}
+function planUndoApply() {
+  const u = planState.undo; if (!u) return;
+  ladder = u.ladder || {}; saveLadder();
+  goal.split = u.split || undefined; goal.dcaDay = u.dcaDay || undefined; lsSet(LS.goal, goal);
+  if (u.strategy?.coins) saveStrategy(u.strategy.coins); else { try { localStorage.removeItem(LS.strategy); } catch (e) {} lsSet(LS.strategy, null); applyStrategyOverrides(null); rebuildBnMap(); generateTasks(); renderAll(); }
+  planState.undo = null; planState.appliedAt = null; savePlan(); stratDraft = null;
+  planMsg = 'Cofnięto zastosowanie planu.'; planMsgOk = true; renderPlan();
+}
+function planApplyHtml(A) {
+  const applied = planState.appliedAt && planState.appliedFrom === A.at;
+  if (applyPreview) return `<div class="card" id="planApplyBox">
+      <h2>Co zmieni się w aplikacji</h2>
+      <ul class="plan-list">${applyPreview.changes.map(c => `<li>${esc(c)}</li>`).join('')}</ul>
+      <div class="form-row" style="margin-top:.6rem"><button class="action" onclick="planApplyConfirm()">Zastosuj</button><button class="action secondary" onclick="applyPreview=null;renderPlan()">Anuluj</button></div>
+      <p class="small muted" style="margin:.3rem 0 0">Zmiany możesz potem cofnąć jednym kliknięciem albo poprawić ręcznie w edytorze strategii niżej.</p>
+    </div>`;
+  return `<div class="card" id="planApplyBox" style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <div style="min-width:0"><h3 style="margin:0">${applied ? '✓ Plan działa w aplikacji' : 'Zastosuj ten plan w aplikacji'}</h3>
+        <p class="small muted" style="margin:.2rem 0 0">${applied ? `Zastosowano ${new Date(planState.appliedAt).toLocaleString('pl-PL', {dateStyle: 'short', timeStyle: 'short'})}. Cele, role, progi sprzedaży i podział dopłaty pochodzą z tego planu.` : 'Ustawi cele alokacji, role monet, progi sprzedaży, podział dopłaty i przypomnienia – zobaczysz listę zmian przed zatwierdzeniem.'}</p></div>
+      <div class="form-row" style="margin:0">${applied ? '' : '<button class="action" onclick="planApplyPreview()">Zastosuj plan</button>'}${planState.undo ? '<button class="action secondary" onclick="planUndoApply()">Cofnij</button>' : ''}</div>
     </div>`;
 }
 
@@ -2566,22 +2828,426 @@ function renderPlan() {
         </div>
       </details>
     </div>`;
+  const stratCard = `<div class="card" id="stratCard"><h2>Strategia w aplikacji – role i progi</h2><div id="stratEditor"></div></div>`;
   if (!A) {
-    el.innerHTML = editor + `<div class="card"><p class="muted" style="margin:0">Pełny plan pojawi się tutaj po analizie AI.</p></div>`;
+    el.innerHTML = editor + `<div class="card"><p class="muted" style="margin:0">Pełny plan pojawi się tutaj po analizie AI.</p></div>` + stratCard;
+    renderStratEditor();
     return;
   }
-  el.innerHTML = (editorOpen ? editor : '') + renderPlanResult(A) + (editorOpen ? '' : `
+  el.innerHTML = (editorOpen ? editor : '') + renderPlanResult(A) + planApplyHtml(A) + (editorOpen ? '' : `
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap">
       <div style="min-width:0"><h3 style="margin:0">Twój plan – treść</h3><p class="small muted" style="margin:.2rem 0 0">Chcesz coś zmienić? Edytuj plan i przeanalizuj go ponownie.</p></div>
       <button class="action secondary" onclick="planShowEditor=true;renderPlan();document.getElementById('planEditor').scrollIntoView({behavior:'smooth'})">Edytuj plan</button>
-    </div>`) + (planMsg && !editorOpen ? `<p class="small" style="color:${planMsgOk ? 'var(--green)' : 'var(--red)'}">${esc(planMsg)}</p>` : '');
+    </div>`) + (planMsg && !editorOpen ? `<p class="small" style="color:${planMsgOk ? 'var(--green)' : 'var(--red)'}">${esc(planMsg)}</p>` : '') + stratCard;
+  renderStratEditor();
 }
 
-function renderNew() {
-  const items = Object.keys(STRATEGY).filter(s => STRATEGY[s].status === 'new')
-    .map(s => `<li><strong>${s}</strong>${STRATEGY[s].note ? ' – ' + STRATEGY[s].note : ''}</li>`).join('');
-  document.getElementById('newContent').innerHTML = `<h2>Nowe projekty do rozważenia</h2><ul>${items}</ul>
-    <p class="muted small">Po dodaniu do portfela mają status „Nowy”, dopóki nie przypiszesz im roli w planie.</p>`;
+
+/* =========================================================
+   KUPNO / SPRZEDAŻ: automatyczne dodawanie transakcji
+   1) Binance – klucz API tylko do odczytu (zapisany wyłącznie w tym urządzeniu)
+   2) Plik z giełdy: Binance, Bybit, Kraken lub dowolny CSV/XLSX z dopasowaniem kolumn
+   ========================================================= */
+LS.bnApi = 'ccBnApi';        // tylko to urządzenie – NIE trafia do chmury ani kopii
+LS.imp = 'ccImport';         // zaimportowane ID (synchronizowane)
+const FIAT = new Set(['PLN', 'EUR', 'USD', 'GBP', 'CHF', 'TRY', 'UAH', 'CZK']);
+const USD_STABLE = new Set(['USDT', 'USDC', 'FDUSD', 'BUSD', 'TUSD', 'DAI', 'USDE', 'USDP', 'USD1', 'PYUSD']);
+const QUOTES = ['FDUSD', 'USDT', 'USDC', 'BUSD', 'TUSD', 'PYUSD', 'USD1', 'USDE', 'DAI', 'EUR', 'PLN', 'USD', 'GBP', 'TRY', 'BTC', 'ETH', 'BNB'];
+const ASSET_ALIAS = {XBT: 'BTC', XXBT: 'BTC', XETH: 'ETH', XXDG: 'DOGE', XDG: 'DOGE', ZEUR: 'EUR', ZUSD: 'USD', ZPLN: 'PLN', XXRP: 'XRP', XXLM: 'XLM', XLTC: 'LTC'};
+const IMP_FROM_DEFAULT = '2026-10-24';   // stan portfela z CoinMarketCap – starszych transakcji nie importujemy drugi raz
+let impView = 'binance', impOps = [], impMsg = '', impMsgOk = true, impBusy = false, impCsv = null;
+
+const impState = () => { const s = lsGet(LS.imp); return s && typeof s === 'object' ? {done: {}, ...s} : {done: {}}; };
+const saveImpState = s => lsSet(LS.imp, s);
+const normAsset = a => { a = String(a || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); return ASSET_ALIAS[a] || a; };
+function splitPair(p) {
+  p = String(p || '').trim().toUpperCase();
+  const sep = p.match(/^([A-Z0-9]+)[\/\-_ ]([A-Z0-9]+)$/);
+  if (sep) return [normAsset(sep[1]), normAsset(sep[2])];
+  const q = QUOTES.concat(['ZEUR', 'ZUSD', 'XXBT', 'XBT']).sort((a, b) => b.length - a.length).find(q => p.endsWith(q) && p.length > q.length);
+  return q ? [normAsset(p.slice(0, -q.length)), normAsset(q)] : [null, null];
+}
+function parseNum(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v ?? '').trim().replace(/\s/g, '').replace(/[A-Za-z$€zł]+$/, '').replace(/^[A-Za-z$€]+/, '');
+  if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d+,\d+$/.test(s)) s = s.replace(',', '.');
+  else s = s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return isFinite(n) ? n : NaN;
+}
+const numAsset = v => { const m = String(v ?? '').trim().match(/^(-?[\d.,\s]+)\s*([A-Za-z][A-Za-z0-9]*)?$/); return m ? [parseNum(m[1]), m[2] ? normAsset(m[2]) : null] : [parseNum(v), null]; };
+function parseDate(v) {
+  if (v instanceof Date) return v.getTime();
+  if (typeof v === 'number') return v > 1e12 ? v : v > 1e9 ? v * 1000 : Math.round((v - 25569) * 86400000);   // Excel
+  const s = String(v || '').trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  m = s.match(/^(\d{2})[.\/-](\d{2})[.\/-](\d{4})[ T,]*(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4], +m[5], +(m[6] || 0));
+  m = s.match(/^(\d{2})[.\/-](\d{2})[.\/-](\d{2})[ T,]*(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return Date.UTC(2000 + +m[3], +m[2] - 1, +m[1], +m[4], +m[5], +(m[6] || 0));
+  const t = Date.parse(s); return isFinite(t) ? t : NaN;
+}
+const ymd = ts => new Date(ts).toLocaleDateString('sv-SE');
+const txN = n => n === 1 ? '1 transakcję' : `${n} ${n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'transakcje' : 'transakcji'}`;
+
+/* ---------- kursy do przeliczeń (NBP: dzień roboczy przed transakcją, jak w PIT) ---------- */
+const nbpCache = {}, dayCloseCache = {};
+async function nbpBefore(cur, date) {
+  if (cur === 'PLN') return 1;
+  const k = cur + date;
+  if (nbpCache[k]) return nbpCache[k];
+  const d = new Date(date + 'T12:00:00'), to = new Date(d - 86400000), from = new Date(d - 12 * 86400000);
+  try {
+    const r = await fetchJson(API.nbpRange(cur, from.toLocaleDateString('sv-SE'), to.toLocaleDateString('sv-SE')));
+    const mid = r?.rates?.[r.rates.length - 1]?.mid;
+    if (mid > 0) return (nbpCache[k] = mid);
+  } catch (e) {}
+  return cur === 'USD' ? usdPlnRate : cur === 'EUR' ? (eurPlnRate || 4.25) : null;
+}
+async function usdOfAsset(asset, ts) {
+  if (USD_STABLE.has(asset) || asset === 'USD') return 1;
+  const day = ymd(ts), k = asset + day;
+  if (dayCloseCache[k]) return dayCloseCache[k];
+  try {
+    const d = await fetchJson(`https://api.binance.com/api/v3/klines?symbol=${asset}USDT&interval=1d&startTime=${Date.parse(day + 'T00:00:00Z')}&limit=1`);
+    const c = +d?.[0]?.[4]; if (c > 0) return (dayCloseCache[k] = c);
+  } catch (e) {}
+  return prices[asset]?.usd || null;
+}
+
+/* ---------- operacje: opis, skutki, zastosowanie ---------- */
+// op = {id, src, ts, base, quote, side:'buy'|'sell', qty, total, fee, feeAsset}
+function opEffects(op) {
+  const fiat = FIAT.has(op.quote), held = !!(holdings[op.base] || STRATEGY[op.base]);
+  const parts = [];
+  if (op.side === 'buy') parts.push(`portfel: +${fmtQty(op.qty)} ${op.base}`); else parts.push(held && holdings[op.base] ? `portfel: −${fmtQty(op.qty)} ${op.base}` : `${op.base} nie ma w portfelu`);
+  if (!fiat && holdings[op.quote]) parts.push(`${op.side === 'buy' ? '−' : '+'}${fmtQty(op.total)} ${op.quote}`);
+  parts.push(fiat ? `dziennik PIT: ${op.side === 'buy' ? 'koszt' : 'przychód'}` : 'krypto→krypto, bez PIT');
+  return parts.join(' · ');
+}
+function possibleDup(op) {
+  if (!FIAT.has(op.quote)) return false;
+  const d = ymd(op.ts);
+  return journal.some(e => !e.ext && e.date === d && e.type === op.side && op.quote === 'PLN' && Math.abs(e.pln - op.total) <= Math.max(1, op.total * 0.02));
+}
+async function applyOp(op) {
+  const day = ymd(op.ts), fiat = FIAT.has(op.quote);
+  const usdRate = await nbpBefore('USD', day);
+  let totalPln = null, unitUsd;
+  if (fiat) {
+    const r = await nbpBefore(op.quote, day);
+    totalPln = op.total * r;
+    unitUsd = totalPln / usdRate / op.qty;
+  } else {
+    const qu = await usdOfAsset(op.quote, op.ts);
+    unitUsd = qu ? op.total * qu / op.qty : null;
+  }
+  const feeIn = a => op.fee > 0 && op.feeAsset === a ? op.fee : 0;
+  if (op.side === 'buy') {
+    const qty = op.qty - feeIn(op.base);
+    if (qty > 0 && unitUsd > 0) {
+      const cur = holdings[op.base], unitPln = fiat ? totalPln / qty : unitUsd * usdRate;
+      if (!cur) holdings[op.base] = {qty: +qty.toPrecision(12), avg: unitUsd * op.qty / qty, avgPln: unitPln};
+      else {
+        const nq = cur.qty + qty;
+        holdings[op.base] = {...cur, qty: +nq.toPrecision(12), avg: (cur.qty * cur.avg + op.qty * unitUsd) / nq, avgPln: (cur.qty * avgPlnOf(cur) + qty * unitPln) / nq};
+      }
+    }
+    if (!fiat && holdings[op.quote]) { holdings[op.quote].qty = Math.max(0, holdings[op.quote].qty - op.total - feeIn(op.quote)); if (holdings[op.quote].qty <= 1e-12) delete holdings[op.quote]; }
+  } else {
+    const cur = holdings[op.base];
+    if (cur) { cur.qty = +(cur.qty - op.qty - feeIn(op.base)).toPrecision(12); if (cur.qty <= 1e-12) delete holdings[op.base]; }
+    if (!fiat && holdings[op.quote]) holdings[op.quote].qty = +(holdings[op.quote].qty + op.total - feeIn(op.quote)).toPrecision(12);
+  }
+  if (op.fee > 0 && op.feeAsset && ![op.base, op.quote].includes(op.feeAsset) && holdings[op.feeAsset]) {
+    holdings[op.feeAsset].qty = Math.max(0, holdings[op.feeAsset].qty - op.fee);
+  }
+  if (fiat && totalPln > 0) {
+    const fee = feeIn(op.quote) * (totalPln / op.total);
+    const pln = round2(op.side === 'buy' ? totalPln + fee : totalPln - fee);
+    journal.push({id: 'x' + Math.random().toString(36).slice(2, 10), date: day, type: op.side, pln, exch: op.src.split(' ')[0],
+      note: `${op.side === 'buy' ? 'Kupno' : 'Sprzedaż'} ${fmtQty(op.qty)} ${op.base} (import)`, ...(op.quote !== 'PLN' ? {orig: String(op.total).replace('.', ','), rate: await nbpBefore(op.quote, day), cur: op.quote} : {}), ext: op.id});
+  }
+}
+async function impApplySelected() {
+  if (impBusy) return;
+  const chosen = impOps.filter(o => o.sel);
+  if (!chosen.length) { impMsg = 'Nie zaznaczono żadnej transakcji.'; impMsgOk = false; renderImport(); return; }
+  impBusy = true; impMsg = 'Dodaję transakcje…'; impMsgOk = true; renderImport();
+  const st = impState();
+  let n = 0, j = 0;
+  try {
+    for (const op of chosen.sort((a, b) => a.ts - b.ts)) {
+      const before = journal.length;
+      await applyOp(op);
+      if (journal.length > before) j++;
+      st.done[op.id] = Date.now(); n++;
+    }
+  } catch (e) { impMsg = 'Błąd przy dodawaniu: ' + e.message; impMsgOk = false; }
+  sanitizeHoldings(); saveHoldings(); saveJournal(); saveImpState(st);
+  impOps = impOps.filter(o => !st.done[o.id]);
+  impBusy = false;
+  if (impMsgOk) { impMsg = `Dodano ${txN(n)}${j ? `, w tym do dziennika PIT: ${j}` : ''}. Portfel i średnie ceny są zaktualizowane.`; }
+  renderJournal(); updateEditForm(); renderAll(); fullRefresh();
+  renderImport();
+}
+function impSetOps(ops, srcLabel) {
+  const st = impState(), from = Date.parse(impFrom() + 'T00:00:00');
+  const seen = new Set();
+  impOps = ops.filter(o => o && o.base && o.quote && o.qty > 0 && o.total > 0 && isFinite(o.ts))
+    .filter(o => !seen.has(o.id) && seen.add(o.id))
+    .map(o => ({...o, done: !!st.done[o.id], old: o.ts < from, dup: possibleDup(o)}))
+    .map(o => ({...o, sel: !o.done && !o.old && !o.dup}))
+    .sort((a, b) => b.ts - a.ts);
+  const fresh = impOps.filter(o => !o.done && !o.old).length;
+  impMsg = impOps.length ? `${srcLabel}: znalazłem ${txN(impOps.length)}, w tym nowych od ${fmtDate(impFrom())}: ${fresh}. Sprawdź listę i kliknij „Dodaj zaznaczone”.` : `${srcLabel}: nie znalazłem transakcji kupna ani sprzedaży.`;
+  impMsgOk = true;
+  renderImport();
+}
+const impFrom = () => impState().from || IMP_FROM_DEFAULT;
+function impSetFrom(v) { const s = impState(); s.from = v || IMP_FROM_DEFAULT; saveImpState(s); if (impOps.length) impSetOps(impOps, 'Lista'); }
+
+/* ---------- Binance API ---------- */
+const bnApi = () => { try { return JSON.parse(localStorage.getItem(LS.bnApi)) || null; } catch (e) { return null; } };
+function bnSaveKeys() {
+  const k = (val('bnKey') || '').trim(), s = (val('bnSecret') || '').trim();
+  if (k.length < 20 || s.length < 20) { impMsg = 'Wklej cały klucz API i sekret (to długie ciągi znaków).'; impMsgOk = false; renderImport(); return; }
+  try { localStorage.setItem(LS.bnApi, JSON.stringify({key: k, secret: s})); } catch (e) {}
+  impMsg = 'Klucz zapisany w tym urządzeniu. Kliknij „Pobierz transakcje”.'; impMsgOk = true; renderImport();
+}
+function bnForget() { try { localStorage.removeItem(LS.bnApi); } catch (e) {} impMsg = 'Klucz usunięty z tego urządzenia.'; impMsgOk = true; renderImport(); }
+let bnOffset = 0;
+async function hmacHex(secret, msg) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']);
+  return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)))].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function bnSigned(path, params = {}) {
+  const a = bnApi();
+  const qs = new URLSearchParams({...params, recvWindow: '15000', timestamp: String(Date.now() + bnOffset)}).toString();
+  let res;
+  try { res = await fetch(`https://api.binance.com${path}?${qs}&signature=${await hmacHex(a.secret, qs)}`, {headers: {'X-MBX-APIKEY': a.key}}); }
+  catch (e) { const err = new Error('CORS'); err.cors = true; throw err; }
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const c = d?.code;
+    throw new Error(c === -2015 || c === -2014 || c === -1022 ? 'Binance odrzucił klucz – sprawdź, czy klucz i sekret są poprawne i czy klucz ma uprawnienie „Enable Reading”.'
+      : c === -1021 ? 'Zegar urządzenia różni się od zegara Binance – spróbuj ponownie.'
+      : `Binance: ${d?.msg || 'błąd ' + res.status}`);
+  }
+  return d;
+}
+async function bnFetch() {
+  if (impBusy) return;
+  if (!bnApi()) { impMsg = 'Najpierw zapisz klucz API.'; impMsgOk = false; renderImport(); return; }
+  impBusy = true; impOps = [];
+  const prog = t => { impMsg = t; impMsgOk = true; const el = document.getElementById('impMsg'); if (el) { el.textContent = t; el.style.color = 'var(--muted)'; } };
+  prog('Łączę się z Binance…'); renderImport();
+  const from = Date.parse(impFrom() + 'T00:00:00'), now = Date.now(), ops = [];
+  try {
+    try { const t = await fetchJson('https://api.binance.com/api/v3/time'); bnOffset = t.serverTime - Date.now(); } catch (e) {}
+    const acc = await bnSigned('/api/v3/account', {omitZeroBalances: 'true'});
+    const assets = new Set([...(acc.balances || []).map(b => b.asset), ...Object.keys(holdings), ...Object.keys(STRATEGY)].map(normAsset).filter(a => a && !FIAT.has(a)));
+    prog('Sprawdzam pary handlowe…');
+    const all = await fetchJson('https://api.binance.com/api/v3/ticker/price', 20000);
+    const valid = new Set(all.map(t => t.symbol));
+    const syms = [];
+    assets.forEach(a => QUOTES.forEach(q => { if (a !== q && valid.has(a + q)) syms.push([a + q, a, q]); }));
+    let i = 0;
+    for (const [sym, base, quote] of syms) {
+      prog(`Pobieram transakcje ${++i}/${syms.length}: ${base}/${quote}…`);
+      let fromId = 0;
+      for (let page = 0; page < 20; page++) {
+        const tr = await bnSigned('/api/v3/myTrades', {symbol: sym, fromId: String(fromId), limit: '1000'});
+        tr.forEach(t => { if (t.time >= from) ops.push({id: `bn:t:${sym}:${t.id}`, src: 'Binance API', ts: t.time, base, quote, side: t.isBuyer ? 'buy' : 'sell', qty: +t.qty, total: +t.quoteQty, fee: +t.commission, feeAsset: normAsset(t.commissionAsset)}); });
+        if (tr.length < 1000) break;
+        fromId = tr[tr.length - 1].id + 1;
+      }
+    }
+    prog('Pobieram zakupy kartą i przelewem…');
+    for (const tt of ['0', '1']) {
+      try {
+        const f = await bnSigned('/sapi/v1/fiat/payments', {transactionType: tt, beginTime: String(from), endTime: String(now), rows: '500'});
+        (f.data || []).filter(x => /complet|success/i.test(x.status)).forEach(x => ops.push({id: `bn:f:${x.orderNo}`, src: 'Binance API', ts: +x.createTime, base: normAsset(x.cryptoCurrency), quote: normAsset(x.fiatCurrency),
+          side: tt === '0' ? 'buy' : 'sell', qty: tt === '0' ? +x.obtainAmount : +x.sourceAmount, total: tt === '0' ? +x.sourceAmount : +x.obtainAmount, fee: 0}));   // kwota z Binance zawiera już prowizję
+      } catch (e) { if (e.cors) throw e; }
+    }
+    prog('Pobieram wymiany „Convert”…');
+    for (let t0 = from; t0 < now; t0 += 30 * 86400000) {
+      try {
+        const c = await bnSigned('/sapi/v1/convert/tradeFlow', {startTime: String(t0), endTime: String(Math.min(now, t0 + 30 * 86400000 - 1)), limit: '1000'});
+        (c.list || []).filter(x => x.orderStatus === 'SUCCESS').forEach(x => {
+          const fa = normAsset(x.fromAsset), ta = normAsset(x.toAsset);
+          const sell = (FIAT.has(ta) || USD_STABLE.has(ta)) && !FIAT.has(fa) && !USD_STABLE.has(fa);
+          ops.push(sell ? {id: `bn:c:${x.orderId}`, src: 'Binance API', ts: +x.createTime, base: fa, quote: ta, side: 'sell', qty: +x.fromAmount, total: +x.toAmount, fee: 0}
+                        : {id: `bn:c:${x.orderId}`, src: 'Binance API', ts: +x.createTime, base: ta, quote: fa, side: 'buy', qty: +x.toAmount, total: +x.fromAmount, fee: 0});
+        });
+      } catch (e) { if (e.cors) throw e; }
+    }
+    const s = impState(); s.lastSync = Date.now(); saveImpState(s);
+    impBusy = false;
+    impSetOps(ops, 'Binance');
+  } catch (e) {
+    impBusy = false;
+    impMsg = e.cors ? 'Binance nie pozwolił na połączenie z tej strony (blokada przeglądarki). Użyj zakładki „Plik z giełdy” – wyeksportuj historię transakcji z Binance i wczytaj plik.' : e.message;
+    impMsgOk = false; renderImport();
+  }
+}
+
+/* ---------- plik CSV / XLSX ---------- */
+function parseCsv(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/)[0] || '';
+  const sep = [',', ';', '\t'].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep) { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+async function loadXlsxLib() {
+  if (window.XLSX) return window.XLSX;
+  await new Promise((ok, fail) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = ok; s.onerror = () => fail(new Error('Nie udało się wczytać czytnika plików Excel – zapisz plik jako CSV.')); document.head.appendChild(s); });
+  return window.XLSX;
+}
+async function impFile(file) {
+  if (!file) return;
+  impMsg = 'Czytam plik…'; impMsgOk = true; renderImport();
+  try {
+    let rows;
+    if (/\.xlsx?$/i.test(file.name)) {
+      const X = await loadXlsxLib();
+      const wb = X.read(await file.arrayBuffer(), {type: 'array', cellDates: true});
+      rows = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, raw: true, defval: ''});
+    } else rows = parseCsv(await file.text());
+    const hi = rows.findIndex(r => r.filter(c => /[a-z]/i.test(String(c))).length >= 3);
+    if (hi < 0 || rows.length < hi + 2) throw new Error('Plik nie zawiera tabeli z transakcjami.');
+    const head = rows[hi].map(h => String(h).trim()), data = rows.slice(hi + 1).filter(r => r.length >= 3);
+    impCsv = {name: file.name, head, data, map: guessMap(head)};
+    impFromCsv();
+  } catch (e) { impMsg = e.message; impMsgOk = false; impCsv = null; renderImport(); }
+}
+function guessMap(head) {
+  const H = head.map(h => h.toLowerCase());
+  const f = (...res) => { for (const re of res) { const i = H.findIndex(h => re.test(h)); if (i >= 0) return i; } return -1; };
+  const fmt = H.includes('utc_time') && H.includes('operation') && H.includes('change') ? 'binance-ledger'
+    : H.includes('date(utc)') && H.includes('pair') && H.includes('executed') ? 'binance-trades'
+    : H.includes('txid') && H.includes('pair') && H.includes('vol') ? 'kraken' : 'generic';
+  return {fmt,
+    date: f(/^date\(utc\)$/, /^utc_time$/, /^time$/, /timestamp|date|time|czas|^data/),
+    pair: f(/^pair$/, /^symbol$/, /spot pairs|market|instrument|pair|symbol|para/),
+    base: f(/^(base|base ?asset|coin|asset)$/), quote: f(/^quote( asset)?$/),
+    side: f(/^side$/, /direction|^type$|kierunek|strona|side/),
+    qty: f(/^executed$/, /^vol$/, /filled.*(qty|quantity)|exec.*qty|quantity|^qty$|ilość|amount \(base\)/),
+    total: f(/^amount$/, /^cost$/, /filled value|total|quote.*(qty|amount)|wartość|kwota/),
+    price: f(/^price$/, /avg.*price|filled price|price|cena/),
+    fee: f(/^fee$/, /fees?$|commission|prowizja/),
+    feeAsset: f(/fee.*(coin|asset|currency)|commission asset/)};
+}
+const isSell = v => /sell|sprzeda|^s$|ask/i.test(String(v));
+const isBuy = v => /buy|kup|^b$|bid/i.test(String(v));
+function impFromCsv() {
+  const {head, data, map} = impCsv, src = map.fmt === 'kraken' ? 'Kraken' : map.fmt.startsWith('binance') ? 'Binance' : 'Plik';
+  const ops = [];
+  const hash = r => src + ':' + r.join('|').slice(0, 200);
+  if (map.fmt === 'binance-ledger') {
+    const iT = head.indexOf('UTC_Time'), iA = head.indexOf('Account'), iO = head.indexOf('Operation'), iC = head.indexOf('Coin'), iX = head.indexOf('Change');
+    const groups = {};
+    data.forEach(r => { const k = r[iT] + '|' + r[iA]; (groups[k] = groups[k] || []).push(r); });
+    Object.entries(groups).forEach(([k, rs]) => {
+      if (rs.some(r => /deposit|withdraw|distribution|staking|savings|earn|launchpool|airdrop|transfer|interest|reward|rebate|cashback/i.test(r[iO]))) return;
+      const sum = {}, fee = {};
+      rs.forEach(r => { const c = normAsset(r[iC]), v = parseNum(r[iX]); if (!isFinite(v)) return; if (/fee/i.test(r[iO])) fee[c] = (fee[c] || 0) - v; else sum[c] = (sum[c] || 0) + v; });
+      const neg = Object.entries(sum).filter(([, v]) => v < 0), pos = Object.entries(sum).filter(([, v]) => v > 0);
+      if (neg.length !== 1 || pos.length !== 1) return;
+      const [outA, outV] = neg[0], [inA, inV] = pos[0];
+      const [fa, fv] = Object.entries(fee)[0] || [null, 0];
+      const ts = parseDate(rs[0][iT]);
+      const sellSide = (FIAT.has(inA) || USD_STABLE.has(inA)) && !FIAT.has(outA) && !USD_STABLE.has(outA);
+      ops.push(sellSide ? {id: 'bnl:' + k, src: 'Binance plik', ts, base: outA, quote: inA, side: 'sell', qty: -outV, total: inV + (fa === inA ? fv : 0), fee: fv, feeAsset: fa}
+                        : {id: 'bnl:' + k, src: 'Binance plik', ts, base: inA, quote: outA, side: 'buy', qty: inV + (fa === inA ? fv : 0), total: -outV, fee: fv, feeAsset: fa});
+    });
+  } else {
+    data.forEach(r => {
+      const g = i => i >= 0 ? r[i] : '';
+      let base, quote;
+      if (map.pair >= 0) [base, quote] = splitPair(g(map.pair)); else { base = normAsset(g(map.base)); quote = normAsset(g(map.quote)); }
+      const [q, qA] = numAsset(g(map.qty)), [tot, tA] = numAsset(g(map.total)), [fee, fA] = numAsset(g(map.fee));
+      if (!base && qA) base = qA; if (!quote && tA) quote = tA;
+      const price = parseNum(g(map.price));
+      const total = isFinite(tot) && tot !== 0 ? Math.abs(tot) : (isFinite(price) && isFinite(q) ? Math.abs(price * q) : NaN);
+      const sideV = g(map.side), side = isSell(sideV) ? 'sell' : isBuy(sideV) ? 'buy' : (q < 0 ? 'sell' : null);
+      if (!side || !base || !quote) return;
+      ops.push({id: hash(r), src: src + ' plik', ts: parseDate(g(map.date)), base, quote, side, qty: Math.abs(q), total,
+        fee: isFinite(fee) ? Math.abs(fee) : 0, feeAsset: fA || (map.feeAsset >= 0 ? normAsset(g(map.feeAsset)) : (map.fmt === 'kraken' ? quote : null))});
+    });
+  }
+  impSetOps(ops, `Plik ${impCsv.name}`);
+}
+function impMapSet(k, v) { impCsv.map[k] = +v; impFromCsv(); }
+
+/* ---------- widok ---------- */
+function renderImport() {
+  const el = document.getElementById('impBody');
+  if (!el) return;
+  const st = impState(), a = bnApi();
+  const tabs = `<div class="form-row" style="margin:0 0 .8rem"><span class="seg">
+      <button class="${impView === 'binance' ? 'on' : ''}" onclick="impView='binance';impOps=[];impMsg='';renderImport()">Binance – automatycznie</button>
+      <button class="${impView === 'file' ? 'on' : ''}" onclick="impView='file';impOps=[];impMsg='';renderImport()">Plik z giełdy</button></span></div>`;
+  const fromRow = `<div class="form-row" style="align-items:flex-end"><div><label for="impFrom">Importuj transakcje od</label><br><input type="date" id="impFrom" value="${impFrom()}" onchange="impSetFrom(this.value)"></div></div>
+    <p class="small muted" style="margin:0 0 .6rem">Starsze transakcje są już w portfelu (stan z CoinMarketCap z ${fmtDate(IMP_FROM_DEFAULT)}) i w dzienniku – nie dodawaj ich drugi raz.</p>`;
+  let body;
+  if (impView === 'binance') {
+    body = a ? `<div class="set-row"><div><strong>Klucz API zapisany w tym urządzeniu ✓</strong><span class="small">${st.lastSync ? 'Ostatnie pobranie: ' + new Date(st.lastSync).toLocaleString('pl-PL') : 'Jeszcze nie pobierano.'}</span></div>
+        <button class="action secondary" onclick="bnForget()">Usuń klucz</button></div>
+      ${fromRow}
+      <div class="form-row"><button class="action" onclick="bnFetch()" ${impBusy ? 'disabled' : ''}>${impBusy ? '⏳ Pobieram…' : '↻ Pobierz transakcje z Binance'}</button></div>`
+    : `<p class="muted" style="font-size:.88rem;margin-top:0">Aplikacja sama pobierze Twoje zakupy i sprzedaże: transakcje na giełdzie, zakupy kartą/przelewem i wymiany „Convert”.</p>
+      <ol class="small" style="padding-left:1.1rem;margin:.2rem 0 .7rem;line-height:1.55">
+        <li>W Binance: profil → <strong>Zarządzanie API</strong> (API Management) → <strong>Utwórz API</strong> → „Wygenerowane przez system”.</li>
+        <li>Zaznacz <strong>tylko „Enable Reading”</strong> (odczyt). Nie zaznaczaj handlu ani wypłat – wtedy kluczem nie da się niczego kupić ani wypłacić.</li>
+        <li>Skopiuj <strong>API Key</strong> i <strong>Secret Key</strong> i wklej poniżej.</li>
+      </ol>
+      <div class="form-row" style="align-items:flex-end">
+        <div><label for="bnKey">API Key</label><br><input type="text" id="bnKey" autocomplete="off" spellcheck="false" style="max-width:260px"></div>
+        <div><label for="bnSecret">Secret Key</label><br><input type="password" id="bnSecret" autocomplete="off" style="max-width:260px"></div>
+        <button class="action" onclick="bnSaveKeys()">Zapisz klucz</button>
+      </div>
+      <p class="small muted" style="margin:.3rem 0 0">Klucz zostaje tylko w tym urządzeniu – nie trafia do chmury, kopii zapasowej ani do mnie. Łączysz się bezpośrednio z Binance.</p>`;
+  } else {
+    const m = impCsv?.map;
+    const sel = (k, label) => `<div><label>${label}</label><br><select onchange="impMapSet('${k}',this.value)"><option value="-1">—</option>${impCsv.head.map((h, i) => `<option value="${i}" ${m[k] === i ? 'selected' : ''}>${esc(h || '(kolumna ' + (i + 1) + ')')}</option>`).join('')}</select></div>`;
+    body = `<p class="muted" style="font-size:.88rem;margin-top:0">Wyeksportuj historię transakcji z giełdy i wczytaj plik (CSV albo XLSX). Rozpoznaję pliki z Binance (historia transakcji spot i historia konta), Bybit i Kraken; dla innych giełd dopasujesz kolumny.</p>
+      <details class="small" style="margin:.2rem 0 .7rem"><summary><strong>Skąd wziąć plik?</strong></summary><div style="padding:.5rem .8rem;line-height:1.55">
+        <strong>Binance:</strong> Portfel → Historia transakcji → Eksportuj (historia spot) albo Raporty → Historia transakcji konta.<br>
+        <strong>Bybit:</strong> Zlecenia → Spot → Historia transakcji → Eksportuj.<br>
+        <strong>Kraken:</strong> History → Export → Trades.
+      </div></details>
+      ${fromRow}
+      <div class="form-row"><button class="action" onclick="document.getElementById('impFile').click()">Wybierz plik</button><span class="small muted">${impCsv ? esc(impCsv.name) + ` · ${impCsv.data.length} wierszy · ${m.fmt === 'generic' ? 'format ogólny' : 'rozpoznany format ' + m.fmt}` : ''}</span></div>
+      <input type="file" id="impFile" accept=".csv,.txt,.xlsx,.xls" style="display:none" onchange="impFile(this.files[0]);this.value=''">
+      ${impCsv && m.fmt !== 'binance-ledger' ? `<details style="margin-top:.6rem" ${impOps.length ? '' : 'open'}><summary><strong>Dopasowanie kolumn</strong><span class="small muted">popraw, jeśli lista wygląda źle</span></summary>
+        <div class="strat-fields" style="padding:.6rem .8rem">${sel('date', 'Data')}${sel('pair', 'Para (np. BTCUSDT)')}${sel('base', 'Moneta (gdy brak pary)')}${sel('quote', 'Waluta zapłaty')}${sel('side', 'Kupno / sprzedaż')}${sel('qty', 'Ilość monety')}${sel('total', 'Wartość (w walucie zapłaty)')}${sel('price', 'Cena')}${sel('fee', 'Prowizja')}</div></details>` : ''}`;
+  }
+  const list = impOps.length ? `
+    <div class="table-wrap" style="margin-top:.8rem"><table class="imp-table">
+      <thead><tr><th><input type="checkbox" aria-label="Zaznacz wszystkie" onchange="impOps.forEach(o=>{if(!o.done)o.sel=this.checked});renderImport()"></th><th>Data</th><th>Transakcja</th><th>Co się zmieni</th></tr></thead>
+      <tbody>${impOps.slice(0, 300).map((o, i) => `<tr class="${o.done || o.old ? 'imp-dim' : ''}">
+        <td><input type="checkbox" ${o.sel ? 'checked' : ''} ${o.done ? 'disabled' : ''} onchange="impOps[${i}].sel=this.checked" aria-label="Zaznacz"></td>
+        <td class="small">${new Date(o.ts).toLocaleString('pl-PL', {dateStyle: 'short', timeStyle: 'short'})}</td>
+        <td><strong class="${o.side === 'buy' ? 'positive' : 'negative'}">${o.side === 'buy' ? 'Kupno' : 'Sprzedaż'}</strong> ${fmtQty(o.qty)} ${o.base}<br><span class="small muted">za ${upto(o.total, o.total < 1 ? 6 : 2)} ${o.quote}${o.fee ? ` · prowizja ${upto(o.fee, 6)} ${o.feeAsset || ''}` : ''} · ${esc(o.src)}</span></td>
+        <td class="small">${o.done ? '<span class="tag tag-neu">już dodana</span>' : o.old ? '<span class="tag tag-neu">przed datą od</span>' : o.dup ? '<span class="tag tag-sell">możliwy duplikat wpisu ręcznego</span><br>' : ''}${o.done ? '' : opEffects(o)}</td></tr>`).join('')}</tbody></table></div>
+    ${impOps.length > 300 ? `<p class="small muted">Pokazuję 300 najnowszych z ${impOps.length}.</p>` : ''}
+    <div class="form-row" style="margin-top:.6rem"><button class="action" onclick="impApplySelected()" ${impBusy ? 'disabled' : ''}>Dodaj zaznaczone (${impOps.filter(o => o.sel).length})</button><button class="action secondary" onclick="impOps=[];impMsg='';renderImport()">Wyczyść listę</button></div>` : '';
+  el.innerHTML = tabs + body + `<p class="small" id="impMsg" style="color:${impMsgOk ? 'var(--green)' : 'var(--red)'};min-height:1em;margin:.6rem 0 0">${esc(impMsg)}</p>` + list
+    + `<p class="small muted" style="margin:.8rem 0 0">Zakupy i sprzedaże za złotówki lub inną walutę trafiają do dziennika PIT-38 (waluty przeliczam po kursie NBP z dnia roboczego przed transakcją). Wymiany krypto→krypto zmieniają tylko portfel. Każdą transakcję zapamiętuję, więc nie doda się drugi raz.</p>`;
 }
 
 /* ---------- edycja pozycji ---------- */
@@ -2737,11 +3403,12 @@ function generateTasks() {
       }
       tasks.push({type:'buy', label: c.optional ? 'OPCJONALNIE DOKUP' : 'DOKUP', msg: `${head} ${tail}`});
     }
-    if (c.status === 'reduce') {
-      const reb = (p - pos.avg) / pos.avg * 100;
+    if (c.status === 'reduce' && c.reboundPct) {
+      const base = c.reboundBase || pos.avg, sp = c.sellPct || 100;
+      const reb = (p - base) / base * 100;
       if (reb >= c.reboundPct) {
-        tasks.push({type:'sell', label:`SPRZEDAJ ${c.sellPct}%`,
-          msg:`${sym}: cena ${usd(p)}, +${fixed(reb, 0)}% od średniej ${usd(pos.avg)}. Sprzedaj ~${fmtQty(pos.qty * c.sellPct / 100)} ${sym}. Kapitał → rdzeń (krypto→krypto, bez podatku).`});
+        tasks.push({type:'sell', label:`SPRZEDAJ ${sp}%`,
+          msg:`${sym}: cena ${usd(p)}, +${fixed(reb, 0)}% od ${c.reboundBase ? 'ceny z ' + fmtDate(c.reboundAt) : 'średniej'} ${usd(base)}. Sprzedaj ~${fmtQty(pos.qty * sp / 100)} ${sym}. Kapitał → rdzeń (krypto→krypto, bez podatku).`});
       }
     }
     if (c.status === 'lottery' && c.sellAt && p >= c.sellAt) {
@@ -2752,6 +3419,19 @@ function generateTasks() {
   const buys = tasks.filter(t => t.type === 'buy').length;
   if (buys > 1 && goal.monthly > 0 && left >= MIN_ORDER_PLN) {
     tasks.push({type:'buy', label:'BUDŻET', msg:`Kilka zadań kupna dzieli jeden budżet (${zl(left)}). Podział znajdziesz w zakładce „Dopłata”.`});
+  }
+  // comiesięczna dopłata według planu
+  if (goal.monthly > 0 && new Date().getDate() >= (goal.dcaDay || 10) && left >= MIN_ORDER_PLN) {
+    const split = (goal.split || []).filter(x => x.pct > 0), ssum = split.reduce((t, x) => t + x.pct, 0) || 100;
+    tasks.push({type:'buy', label:'DOPŁATA', msg:`Miesięczna dopłata: zostało ${zl(left)} z ${zl(goal.monthly)} na ${mName}. ${split.length ? 'Według planu: ' + split.map(x => `${x.sym} ${zl(left * x.pct / ssum)}`).join(', ') + '.' : 'Podział znajdziesz w zakładce „Dopłata”.'}`});
+  }
+  // odchylenia od celów alokacji
+  const tot = totalPln();
+  if (tot > 0) for (const [sym, c] of Object.entries(STRATEGY)) {
+    if (!c.target || !(prices[sym]?.usd > 0)) continue;
+    const now = valuePln(sym) / tot * 100, d = now - c.target;
+    if (Math.abs(d) > 5) tasks.push({type:'info', label: d > 0 ? 'PONAD CEL' : 'PONIŻEJ CELU',
+      msg:`${sym}: ${pct(now)} portfela, cel ${c.target}% (${signed(d, v => fixed(v, 1) + ' pp')}). ${d > 0 ? 'Nie dokupuj – dopłaty kieruj do monet poniżej celu.' : 'Kieruj tu większą część dopłat.'}`});
   }
   tasks.unshift(...ladderTasks());          // realizacja zysków na górze listy
   updateNotifications();
@@ -2895,6 +3575,15 @@ function resetLayout() {
   renderNav(); renderColSettings(); render();
 }
 
+function quickAdd() {
+  openTab('edit');
+  const m = document.getElementById('editMode');
+  if (m && m.value === 'set') { m.value = 'buy'; updateEditForm(); }
+  setTimeout(() => {
+    document.querySelector('#edit .card')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+    document.getElementById('editQty')?.focus({preventScroll: true});
+  }, 80);
+}
 function toggleNav(force) {
   document.body.classList.toggle('nav-open', typeof force === 'boolean' ? force : !document.body.classList.contains('nav-open'));
 }
@@ -2960,11 +3649,12 @@ function openTab(id) {
   if (pt && TAB_DEFS[id]) pt.textContent = TAB_DEFS[id];
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
   document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === id));
+  document.body.classList.toggle('tab-edit', id === 'edit');
   window.scrollTo({top: 0});
   if (id === 'risk') { renderLadder(); renderRisk(); loadRiskData(); }
-  if (id === 'savings') renderSavings();
-  if (id === 'offers') { renderOffers(); loadLiveMacro(); }
+  if (id === 'savings') { bioAuto = true; renderSavings(); }
   if (id === 'plan') renderPlan();
+  if (id === 'edit') renderImport();
   if (id === 'market') mkOpen();
   else if (prevTab === 'market') mkLeave();
   if (id === 'settings') renderSettings();
@@ -3142,8 +3832,9 @@ function ladderProposal(sym) {
   // monety z regułami w planie – propozycja = reguły planu
   if (c.status === 'lottery') return c.sellAt && c.sellAt > price ? [mk(c.sellAt, 100, 'próg z Twojego planu – loteria, sprzedaj całość')] : [];
   if (c.status === 'reduce') {
-    const p = pos.avg * (1 + c.reboundPct / 100);
-    return p > price ? [mk(p, c.sellPct, `redukcja z Twojego planu (+${c.reboundPct}% od średniej), kapitał do rdzenia`)] : [];
+    if (!c.reboundPct) return [];
+    const p = (c.reboundBase || pos.avg) * (1 + c.reboundPct / 100);
+    return p > price ? [mk(p, c.sellPct || 100, `redukcja z Twojego planu (+${c.reboundPct}% od ${c.reboundBase ? 'ceny z ' + fmtDate(c.reboundAt) : 'średniej'}), kapitał do rdzenia`)] : [];
   }
   const risk = m ? riskAssess(sym, m) : {pts: 0};
   let lv = [];
@@ -3266,7 +3957,7 @@ function ladderDone(s, id, val = true) {
   if (!l) return;
   l.done = val; l.doneAt = val ? Date.now() : null;
   saveLadder(); renderLadder(); generateTasks();
-  if (val) document.getElementById('ladderMsg').innerHTML = `<span class="positive">Oznaczono jako zrobione. Zapisz sprzedaż w „Edytuj / Dodaj” → Sprzedaj część (jeśli za złotówki – wpisz kwotę, trafi do PIT).</span>`;
+  if (val) document.getElementById('ladderMsg').innerHTML = `<span class="positive">Oznaczono jako zrobione. Zapisz sprzedaż w „Kupno / Sprzedaż” → Sprzedaj część (jeśli za złotówki – wpisz kwotę, trafi do PIT).</span>`;
 }
 
 /* --- okno: ustawienia progów --- */
@@ -3729,6 +4420,14 @@ function renderPinCard(keepMsg) {
     <div class="set-row"><div><strong>Automatyczna blokada</strong><span class="small">Kiedy zakładka Oszczędności ma się sama zablokować.</span></div>
       <span class="seg">${segHtml('autoLock', [['leave', 'Po wyjściu'], ['5', 'Po 5 min'], ['15', 'Po 15 min'], ['manual', 'Ręcznie']])}</span></div>
     ${prev || '<p class="small" id="pinMsg2"></p>'}
+    <details ${v.bio ? '' : 'open'}><summary><strong>Face ID / Touch ID</strong><span class="small muted">${v.bio ? 'włączone ✓' : 'odblokowanie bez wpisywania PIN-u'}</span></summary><div style="padding:.75rem 1rem">
+      ${v.bio ? `<p class="small muted" style="margin-top:0">Zakładkę Oszczędności możesz odblokować Face ID (lub Touch ID). PIN dalej działa jako zapasowy.</p>
+        <button class="action secondary" onclick="pinAction(async () => bioDisable(), 'Face ID wyłączone – zostaje PIN.')">Wyłącz Face ID</button>`
+      : bioAvailable() ? `<p class="small muted" style="margin-top:0">Wpisz PIN, a potem potwierdź Face ID. Na Macu i innych urządzeniach Apple z tym samym kontem iCloud zadziała też Touch ID.</p>
+        <div class="form-row"><div><label>Obecny PIN</label><br>${pinInput('pB0', '••••')}</div>
+        <button class="action" onclick="pinAction(() => bioEnable(val('pB0')), 'Face ID włączone – w zakładce Oszczędności odblokujesz je jednym spojrzeniem.')">Włącz Face ID</button></div>`
+      : '<p class="small muted" style="margin:0">Dostępne w aplikacji otwartej z adresu https – na iPhonie z ikony na ekranie początkowym.</p>'}
+    </div></details>
     <details><summary><strong>Zmień PIN</strong></summary><div style="padding:.75rem 1rem"><div class="form-row">
       <div><label>Obecny PIN</label><br>${pinInput('pC0', '••••')}</div>
       <div><label>Nowy PIN</label><br>${pinInput('pC1', '••••')}</div>
@@ -3755,6 +4454,56 @@ function renderPinCard(keepMsg) {
     </div></details>
     ${honest}`;
 }
+
+/* --- Face ID / Touch ID: klucz dostępu (passkey) z rozszerzeniem PRF odblokowuje ten sam sejf co PIN --- */
+const bioAvailable = () => !!(window.PublicKeyCredential && window.isSecureContext && location.protocol !== 'file:' && hasCrypto);
+const prfKey = bytes => crypto.subtle.importKey('raw', new Uint8Array(bytes), 'AES-GCM', false, ['encrypt', 'decrypt']);
+async function bioPrf(rawId, salt) {
+  const a = await navigator.credentials.get({publicKey: {challenge: rand(32), rpId: location.hostname, allowCredentials: [{type: 'public-key', id: rawId}],
+    userVerification: 'required', timeout: 60000, extensions: {prf: {eval: {first: salt}}}}});
+  const r = a.getClientExtensionResults?.()?.prf?.results?.first;
+  if (!r) throw new Error('To urządzenie nie obsługuje odblokowania tą metodą – zostaje PIN.');
+  return r;
+}
+async function bioEnable(pin) {
+  if (!bioAvailable()) throw new Error('Face ID działa w aplikacji otwartej z adresu https – na iPhonie z ikony na ekranie początkowym.');
+  let raw;
+  try { raw = (await openWithPin(pin)).raw; } catch (e) { registerFail(); throw new Error('PIN jest błędny.'); }
+  const salt = rand(32);
+  let cred;
+  try {
+    cred = await navigator.credentials.create({publicKey: {
+      rp: {name: 'Crypto Control', id: location.hostname},
+      user: {id: rand(16), name: 'Oszczędności', displayName: 'Crypto Control – Oszczędności'},
+      challenge: rand(32), pubKeyCredParams: [{type: 'public-key', alg: -7}, {type: 'public-key', alg: -257}],
+      authenticatorSelection: {authenticatorAttachment: 'platform', residentKey: 'preferred', userVerification: 'required'},
+      timeout: 60000, extensions: {prf: {eval: {first: salt}}}}});
+  } catch (e) { throw new Error(e.name === 'NotAllowedError' ? 'Anulowano.' : 'Nie udało się utworzyć klucza Face ID: ' + e.message); }
+  const ext = cred.getClientExtensionResults?.() || {};
+  if (ext.prf && ext.prf.enabled === false) throw new Error('To urządzenie nie obsługuje odblokowania tą metodą – zostaje PIN.');
+  const out = ext.prf?.results?.first || await bioPrf(cred.rawId, salt);
+  const v = getVault();
+  v.bio = {id: b64(cred.rawId), salt: b64(salt), wrap: await seal(await prfKey(out), raw)};
+  lsSet(LS.vault, v);
+}
+let bioAuto = false;   // automatyczne pytanie o Face ID tylko przy wejściu do zakładki
+async function bioUnlock(auto) {
+  const v = getVault();
+  if (!v?.bio || !bioAvailable() || isUnlocked()) return;
+  const msg = document.getElementById('pinMsg');
+  try {
+    const out = await bioPrf(unb64(v.bio.id), unb64(v.bio.salt));
+    const raw = await unseal(await prfKey(out), v.bio.wrap);
+    const data = JSON.parse(td.decode(await unseal(await dataKey(raw), v.data)));
+    vaultKey = raw; sav = {...SAV_EMPTY(), ...data}; lastSavActivity = Date.now();
+    lsSet(LS.pinLock, {fails: 0, until: 0});
+    renderSavings();
+  } catch (e) {
+    if (msg && !auto) msg.textContent = e.name === 'NotAllowedError' ? 'Anulowano – stuknij Face ID jeszcze raz albo wpisz PIN.' : (e.message || 'Nie udało się – wpisz PIN.');
+  }
+}
+function bioDisable() { const v = getVault(); if (v) { delete v.bio; lsSet(LS.vault, v); } }
+
 function goPinSettings(openReset) {
   openTab('settings');
   setTimeout(() => {
@@ -3836,7 +4585,8 @@ function renderSavings() {
     el.innerHTML = `<div class="card"><div class="lock-screen">
       <div class="lock-ic">${lockIc}</div>
       <h2 style="margin:.25rem 0">Oszczędności są zablokowane</h2>
-      <p class="muted" style="font-size:.9rem;margin:0">Wpisz 4-cyfrowy PIN</p>
+      ${v.bio && bioAvailable() ? `<button class="action bio-btn" onclick="bioUnlock()">${svg('<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1M15 9v1M12 9v4h-1M9 15.5c1.8 1.3 4.2 1.3 6 0"/>')} Odblokuj Face ID</button>
+        <p class="muted" style="font-size:.85rem;margin:.6rem 0 0">albo wpisz 4-cyfrowy PIN</p>` : '<p class="muted" style="font-size:.9rem;margin:0">Wpisz 4-cyfrowy PIN</p>'}
       <div class="pin-dots" id="pinDots"></div>
       <div class="pin-pad">
         ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button onclick="pinPress('${n}')">${n}</button>`).join('')}
@@ -3848,8 +4598,10 @@ function renderSavings() {
       <a href="#" class="small" onclick="goPinSettings(true);return false">Nie pamiętasz PIN-u? Reset e-mailem</a>
     </div></div>`;
     pinDots();
+    if (v.bio && bioAvailable() && bioAuto) { bioAuto = false; bioUnlock(true); }
     return;
   }
+  bioAuto = false;
   loadEurRate();
   const A = sav.assets;
   const by = {cash: 0, free: 0, savings: 0, deposit: 0};
@@ -4220,26 +4972,19 @@ async function loadLiveMacro(force) {
     loadEurRate()
   ]);
   LIVE.at = Date.now(); LIVE.loading = false;
-  if (activeTab === 'offers') renderOffers();
+  if (activeTab === 'market') renderMacro();
 }
 
-function renderOffers() {
-  if (activeTab !== 'offers') return;
-  const el = document.getElementById('offersBody');
+function renderMacro() {
+  const el = document.getElementById('mkMacro');
+  if (!el) return;
   const M = MARKET.macro;
   const ref = liveRef(), infl = liveInfl(), real = ref - infl;
   const tagLive = ok => ok ? '<span class="tag tag-buy">na żywo</span>' : '<span class="tag" style="background:var(--hover);color:var(--muted)">stan ' + fmtDate(MARKET.asOf) + '</span>';
   el.innerHTML = `
-    <div class="info" style="margin-bottom:1rem">
-      <strong>Skąd te dane.</strong> Stopa NBP, inflacja, kursy walut i cena złota pobierają się na żywo przy każdym otwarciu zakładki.
-      Komentarze pod wskaźnikami to research z sieci z <strong>${fmtDate(MARKET.asOf)}</strong> – żeby je odświeżyć, poproś mnie o aktualizację.
-      Ceny kryptowalut, wykresy i analizy są w zakładce <a href="#" onclick="openTab('market');return false">Rynek</a>.
-    </div>
-
-    <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
-        <h2 style="margin:0">Rynek teraz</h2>
-        <button class="action secondary" onclick="loadLiveMacro(true)">↻ Odśwież dane na żywo</button>
+        <h2 style="margin:0">Rynek teraz – Polska</h2>
+        <button class="action secondary" onclick="loadLiveMacro(true)">↻ Odśwież</button>
       </div>
       <div class="summary-bar">
         <div class="summary-item"><span>Stopa referencyjna NBP</span><strong>${fixed(ref, 2)}%</strong><span>${LIVE.ref ? 'od ' + fmtDate(LIVE.refSince || M.refSince) : 'decyzja ' + fmtDate(M.refDecision)} ${tagLive(!!LIVE.ref)}</span></div>
@@ -4249,10 +4994,9 @@ function renderOffers() {
         <div class="summary-item"><span>Kursy NBP</span><strong>${fixed(usdPlnRate, 4)}</strong><span>USD/PLN${eurPlnRate ? ` · EUR ${fixed(eurPlnRate, 4)}` : ''}</span></div>
       </div>
       <ul style="margin:.25rem 0 0;padding-left:1.1rem;font-size:.86rem;color:var(--text-2)">${M.notes.map(n => `<li style="margin:.2rem 0">${n}</li>`).join('')}</ul>
-      <p class="small muted" style="margin:.5rem 0 0">Co z tego wynika: przy inflacji ${fixed(infl, 1)}% pieniądze trzymane bez oprocentowania tracą realnie ok. ${fixed(infl, 1)}% wartości rocznie –
-        żeby oszczędności nie traciły siły nabywczej, muszą zarabiać więcej niż inflacja.</p>
-      <p class="small muted" style="margin:.6rem 0 0">Źródła komentarzy: ${MARKET.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>
-    </div>`;
+      <p class="small muted" style="margin:.5rem 0 0">Co z tego wynika: przy inflacji ${fixed(infl, 1)}% pieniądze trzymane bez oprocentowania tracą realnie ok. ${fixed(infl, 1)}% wartości rocznie.
+        Stopa, inflacja, złoto i kursy pobierają się na żywo; komentarze to research z ${fmtDate(MARKET.asOf)} – poproś mnie o aktualizację.</p>
+      <p class="small muted" style="margin:.4rem 0 0">Źródła komentarzy: ${MARKET.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
 }
 
 function closeInfoModal() { document.getElementById('infoModal')?.classList.remove('open'); }
@@ -4296,19 +5040,23 @@ function mkLoadState() {
     if (s.ov) MK.ov = {...MK.ov, ...s.ov};
     if (s.panes) MK.panes = {...MK.panes, ...s.panes};
     if (Array.isArray(s.watch)) MK.watch = s.watch.filter(x => /^[A-Z0-9]{2,12}$/.test(x));
+    MK.newMerged = !!s.newMerged;
   }
   if (!MK_RANGES[MK.range]) MK.range = '24h';
   if (!MK_TA_IV[MK.taIv]) MK.taIv = '1d';
 }
-const mkSave = () => lsSet(LS.mkt, {sel: MK.sel, range: MK.range, type: MK.type, ov: MK.ov, panes: MK.panes, taIv: MK.taIv, watch: MK.watch});
+const mkSave = () => lsSet(LS.mkt, {sel: MK.sel, range: MK.range, type: MK.type, ov: MK.ov, panes: MK.panes, taIv: MK.taIv, watch: MK.watch, newMerged: MK.newMerged});
 const onBinance = s => !(s in STRATEGY) || !!STRATEGY[s].bn;
 const pairOf = s => STRATEGY[s]?.bn || (s + 'USDT');
 const cgId = s => STRATEGY[s]?.id || MK_CG[s] || null;
+const consideredCoins = () => Object.keys(STRATEGY).filter(s => STRATEGY[s].status === 'new' && STRATEGY[s].bn && !holdings[s]);
 function mkWatch() {
   if (!MK.watch) {
     const held = Object.keys(holdings).filter(s => STRATEGY[s]?.bn && !isStable(s)).sort((a, b) => valuePln(b) - valuePln(a));
-    MK.watch = [...new Set(['BTC', 'ETH', ...held, ...MK_MAJORS])];
+    MK.watch = [...new Set(['BTC', 'ETH', ...held, ...MK_MAJORS, ...consideredCoins()])];
+    MK.newMerged = true;
   }
+  if (!MK.newMerged) { MK.watch = [...new Set([...MK.watch, ...consideredCoins()])]; MK.newMerged = true; mkSave(); }
   return MK.watch;
 }
 function mkStreamSyms() {
@@ -4590,6 +5338,7 @@ window.addEventListener('resize', () => { if (activeTab === 'market') mkQueueDra
 /* ---------- otwieranie zakładki ---------- */
 function mkOpen() {
   mkRenderShell();
+  renderMacro(); loadLiveMacro();
   mkStreamSyms();
   mkLoadTicks().catch(() => null).then(() => { mkRenderWatch(); mkRenderHead(); });
   mkConnect();
@@ -4676,6 +5425,7 @@ function mkRenderShell() {
         </div>
         <div class="card" id="mkFc"></div>
         <div class="card" id="mkInfo"></div>
+        <div class="card" id="mkMacro"></div>
         <div class="info">
           <strong>Jak korzystać z tej zakładki.</strong> Ceny i wykres przychodzą z Binance na żywo (WebSocket, co ok. 1 s). Analiza techniczna, poziomy i zakresy liczą się w przeglądarce ze świec Binance;
           kapitalizacja i szczyty – z CoinGecko, nastroje – z alternative.me, dane o dźwigni – z kontraktów Binance Futures. Wskaźniki techniczne opisują to, co już się wydarzyło – nie wyznaczają przyszłości.
@@ -4741,7 +5491,7 @@ function mkRenderWatch() {
         const t = MK.tick[s], ch = t ? (t.c / t.o - 1) * 100 : null, sp = MK.spark[s];
         const held = holdings[s]?.qty > 0;
         return `<tr class="mk-row ${s === MK.sel ? 'sel' : ''}" onclick="mkSelect('${s}', true)">
-          <td><strong>${s}</strong>${held ? ' <span class="tag tag-acc" title="Masz tę monetę w portfelu">portfel</span>' : ''}<span class="small muted mk-coin">${esc(coinName(s))}</span></td>
+          <td><strong>${s}</strong>${held ? ' <span class="tag tag-acc" title="Masz tę monetę w portfelu">portfel</span>' : STRATEGY[s]?.status === 'new' ? ` <span class="tag tag-neu" title="${esc(STRATEGY[s].note || 'Nowy projekt do rozważenia')}">do rozważenia</span>` : ''}<span class="small muted mk-coin">${esc(coinName(s))}</span></td>
           <td class="num"><span class="mk-price" id="mkp-${s}">${t ? mP(t.c) : onBinance(s) ? '…' : 'brak na Binance'}</span></td>
           <td class="num" id="mkc-${s}">${chg(ch)}</td>
           <td class="num mk-hide-side mk-hide-sm" id="mkv-${s}">${t ? bigMoney(t.q) : '—'}</td>
@@ -5325,7 +6075,7 @@ function mkRenderInfo() {
   const s = MK.sel, cg = MK.cgm[s], st = MK.stat[s], fu = MK.fut[s] || {}, t = MK.tick[s];
   const sup = v => v ? upto(v, 0) : '—';
   const item = (a, b, c = '') => `<div><span>${a}</span><strong>${b}</strong>${c ? `<span>${c}</span>` : ''}</div>`;
-  let html = `<h2>${esc(coinName(s))} (${s}) – informacje</h2><div class="kv">`;
+  let html = `<h2>${esc(coinName(s))} (${s}) – informacje</h2>${STRATEGY[s]?.status === 'new' && !holdings[s] ? `<p class="small" style="margin:-.3rem 0 .5rem"><span class="tag tag-neu">do rozważenia</span> ${esc(STRATEGY[s].note || 'Nowy projekt na Twojej liście do rozważenia.')} Rolę i progi ustawisz w zakładce Plan → Strategia.</p>` : ''}<div class="kv">`;
   if (cg) {
     html += item('Miejsce w rankingu', cg.market_cap_rank ? '#' + cg.market_cap_rank : '—', 'wg kapitalizacji')
       + item('Kapitalizacja', bigMoney(cg.market_cap), cg.fully_diluted_valuation ? 'w pełni rozwodniona ' + bigMoney(cg.fully_diluted_valuation) : '')
@@ -5373,7 +6123,7 @@ function mkRenderMovers() {
 var FIREBASE_CONFIG = {apiKey: "AIzaSyDVegYij8cRCOG4Y2bzA7mEvpzEpHL1VvU", projectId: "crypto-control-69e0f"};   // projekt Firebase (dane publiczne – dostęp chronią reguły i hasło)
 LS.auth = 'ccAuth'; LS.cloudKey = 'ccCloudKey'; LS.cloudMeta = 'ccCloudMeta';
 var CL = {applying: false, pushing: false, again: false, timer: null, pullAt: 0, view: 'signup', busy: false, msg: '', msgOk: false, choice: null, pending: null};
-const CLOUD_LOCAL_ONLY = new Set(['cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
+const CLOUD_LOCAL_ONLY = new Set(['ccMonthSeen', 'ccBnApi', 'cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
 const cloudOn = () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
 const cloudAuth = () => { try { return JSON.parse(localStorage.getItem(LS.auth)) || null; } catch (e) { return null; } };
 const cloudMeta = () => { try { return JSON.parse(localStorage.getItem(LS.cloudMeta)) || {}; } catch (e) { return {}; } };
@@ -5787,13 +6537,36 @@ document.getElementById('jDate').value = todayStr();
 updateJournalForm();
 loadPlan();
 renderPlan();
-renderNew();
 renderJournal();
 renderBackupInfo();
 updateEditForm();
 setCurrency(ui.defaultCur === 'PLN' ? 'PLN' : 'USD');
 fullRefresh();
 cloudStart();
+
+/* Podsumowanie poprzedniego miesiąca przy pierwszym otwarciu w nowym miesiącu */
+LS.monthSeen = 'ccMonthSeen';
+function monthlyRecap() {
+  const cur = todayStr().slice(0, 7), seen = lsGet(LS.monthSeen);
+  if (seen === cur) return;
+  if (document.getElementById('authGate')) { setTimeout(monthlyRecap, 5000); return; }
+  lsSet(LS.monthSeen, cur);
+  if (!seen) return;
+  const prev = prevYm(), sel = document.getElementById('monthSel');
+  if (!sel || ![...sel.options].some(o => o.value === prev)) return;
+  const keep = sel.value;
+  sel.value = prev; renderMonth();
+  const body = document.getElementById('monthBody').innerHTML;
+  sel.value = keep; renderMonth();
+  const split = (goal.split || []).filter(x => x.pct > 0), ssum = split.reduce((t, x) => t + x.pct, 0) || 100;
+  document.getElementById('infoTitle').textContent = 'Podsumowanie: ' + monthName(prev);
+  document.getElementById('infoBody').innerHTML = body + (goal.monthly > 0 ? `<div class="highlight" style="margin-top:1rem"><span class="small muted">Plan na ${monthName(cur)}</span>
+      <strong style="display:block;margin:.2rem 0">Dopłata ${zl(goal.monthly)}${split.length ? ': ' + split.map(x => `${x.sym} ${zl(goal.monthly * x.pct / ssum)}`).join(', ') : ''}</strong>
+      <span class="small muted">Od ${goal.dcaDay || 10}. dnia miesiąca przypomnienie pojawi się w Zadaniach.</span></div>` : '')
+    + `<p class="small muted" style="margin:.8rem 0 0">Szczegóły i wcześniejsze miesiące znajdziesz w zakładce Cel → Podsumowanie miesiąca.</p>`;
+  document.getElementById('infoModal').classList.add('open');
+}
+setTimeout(monthlyRecap, 4000);
 
 /* Automatyczna aktualizacja: po powrocie do aplikacji sprawdzam, czy na serwerze jest nowsza wersja */
 const APP_VER = +((document.querySelector('footer')?.textContent.match(/Crypto Control v(\d+)/) || [])[1] || 0);
