@@ -446,6 +446,17 @@
   .cal-date span{font-size:.72rem;color:var(--muted)}
   .cal-item.soon .cal-date span{color:var(--orange);font-weight:600}
   .bench-mine td{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+  .mk-zoom button{min-width:2.2rem;font-size:1rem;padding:.3rem .55rem}
+  .mk-full{position:fixed !important;inset:0;z-index:1800;margin:0 !important;border-radius:0 !important;overflow:auto;
+    padding:calc(.8rem + env(safe-area-inset-top,0px)) max(.8rem,env(safe-area-inset-right,0px)) calc(.8rem + env(safe-area-inset-bottom,0px)) max(.8rem,env(safe-area-inset-left,0px)) !important;background:var(--card-solid) !important}
+  body.mk-full-open{overflow:hidden}
+  body.mk-full-open .fab{display:none}
+  [hidden]{display:none !important}
+  .subtabs{display:flex;gap:.4rem;overflow-x:auto;margin:0 0 var(--gap);padding:.15rem .05rem .35rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .subtabs::-webkit-scrollbar{display:none}
+  .subtabs button{flex:0 0 auto;border:1px solid var(--border);background:var(--card);color:var(--text-2);border-radius:var(--pill);padding:.5rem .95rem;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+  .subtabs button:hover{border-color:var(--border-strong);color:var(--text)}
+  .subtabs button.on{background:var(--btn-bg);background-color:var(--accent);color:var(--accent-ink);border-color:transparent;box-shadow:0 6px 16px -10px color-mix(in srgb,var(--accent) 80%,transparent)}
   /* ---------- PLAN (AI) ---------- */
   textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:.9rem;line-height:1.55;color:var(--text);background:var(--input);
     border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.75rem .85rem;resize:vertical;margin-top:.5rem}
@@ -474,7 +485,7 @@
   .mk-grid > *{min-width:0}
   @media (max-width:1359px){
     .mk-side,.mk-main{display:contents}
-    #mkWatchCard{order:1} #mkChartCard{order:2} .mk-2col{order:3} #mkFc{order:4} #mkInfo{order:5} #mkCal{order:6} #mkMacro{order:7} #mkMovers{order:8} .mk-main > .info{order:9}
+    #mkWatchCard{order:1} #mkChartCard{order:2} .mk-2col{order:3} #mkFc{order:4} #mkInfo{order:5} #mkMovers{order:6} .mk-main > .info{order:7}
   }
   @media (min-width:1360px){
     .mk-grid{grid-template-columns:minmax(0,1fr) 370px}
@@ -843,33 +854,34 @@
 
   <!-- ===================== USTAWIENIA ===================== -->
   <section id="settings">
-    <div class="card" id="cloudCard">
+    <nav class="subtabs" id="setSubs" role="tablist"></nav>
+    <div class="card" id="cloudCard" data-sub="konto">
       <h2>Konto i synchronizacja</h2>
       <div id="cloudBody"></div>
     </div>
-    <div class="card" id="pushCard">
+    <div class="card" id="pushCard" data-sub="powiadomienia">
       <h2>Powiadomienia w tle</h2>
       <div id="pushBody"></div>
     </div>
-    <div class="card">
+    <div class="card" data-sub="wyglad">
       <h2>Wygląd</h2>
       <p class="muted" style="font-size:.88rem;margin-top:0">Motyw zmienia cały charakter aplikacji: kolory, kształty, czcionkę i styl przycisków.</p>
       <div class="set-grid" id="themeGrid"></div>
       <div class="set-row"><div><strong>Tryb</strong><span class="small">Ciemny, jasny albo zgodny z ustawieniem systemu.</span></div><span class="seg" id="modeSeg"></span></div>
       <div class="set-row"><div><strong>Gęstość</strong><span class="small">Kompaktowa mieści więcej informacji na ekranie.</span></div><span class="seg" id="densSeg"></span></div>
     </div>
-    <div class="card">
+    <div class="card" data-sub="prywatnosc">
       <h2>Prywatność</h2>
       <div class="set-row">
         <div><strong>Ukryj kwoty</strong><span class="small">Rozmywa kwoty w całej aplikacji – przydatne w miejscach publicznych. Najedź albo dotknij, żeby podejrzeć. Szybki przełącznik: ikona oka u góry.</span></div>
         <label class="switch"><input type="checkbox" id="setPrivacy" onchange="setUi('privacy', this.checked)"><span></span></label>
       </div>
     </div>
-    <div class="card" id="pinCard">
+    <div class="card" id="pinCard" data-sub="prywatnosc">
       <h2>PIN do zakładki Oszczędności</h2>
       <div id="pinBody"></div>
     </div>
-    <div class="card">
+    <div class="card" data-sub="aplikacja">
       <h2>Aplikacja</h2>
       <div class="set-row"><div><strong>Waluta portfela przy starcie</strong><span class="small">W jakiej walucie pokazywać portfel krypto po otwarciu aplikacji.</span></div><span class="seg" id="curSeg"></span></div>
       <div class="set-row">
@@ -878,7 +890,7 @@
       </div>
       <div class="set-row"><div><strong>Powiadomienia systemowe</strong><span class="small">Wyskakujące powiadomienia, gdy aplikacja jest otwarta w tle.</span></div><button class="action secondary" onclick="enableNotifications()">Włącz</button></div>
     </div>
-    <div class="card">
+    <div class="card" data-sub="dane">
       <h2>Dane</h2>
       <div class="set-row">
         <div><strong>Kopia zapasowa</strong><span class="small">Jeden plik ze wszystkim: portfel, dziennik i PIT, progi, cele, ustawienia i zaszyfrowane oszczędności. Trzymaj go np. na dysku w chmurze.</span>
@@ -904,12 +916,12 @@
         </span>
       </div>
     </div>
-    <div class="card danger-zone">
+    <div class="card danger-zone" data-sub="dane">
       <h2>Strefa niebezpieczna</h2>
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v20 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v21 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -925,7 +937,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v20 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v21 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1511,17 +1523,18 @@ function render() {
     } else noPrice++;
   });
   const hiddenDust = renderTable(rows);
+  if (tileModal && Date.now() - (render.tileAt || 0) > 2000) { render.tileAt = Date.now(); renderTileModal(); }
 
   const pl = totVal - totCost, plPct = totCost > 0 ? pl / totCost * 100 : 0;
   const act = activeGoal(totalPln());
   const spent = spentThisMonth(), monthly = goal.monthly || 0;
   document.getElementById('summaryBar').innerHTML = `
-    <div class="summary-item"><span>Wartość</span><strong>${money(totVal)}</strong></div>
-    ${rows.filter(r => statusOf(r.sym) === 'stable').map(r => `<div class="summary-item link" onclick="editPosition('${r.sym}')" title="Kliknij, żeby zmienić ilość">
+    <div class="summary-item link" onclick="openTile('value')" title="Szczegóły wartości"><span>Wartość</span><strong>${money(totVal)}</strong></div>
+    ${rows.filter(r => statusOf(r.sym) === 'stable').map(r => `<div class="summary-item link" onclick="${r.sym === 'USDC' ? "openTile('usdc')" : `editPosition('${r.sym}')`}" title="${r.sym === 'USDC' ? 'W co zainwestować USDC według strategii' : 'Kliknij, żeby zmienić ilość'}">
       <span>${r.sym} na giełdzie</span><strong>${fixed(r.pos.qty, 2)} ${r.sym}</strong>
       <span>${r.hasPrice ? '≈ ' + zl2(valuePln(r.sym)) : ''}</span></div>`).join('')}
-    <div class="summary-item"><span>Koszt (ze średnich)</span><strong>${approx ? '≈ ' : ''}${money(totCost)}</strong></div>
-    <div class="summary-item"><span>P/L</span><strong class="${pl >= 0 ? 'positive' : 'negative'}">${signed(pl, money)} (${signed(plPct, pct)})</strong></div>
+    <div class="summary-item link" onclick="openTile('cost')" title="Koszty rok po roku"><span>Koszt (ze średnich)</span><strong>${approx ? '≈ ' : ''}${money(totCost)}</strong></div>
+    <div class="summary-item link" onclick="openTile('pl')" title="Wynik według monet"><span>P/L</span><strong class="${pl >= 0 ? 'positive' : 'negative'}">${signed(pl, money)} (${signed(plPct, pct)})</strong></div>
     ${act ? `<div class="summary-item link" onclick="openTab('goal')"><span>Do celu ${zl(act.g)}</span><strong>${pct(act.pct)}</strong></div>` : ''}
     ${monthly > 0 ? `<div class="summary-item link" onclick="openTab('budget')"><span>Budżet: ${monthName()}</span><strong class="${spent > monthly ? 'negative' : ''}">${zl(spent)} / ${zl(monthly)}</strong></div>` : ''}`;
 
@@ -1745,10 +1758,10 @@ function eligibleForSplit() {
   }).map(([s]) => s);
 }
 
-function splitContribution(amount) {
+function splitContribution(amount, opts = {}) {
   const total = totalPln();
-  const after = total + amount;
-  let elig = eligibleForSplit();
+  const after = opts.inside ? total : total + amount;     // inside: przesunięcie w portfelu (np. z USDC)
+  let elig = eligibleForSplit().filter(s => !isStable(s) && (!opts.only || opts.only.includes(s)));
   let alloc = {};
   for (let iter = 0; iter < 6 && elig.length; iter++) {
     const sumT = elig.reduce((t, s) => t + STRATEGY[s].target, 0);
@@ -3594,6 +3607,23 @@ function resetLayout() {
   renderNav(); renderColSettings(); render();
 }
 
+/* ---------- podkategorie (zakładki wewnątrz zakładki) ---------- */
+const SUBS = {
+  settings: {root: 'settings', nav: 'setSubs', def: 'konto', items: [['konto', 'Konto'], ['powiadomienia', 'Powiadomienia'], ['wyglad', 'Wygląd'], ['prywatnosc', 'Prywatność i PIN'], ['aplikacja', 'Aplikacja'], ['dane', 'Dane i kopia']]},
+  market: {root: 'marketBody', nav: 'mkSubs', def: 'quotes', items: [['quotes', 'Notowania i wykresy'], ['cal', 'Kalendarz wydarzeń'], ['pl', 'Polska – stopy i inflacja']]}
+};
+const subGet = id => { try { return localStorage.getItem('ccSub_' + id) || SUBS[id].def; } catch (e) { return SUBS[id].def; } };
+function setSub(id, k, silent) {
+  try { localStorage.setItem('ccSub_' + id, k); } catch (e) {}
+  if (!silent) { applySub(id); window.scrollTo({top: 0}); }
+}
+function applySub(id) {
+  const S = SUBS[id], cur = subGet(id), root = document.getElementById(S.root), nav = document.getElementById(S.nav);
+  if (!root || !nav) return;
+  nav.innerHTML = S.items.map(([k, l]) => `<button role="tab" aria-selected="${k === cur}" class="${k === cur ? 'on' : ''}" onclick="setSub('${id}','${k}')">${l}</button>`).join('');
+  root.querySelectorAll(':scope > [data-sub]').forEach(el => { el.hidden = el.dataset.sub !== cur; });
+  if (id === 'market') { if (cur === 'quotes') mkQueueDraw(); if (cur === 'cal') renderCal(); if (cur === 'pl') renderMacro(); }
+}
 function quickAdd() {
   openTab('edit');
   const m = document.getElementById('editMode');
@@ -3676,7 +3706,7 @@ function openTab(id) {
   if (id === 'edit') renderImport();
   if (id === 'market') mkOpen();
   else if (prevTab === 'market') mkLeave();
-  if (id === 'settings') renderSettings();
+  if (id === 'settings') { applySub('settings'); renderSettings(); }
   if (id === 'goal') { renderMonth(); if (!benchState.busy && (!benchState.res || Date.now() - benchState.at > 600000)) runBench(); else renderBench(); }
 }
 
@@ -4525,6 +4555,7 @@ async function bioUnlock(auto) {
 function bioDisable() { const v = getVault(); if (v) { delete v.bio; lsSet(LS.vault, v); } }
 
 function goPinSettings(openReset) {
+  setSub('settings', 'prywatnosc', true);
   openTab('settings');
   setTimeout(() => {
     if (openReset) { const d = document.getElementById('pinResetBox'); if (d) d.open = true; }
@@ -5019,7 +5050,7 @@ function renderMacro() {
       <p class="small muted" style="margin:.4rem 0 0">Źródła komentarzy: ${MARKET.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
 }
 
-function closeInfoModal() { document.getElementById('infoModal')?.classList.remove('open'); }
+function closeInfoModal() { document.getElementById('infoModal')?.classList.remove('open'); tileModal = null; }
 document.getElementById('infoModal').addEventListener('click', e => { if (e.target.id === 'infoModal') closeInfoModal(); });
 
 /* =========================================================
@@ -5367,11 +5398,12 @@ function mkOpen() {
   mkLoadSparks();
   mkAnalyze();
 }
-function mkLeave() { mkClose(); MK.hover = null; }
+function mkLeave() { mkClose(); MK.hover = null; mkFull(false); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.mk-full')) mkFull(false); });
 function mkSelect(s, scroll) {
   if (!s) return;
   MK.sel = s; mkSave();
-  MK.hover = null;
+  MK.hover = null; MK.zoom = null;
   if (activeTab !== 'market') return;
   mkRenderWatch(); mkRenderHead(); mkRenderTA(); mkRenderLevels(); mkRenderFc(); mkRenderInfo();
   mkConnect(); mkLoadChart(); mkAnalyze();
@@ -5380,10 +5412,27 @@ function mkSelect(s, scroll) {
   else mkLoadFutures(s).then(mkRenderInfo);
   if (scroll) document.getElementById('mkChartCard')?.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
-function mkSetRange(r) { MK.range = r; mkSave(); MK.hover = null; mkRenderHead(); mkConnect(); mkLoadChart(); }
+function mkSetRange(r) { MK.range = r; mkSave(); MK.hover = null; MK.zoom = null; mkRenderHead(); mkConnect(); mkLoadChart(); }
 function mkToggle(group, k) { MK[group][k] = !MK[group][k]; mkSave(); mkRenderHead(); mkQueueDraw(); }
 function mkSetType(t) { MK.type = t; mkSave(); mkRenderHead(); mkQueueDraw(); }
 function mkSetTaIv(iv) { MK.taIv = iv; mkSave(); mkAnalyze(); }
+async function mkZoomAt(x, factor) {
+  const g = MK.geom; if (!g) return;
+  const idx = g.s0 + Math.max(0, Math.min(g.PW, x - g.L)) / g.cw;
+  const nN = Math.round(Math.max(15, Math.min(g.total, g.n * factor)));
+  const s0 = Math.round(idx - Math.max(0, Math.min(g.PW, x - g.L)) * nN / g.PW);
+  MK.zoom = {n: nN, off: Math.max(0, Math.min(g.total - nN, g.total - nN - s0))};
+  mkQueueDraw();
+}
+function mkZoomBy(f) { const g = MK.geom; if (g) mkZoomAt(g.L + g.PW / 2, f); }
+function mkPanTo(off) { const g = MK.geom; if (!g) return; MK.zoom = {n: g.n, off: Math.max(0, Math.min(g.total - g.n, off))}; mkQueueDraw(); }
+function mkFull(on) {
+  const c = document.getElementById('mkChartCard'); if (!c) return;
+  const v = typeof on === 'boolean' ? on : !c.classList.contains('mk-full');
+  c.classList.toggle('mk-full', v); document.body.classList.toggle('mk-full-open', v);
+  if (v) { try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch (e) {} }
+  mkQueueDraw(); setTimeout(mkQueueDraw, 350);
+}
 async function mkLoadChart() {
   const s = MK.sel, R = MK_RANGES[MK.range];
   MK.chartErr = '';
@@ -5420,6 +5469,10 @@ function mkRenderShell() {
   if (MK.shell && el.childElementCount) return;
   MK.shell = true;
   el.innerHTML = `
+    <nav class="subtabs" id="mkSubs" role="tablist"></nav>
+    <div data-sub="cal" class="card" id="mkCal"></div>
+    <div data-sub="pl" class="card" id="mkMacro"></div>
+    <div data-sub="quotes">
     <div class="card" style="padding-bottom:.6rem"><div id="mkOverview" class="summary-bar" style="margin:0"></div><div id="mkStatus" class="small muted" style="margin-top:.6rem"></div></div>
     <div class="mk-grid">
       <div class="mk-side">
@@ -5445,15 +5498,15 @@ function mkRenderShell() {
         </div>
         <div class="card" id="mkFc"></div>
         <div class="card" id="mkInfo"></div>
-        <div class="card" id="mkCal"></div>
-        <div class="card" id="mkMacro"></div>
         <div class="info">
           <strong>Jak korzystać z tej zakładki.</strong> Ceny i wykres przychodzą z Binance na żywo (WebSocket, co ok. 1 s). Analiza techniczna, poziomy i zakresy liczą się w przeglądarce ze świec Binance;
           kapitalizacja i szczyty – z CoinGecko, nastroje – z alternative.me, dane o dźwigni – z kontraktów Binance Futures. Wskaźniki techniczne opisują to, co już się wydarzyło – nie wyznaczają przyszłości.
           Zakresy cenowe to statystyka z historii monety, a nie prognoza kierunku. Nic tutaj nie jest poradą inwestycyjną.
         </div>
       </div>
+    </div>
     </div>`;
+  applySub('market');
   const cv = document.getElementById('mkCanvas');
   const hov = (x, y) => { MK.hover = {x, y}; mkQueueDraw(); };
   cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(); hov(e.clientX - r.left, e.clientY - r.top); });
@@ -5461,6 +5514,29 @@ function mkRenderShell() {
   cv.addEventListener('touchstart', e => { const r = cv.getBoundingClientRect(), t = e.touches[0]; hov(t.clientX - r.left, t.clientY - r.top); }, {passive: true});
   cv.addEventListener('touchmove', e => { const r = cv.getBoundingClientRect(), t = e.touches[0]; hov(t.clientX - r.left, t.clientY - r.top); }, {passive: true});
   cv.addEventListener('touchend', () => { setTimeout(() => { MK.hover = null; mkQueueDraw(); }, 1500); });
+  // przybliżanie: kółko myszy, przeciąganie myszą, dwa palce (szczypanie i przesuwanie), podwójne stuknięcie = cały zakres
+  cv.addEventListener('wheel', e => { e.preventDefault(); const r = cv.getBoundingClientRect(); mkZoomAt(e.clientX - r.left, e.deltaY > 0 ? 1.15 : 1 / 1.15); }, {passive: false});
+  let drag = null;
+  cv.addEventListener('mousedown', e => { if (MK.geom) drag = {x: e.clientX, off: MK.geom.off}; });
+  window.addEventListener('mousemove', e => { if (!drag || !MK.geom) return; mkPanTo(drag.off + Math.round((e.clientX - drag.x) / MK.geom.cw)); });
+  window.addEventListener('mouseup', () => { drag = null; });
+  cv.addEventListener('dblclick', () => { MK.zoom = null; mkQueueDraw(); });
+  let pinch = null, lastTap = 0;
+  const two = e => { const r = cv.getBoundingClientRect(), [a, b] = e.touches; return {d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), x: (a.clientX + b.clientX) / 2 - r.left}; };
+  cv.addEventListener('touchstart', e => {
+    if (e.touches.length === 2 && MK.geom) { const t = two(e); pinch = {d: t.d, x: t.x, n: MK.geom.n, off: MK.geom.off, idx: MK.geom.s0 + (t.x - MK.geom.L) / MK.geom.cw}; MK.hover = null; }
+    else if (e.touches.length === 1) { const now = Date.now(); if (now - lastTap < 300) { MK.zoom = null; mkQueueDraw(); } lastTap = now; }
+  }, {passive: true});
+  cv.addEventListener('touchmove', e => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    const t = two(e), g = MK.geom;
+    const nN = Math.round(Math.max(15, Math.min(g.total, pinch.n * pinch.d / Math.max(20, t.d))));
+    const s0 = Math.round(pinch.idx - (t.x - g.L) / (g.PW / nN));
+    MK.zoom = {n: nN, off: Math.max(0, Math.min(g.total - nN, g.total - nN - s0))};
+    MK.hover = null; mkQueueDraw();
+  }, {passive: false});
+  cv.addEventListener('touchend', e => { if (e.touches.length < 2) pinch = null; });
   mkRenderOverview(); mkRenderWatch(); mkRenderMovers(); mkRenderHead(); mkRenderTA(); mkRenderLevels(); mkRenderFc(); mkRenderInfo(); mkStatus();
 }
 function mkRenderAll() {
@@ -5576,7 +5652,10 @@ function mkRenderHead() {
     </div>
     <div class="mk-tools" style="margin-top:.75rem">
       <span class="seg">${Object.entries(MK_RANGES).map(([k, r]) => `<button class="${MK.range === k ? 'on' : ''}" onclick="mkSetRange('${k}')">${r.label}</button>`).join('')}</span>
-      <span class="seg"><button class="${MK.type === 'candle' ? 'on' : ''}" onclick="mkSetType('candle')">Świece</button><button class="${MK.type === 'line' ? 'on' : ''}" onclick="mkSetType('line')">Linia</button></span>
+      <span style="display:flex;gap:.4rem;flex-wrap:wrap">
+        <span class="seg"><button class="${MK.type === 'candle' ? 'on' : ''}" onclick="mkSetType('candle')">Świece</button><button class="${MK.type === 'line' ? 'on' : ''}" onclick="mkSetType('line')">Linia</button></span>
+        <span class="seg mk-zoom"><button onclick="mkZoomBy(1/1.4)" aria-label="Przybliż" title="Przybliż">＋</button><button onclick="mkZoomBy(1.4)" aria-label="Oddal" title="Oddal">－</button><button onclick="MK.zoom=null;mkQueueDraw()" title="Pokaż cały zakres">⟲</button><button onclick="mkFull()" title="Pełny ekran" aria-label="Pełny ekran">⛶</button></span>
+      </span>
     </div>
     <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem">
       ${ovChip('sma20', 'SMA 20', 'var(--c1)')}${ovChip('sma50', 'SMA 50', 'var(--c2)')}${ovChip('sma200', 'SMA 200', 'var(--c3)')}
@@ -5627,7 +5706,9 @@ function mkDraw() {
   const R = MK_RANGES[MK.range], C = mkColors();
   const W = cv.parentElement.clientWidth, narrow = innerWidth < 760;
   const showR = MK.panes.rsi, showM = MK.panes.macd;
-  const PH = narrow ? 250 : 340, RH = showR ? 76 : 0, MH = showM ? 84 : 0, XH = 22, H = PH + RH + MH + XH;
+  const full = document.getElementById('mkChartCard')?.classList.contains('mk-full');
+  const RH = showR ? 76 : 0, MH = showM ? 84 : 0, XH = 22;
+  const PH = full ? Math.max(200, innerHeight - (document.getElementById('mkHead')?.offsetHeight || 0) - RH - MH - XH - 60) : narrow ? 250 : 340, H = PH + RH + MH + XH;
   const dpr = window.devicePixelRatio || 1;
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.height = H + 'px'; }
   const g = cv.getContext('2d');
@@ -5641,11 +5722,13 @@ function mkDraw() {
     if (tip) tip.style.display = 'none';
     return;
   }
-  const n = Math.min(R.n, all.length), s0 = all.length - n, K = all.slice(s0);
+  const z = MK.zoom || {n: R.n, off: 0};
+  const n = Math.max(10, Math.min(z.n, all.length)), off = Math.max(0, Math.min(z.off || 0, all.length - n)), s0 = all.length - n - off, K = all.slice(s0, s0 + n);
   const cl = all.map(k => k.c);
   const ind = {s20: smaS(cl, 20), s50: smaS(cl, 50), s200: smaS(cl, 200)};
   const bb = MK.ov.bb ? bbS(cl) : null, rs = showR ? rsiS(cl) : null, md = showM ? macdS(cl) : null;
   const AX = narrow ? 58 : 70, L = 4, PW = W - AX - L, cw = PW / n;
+  MK.geom = {L, PW, cw, n, s0, total: all.length, off};
   const X = i => L + (i + .5) * cw;
   const bw = Math.max(1, Math.min(14, cw * .68));
   const overlays = [['sma20', 's20', C.c1], ['sma50', 's50', C.c2], ['sma200', 's200', C.c3]].filter(o => MK.ov[o[0]]);
@@ -5723,11 +5806,14 @@ function mkDraw() {
   }
   overlays.forEach(o => line(ind[o[1]], o[2], 1.5));
   // ostatnia cena
-  const lastK = K[n - 1], ly = Y(lastK.c), lcol = lastK.c >= lastK.o ? C.up : C.down;
-  g.strokeStyle = lcol; g.setLineDash([2, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(L, ly); g.lineTo(L + PW, ly); g.stroke(); g.setLineDash([]);
-  g.fillStyle = lcol; g.fillRect(L + PW + 1, ly - 9, AX - 2, 18);
-  g.fillStyle = C.card; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = `600 11px ${C.font}`; g.fillText(mAxis(lastK.c), L + PW + 5, ly);
-  g.font = `11px ${C.font}`;
+  const lastK = all[all.length - 1], ly = Y(lastK.c), lcol = lastK.c >= lastK.o ? C.up : C.down;
+  if (ly >= top && ly <= pBot) {
+    g.strokeStyle = lcol; g.setLineDash([2, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(L, ly); g.lineTo(L + PW, ly); g.stroke(); g.setLineDash([]);
+    g.fillStyle = lcol; g.fillRect(L + PW + 1, ly - 9, AX - 2, 18);
+    g.fillStyle = C.card; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = `600 11px ${C.font}`; g.fillText(mAxis(lastK.c), L + PW + 5, ly);
+    g.font = `11px ${C.font}`;
+  }
+  if (off > 0 || n !== Math.min(R.n, all.length)) { g.fillStyle = C.muted; g.textAlign = 'right'; g.textBaseline = 'top'; g.fillText(`${n} świec${off ? ', przesunięte' : ''} · 2× stuknij: cały zakres`, L + PW - 4, top + 2); }
   // panele RSI i MACD
   let yOff = PH;
   const sep = y => { g.strokeStyle = C.strong; g.lineWidth = 1; g.beginPath(); g.moveTo(L, y + .5); g.lineTo(L + PW, y + .5); g.stroke(); };
@@ -6902,6 +6988,115 @@ async function renderPushCard() {
         <button class="action" onclick="alertAdd()">Dodaj alert</button>
       </div></div></details>`;
   if (on && cloudReady() && !pushRemote) { try { pushRemote = await fsAlertsGet(); renderPushCard(); } catch (e) {} }
+}
+
+/* =========================================================
+   INTERAKTYWNE KAFELKI PORTFELA: wartość, koszt (rok po roku), wynik, USDC → w co zainwestować
+   ========================================================= */
+let tileModal = null, usdcMode = null, usdcCustom = '';
+function openTile(kind) { tileModal = kind; if (kind === 'usdc') usdcMode = null; document.getElementById('infoModal').classList.add('open'); renderTileModal(); }
+function renderTileModal() {
+  const m = document.getElementById('infoModal');
+  if (!tileModal || !m.classList.contains('open')) { tileModal = null; return; }
+  if (m.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;   // nie przerywaj wpisywania
+  const t = document.getElementById('infoTitle'), b = document.getElementById('infoBody');
+  ({value: tileValue, cost: tileCost, pl: tilePl, usdc: tileUsdc})[tileModal]?.(t, b);
+}
+const tileLive = () => `<p class="small muted" style="margin:.8rem 0 0">Aktualizuje się na żywo razem z cenami${Object.values(prices).some(p => /na żywo/.test(p.src || '')) ? ' (Binance, na żywo)' : ''}.</p>`;
+
+function tileValue(t, b) {
+  const {rows, total} = computeRows();
+  t.textContent = 'Wartość portfela';
+  const by = {};
+  rows.filter(r => r.hasPrice).forEach(r => { const k = statusOf(r.sym); by[k] = (by[k] || 0) + r.value; });
+  const roleOrder = ['core', 'hold', 'reduce', 'lottery', 'stable', 'new'];
+  b.innerHTML = `
+    <div class="kv"><div><span>Razem</span><strong class="sens">${money(total)}</strong><span>${currency === 'USD' ? '≈ ' + zl(totalPln()) : '≈ $' + fixed(totalPln() / usdPlnRate, 0)}</span></div>
+      ${roleOrder.filter(k => by[k]).map(k => `<div><span>${roleName(k)}</span><strong class="sens">${money(by[k])}</strong><span>${pct(by[k] / total * 100)} portfela</span></div>`).join('')}</div>
+    <div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">Wartość</th><th class="num">Udział</th><th class="num">24 h</th></tr></thead>
+      <tbody>${rows.filter(r => r.hasPrice).sort((a, c) => c.value - a.value).map(r => `<tr class="clickable" onclick="closeInfoModal();openModal('${r.sym}')">
+        <td><strong>${r.sym}</strong><br><span class="small muted">${roleName(statusOf(r.sym))}</span></td><td class="num sens">${money(r.value)}</td><td class="num">${pct(r.alloc)}</td>
+        <td class="num">${prices[r.sym]?.ch24 != null ? colored(prices[r.sym].ch24, signed(prices[r.sym].ch24, pct)) : '—'}</td></tr>`).join('')}</tbody></table></div>${tileLive()}`;
+}
+
+function tileCost(t, b) {
+  const {rows} = computeRows();
+  t.textContent = 'Koszt – rok po roku i teraz';
+  const yrs = taxYears(), cy = new Date().getFullYear();
+  const costUsd = rows.reduce((s, r) => s + r.pos.qty * r.pos.avg, 0), costPln = rows.reduce((s, r) => s + r.pos.qty * avgPlnOf(r.pos), 0);
+  const valPln = totalPln(), inPln = yrs.reduce((s, y) => s + y.buys, 0), outPln = yrs.reduce((s, y) => s + y.sells, 0);
+  const approx = rows.some(r => plnApprox(r.pos));
+  b.innerHTML = `
+    <h3 style="margin:.2rem 0 .5rem;font-size:.95rem">Teraz (na bieżąco)</h3>
+    <div class="kv">
+      <div><span>Koszt monet w portfelu</span><strong class="sens">${approx ? '≈ ' : ''}${zl(costPln)}</strong><span>$${fixed(costUsd, 2)} ze średnich cen zakupu</span></div>
+      <div><span>Wartość teraz</span><strong class="sens">${zl(valPln)}</strong><span>${colored(valPln - costPln, signed(valPln - costPln, zl))} względem kosztu</span></div>
+      <div><span>Wpłacone netto (dziennik)</span><strong class="sens">${zl(inPln - outPln)}</strong><span>wpłaty ${zl(inPln)} − wypłaty ${zl(outPln)}</span></div>
+      <div><span>Wynik na wpłatach netto</span><strong class="sens">${colored(valPln - (inPln - outPln), signed(valPln - (inPln - outPln), zl))}</strong><span>wartość teraz − wpłacone netto</span></div>
+    </div>
+    <h3 style="margin:1rem 0 .4rem;font-size:.95rem">Rok po roku (koszty do PIT-38)</h3>
+    <div class="table-wrap"><table><thead><tr><th>Rok</th><th class="num">Zakupy (koszt)</th><th class="num">Sprzedaż (przychód)</th><th class="num">Koszty z lat ubiegłych</th><th class="num">Dochód</th><th class="num">Na kolejny rok</th></tr></thead>
+      <tbody>${yrs.slice().reverse().map(y => `<tr${y.y === cy ? ' class="bench-mine"' : ''}>
+        <td><strong>${y.y}</strong>${y.y === cy ? '<br><span class="small muted">na bieżąco</span>' : y.filed ? '<br><span class="small muted">z PIT-38</span>' : ''}</td>
+        <td class="num sens">${zl2(y.buys)}</td><td class="num sens">${zl2(y.sells)}</td><td class="num sens">${zl2(y.prev)}</td>
+        <td class="num sens">${y.income > 0 ? `<span class="negative">${zl2(y.income)}</span>` : '0,00 zł'}</td><td class="num sens">${zl2(y.carryOut)}</td></tr>`).join('')}</tbody></table></div>
+    <h3 style="margin:1rem 0 .4rem;font-size:.95rem">Koszt według monet</h3>
+    <div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">Koszt</th><th class="num">Wartość</th><th class="num">Wynik</th></tr></thead>
+      <tbody>${rows.map(r => ({...r, cPln: r.pos.qty * avgPlnOf(r.pos), vPln: valuePln(r.sym)})).sort((a, c) => c.cPln - a.cPln).map(r => `<tr>
+        <td><strong>${r.sym}</strong><br><span class="small muted">średnia ${usd(r.pos.avg)}</span></td><td class="num sens">${zl(r.cPln)}</td><td class="num sens">${r.hasPrice ? zl(r.vPln) : '—'}</td>
+        <td class="num sens">${r.hasPrice ? colored(r.vPln - r.cPln, signed(r.vPln - r.cPln, zl)) : '—'}</td></tr>`).join('')}</tbody></table></div>
+    <p class="small muted" style="margin:.6rem 0 0">Zakupy i sprzedaże w tabeli rocznej to transakcje za złotówki z dziennika (to one liczą się do PIT-38). Koszt monet w portfelu liczę z ilości i średnich cen zakupu.${approx ? ' ≈ część średnich w PLN liczona po bieżącym kursie.' : ''}</p>
+    <div class="form-row" style="margin-top:.6rem"><button class="action secondary" onclick="closeInfoModal();openTab('journal')">Dziennik / PIT</button></div>${tileLive()}`;
+}
+
+function tilePl(t, b) {
+  const {rows} = computeRows();
+  t.textContent = 'Wynik (zysk / strata) według monet';
+  const list = rows.filter(r => r.hasPrice).sort((a, c) => c.pl - a.pl);
+  const sum = list.reduce((s, r) => s + r.pl, 0), cost = list.reduce((s, r) => s + r.cost, 0);
+  b.innerHTML = `
+    <div class="kv"><div><span>Razem</span><strong class="sens">${colored(sum, signed(sum, money))}</strong><span>${cost > 0 ? signed(sum / cost * 100, pct) + ' kosztu' : ''}</span></div>
+      ${list.length ? `<div><span>Najlepiej</span><strong>${list[0].sym}</strong><span class="sens">${colored(list[0].pl, signed(list[0].pl, money))}</span></div>
+      <div><span>Najsłabiej</span><strong>${list[list.length - 1].sym}</strong><span class="sens">${colored(list[list.length - 1].pl, signed(list[list.length - 1].pl, money))}</span></div>` : ''}</div>
+    <div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">Wynik</th><th class="num">%</th><th class="num">Cena / średnia</th></tr></thead>
+      <tbody>${list.map(r => `<tr class="clickable" onclick="closeInfoModal();openModal('${r.sym}')"><td><strong>${r.sym}</strong></td>
+        <td class="num sens">${colored(r.pl, signed(r.pl, money))}</td><td class="num">${colored(r.plPct, signed(r.plPct, pct))}</td>
+        <td class="num small">${usd(prices[r.sym]?.usd || 0)}<br><span class="muted">śr. ${usd(r.pos.avg)}</span></td></tr>`).join('')}</tbody></table></div>
+    <p class="small muted" style="margin:.6rem 0 0">Wynik niezrealizowany: obecna wartość minus koszt ze średniej ceny zakupu. Zrealizowane sprzedaże za złotówki znajdziesz w Dzienniku.</p>${tileLive()}`;
+}
+
+function tileUsdc(t, b) {
+  const pos = holdings.USDC;
+  t.textContent = 'USDC – w co zainwestować według strategii';
+  if (!pos || !(pricePln('USDC') > 0)) { b.innerHTML = '<p class="muted">Brak USDC w portfelu albo brak ceny.</p>'; return; }
+  const total = totalPln(), uPx = pricePln('USDC'), usdcPln = valuePln('USDC'), tg = STRATEGY.USDC?.target || 0;
+  const reservePln = total * tg / 100, surplus = Math.max(0, usdcPln - reservePln);
+  const signals = Object.entries(STRATEGY).filter(([s, c]) => c.buyBelow && prices[s]?.usd > 0 && prices[s].usd <= c.buyBelow && !isStable(s)).map(([s]) => s);
+  if (!usdcMode) usdcMode = signals.length ? 'signal' : tg ? 'surplus' : 'all';
+  const modes = [];
+  if (tg) modes.push(['surplus', 'Nadwyżka ponad rezerwę']);
+  if (signals.length) modes.push(['signal', '1/3 rezerwy – sygnał spadku']);
+  modes.push(['all', 'Cała kwota'], ['custom', 'Własna kwota']);
+  const amountPln = usdcMode === 'surplus' ? surplus : usdcMode === 'signal' ? (tg ? Math.min(usdcPln, reservePln) : usdcPln) / 3 : usdcMode === 'custom' ? Math.min(usdcPln, (parseFloat(usdcCustom) || 0) * uPx) : usdcPln;
+  const res = amountPln >= MIN_ORDER_PLN ? splitContribution(amountPln, {inside: true, only: usdcMode === 'signal' ? signals : null}) : {rows: []};
+  const toU = pln => pln / uPx;
+  b.innerHTML = `
+    <div class="kv">
+      <div><span>Masz</span><strong class="sens">${fixed(pos.qty, 2)} USDC</strong><span class="sens">≈ ${zl(usdcPln)} · ${pct(total ? usdcPln / total * 100 : 0)} portfela</span></div>
+      <div><span>Rezerwa według planu</span><strong class="sens">${tg ? fixed(toU(reservePln), 0) + ' USDC' : '—'}</strong><span>${tg ? `cel ${tg}% portfela na dokupy przy spadkach` : 'plan nie ustawia rezerwy USDC'}</span></div>
+      <div><span>Do zainwestowania</span><strong class="sens">${fixed(toU(amountPln), 2)} USDC</strong><span class="sens">≈ ${zl(amountPln)}</span></div>
+    </div>
+    <div class="form-row" style="margin:.4rem 0 .6rem;align-items:flex-end"><span class="seg">${modes.map(([k, l]) => `<button class="${usdcMode === k ? 'on' : ''}" onclick="usdcMode='${k}';renderTileModal()">${l}</button>`).join('')}</span>
+      ${usdcMode === 'custom' ? `<div><label for="usdcAmt">Kwota USDC</label><br><input type="number" id="usdcAmt" min="0" step="1" value="${esc(usdcCustom)}" style="max-width:120px" oninput="usdcCustom=this.value" onchange="usdcCustom=this.value;document.activeElement.blur();renderTileModal()"></div>` : ''}</div>
+    <p class="small muted" style="margin:0 0 .5rem">${usdcMode === 'signal' ? `Cena spadła poniżej progu dokupu z planu: <strong>${signals.join(', ')}</strong>. Plan: z rezerwy na jeden sygnał do 1/3, kolejny najwcześniej po tygodniu.`
+      : usdcMode === 'surplus' ? (surplus >= MIN_ORDER_PLN ? 'Inwestujesz tylko to, co przekracza rezerwę – rezerwa zostaje na okazje przy spadkach.' : 'Masz nie więcej USDC niż rezerwa z planu – według strategii zostaw je na dokupy przy spadkach.')
+      : usdcMode === 'all' && tg ? '<span style="color:var(--orange)">Uwaga: plan zakłada trzymanie rezerwy USDC – wydanie całości zostawi Cię bez gotówki na spadki.</span>' : 'Podział kieruje pieniądze tam, gdzie do celu alokacji brakuje najwięcej.'}</p>
+    ${res.rows.length ? `<div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">USDC</th><th class="num">≈ Ilość</th><th class="num">Udział teraz → po (cel)</th></tr></thead>
+      <tbody>${res.rows.map(r => `<tr><td><strong>${r.sym}</strong>${signals.includes(r.sym) ? ' <span class="tag tag-buy">sygnał dokupu</span>' : ''}</td><td class="num"><strong class="sens">${fixed(toU(r.amount), 2)}</strong></td>
+        <td class="num">${fmtQty(r.qty)}</td><td class="num">${pct(r.before)} → ${pct(r.afterPct)} <span class="muted">(${r.target}%)</span></td></tr>`).join('')}</tbody></table></div>`
+      : `<p class="muted">${amountPln < MIN_ORDER_PLN ? 'Kwota jest za mała na sensowne zlecenie.' : 'Brak monet, które strategia pozwala teraz dokupić.'}</p>`}
+    <p class="small muted" style="margin:.6rem 0 0">Kupno za USDC to wymiana krypto→krypto – nie liczy się do PIT-38 ani do budżetu miesiąca. Po zakupie dodaj go w „Kupno / Sprzedaż” (odznacz „Kupione za złotówki”) albo pobierz automatycznie z Binance.</p>
+    <div class="form-row" style="margin-top:.6rem"><button class="action secondary" onclick="closeInfoModal();openTab('edit')">Kupno / Sprzedaż</button><button class="action secondary" onclick="closeInfoModal();openTab('plan')">Strategia</button></div>${tileLive()}`;
 }
 
 /* ---------- start ---------- */
