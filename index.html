@@ -397,6 +397,23 @@
   [data-theme=terminal] .bar > div{background:var(--accent)}
 
   /* ---------- telefon ---------- */
+  /* ---------- KONTO ---------- */
+  #authGate{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;overflow-y:auto;background:var(--bg);background-image:var(--bg-img);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  body.gate-open{overflow:hidden}
+  .gate-card{width:100%;max-width:400px;box-sizing:border-box;background:var(--card-solid);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem 1.35rem;box-shadow:var(--shadow)}
+  .gate-card h2{font-size:1.15rem;margin:.2rem 0 .5rem}
+  .gate-card label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin:.85rem 0 .3rem}
+  .gate-card input{display:block;width:100%;max-width:none;box-sizing:border-box;padding:.75rem .85rem;font-size:1rem}
+  .gate-brand{margin-bottom:1.1rem}
+  .gate-tabs{display:flex;width:100%;box-sizing:border-box} .gate-tabs button{flex:1;padding:.55rem .5rem;font-size:.85rem}
+  .gate-main{width:100%;margin-top:1.1rem;padding:.8rem 1rem;font-size:.95rem}
+  .gate-msg{margin:.7rem 0 0}
+  .gate-note{margin:.8rem 0 0;line-height:1.45}
+  .gate-choice{display:grid;gap:.6rem;margin:1rem 0 .4rem}
+  .gate-choice .action{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:.8rem 1rem;width:100%}
+  .gate-choice .action span{font-size:.75rem;font-weight:500;opacity:.8;margin-top:.15rem}
+  #cloudFoot{margin-top:.35rem;line-height:1.35}
   /* ---------- PLAN (AI) ---------- */
   textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:.9rem;line-height:1.55;color:var(--text);background:var(--input);
     border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.75rem .85rem;resize:vertical;margin-top:.5rem}
@@ -545,7 +562,7 @@
     <button data-tab="savings">Oszczędności</button>
     <button data-tab="settings">Ustawienia</button>
   </div>
-  <div class="nav-foot">Ceny na żywo · Binance</div>
+  <div class="nav-foot">Ceny na żywo · Binance<div id="cloudFoot"></div></div>
 </nav>
 <div class="nav-backdrop" onclick="toggleNav(false)"></div>
 
@@ -786,6 +803,10 @@
 
   <!-- ===================== USTAWIENIA ===================== -->
   <section id="settings">
+    <div class="card" id="cloudCard">
+      <h2>Konto i synchronizacja</h2>
+      <div id="cloudBody"></div>
+    </div>
     <div class="card">
       <h2>Wygląd</h2>
       <p class="muted" style="font-size:.88rem;margin-top:0">Motyw zmienia cały charakter aplikacji: kolory, kształty, czcionkę i styl przycisków.</p>
@@ -844,7 +865,7 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v15 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v16 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -860,7 +881,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v15 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v16 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1055,7 +1076,7 @@ const round2 = n => Math.round(n * 100) / 100;
 
 /* ---------- dane ---------- */
 function lsGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
-function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} if (typeof cloudTouched === 'function') cloudTouched(key); }
 
 const historyEntries = () => HISTORY.map((e, i) => ({id:'h' + i, ...e}));
 
@@ -1992,11 +2013,32 @@ function renderBackupInfo() {
     : '<span style="color:var(--orange)">Nie zrobiono jeszcze kopii.</span>';
 }
 
+function collectData() {
+  return {app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
+          vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
+          pit: FILED_PIT, ladder, snapshots: snaps};
+}
+const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && typeof d.holdings === 'object' && Array.isArray(d.journal);
+function applyData(d) {
+  holdings = d.holdings; sanitizeHoldings(); saveHoldings();
+  journal = d.journal.filter(validEntry); saveJournal();
+  if (d.goal) { goal = {...GOAL_DEFAULTS, ...d.goal}; lsSet(LS.goal, goal); loadGoalInputs(); }
+  if (d.layout) { loadLayout(d.layout); saveLayout(); renderNav(); renderColSettings(); }
+  if (d.pit && typeof d.pit === 'object') { FILED_PIT = d.pit; lsSet(LS.pit, FILED_PIT); }
+  if (d.ladder && typeof d.ladder === 'object') { ladder = d.ladder; saveLadder(); }
+  if (d.snapshots && typeof d.snapshots === 'object') { snaps = {...d.snapshots, ...snaps}; lsSet(LS.snaps, snaps); }
+  if (d.vault && d.vault.pinWrap) { lsSet(LS.vault, d.vault); try { localStorage.removeItem(LS.savPlain); } catch (e) {} }
+  else if (d.savingsPlain) lsSet(LS.savPlain, d.savingsPlain);
+  if (d.ui) { ui = {...UI_DEFAULTS, ...d.ui}; lsSet(LS.ui, ui); applyUi(); }
+  if (d.plan && typeof d.plan === 'object' && typeof d.plan.text === 'string') { planState = {...planState, ...d.plan, analyses: Array.isArray(d.plan.analyses) ? d.plan.analyses : [], view: 0}; savePlan(); renderPlan(); }
+  if (d.market && typeof d.market === 'object') { lsSet(LS.mkt, d.market); MK.watch = null; mkLoadState(); MK.shell = false; }
+  lockSav();
+  lsSet(LS.holdingsVer, HOLDINGS_VERSION);
+  lsSet(LS.patches, HOLDINGS_PATCHES.map(p => p.id));
+}
+
 function exportBackup() {
-  const data = {app:'crypto-control', version:11, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
-                vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
-                pit: FILED_PIT, ladder, snapshots: snaps};
-  downloadFile(`crypto-control-kopia-${todayStr()}.json`, JSON.stringify(data, null, 1), 'application/json');
+  downloadFile(`crypto-control-kopia-${todayStr()}.json`, JSON.stringify(collectData(), null, 1), 'application/json');
   lsSet(LS.backup, Date.now());
   renderBackupInfo();
   render();
@@ -2013,26 +2055,10 @@ function importBackup(file) {
   reader.onload = () => {
     let d;
     try { d = JSON.parse(reader.result); } catch (e) { return fail('To nie jest poprawny plik kopii.'); }
-    if (!['plan-portfela-crypto', 'crypto-control'].includes(d?.app) || typeof d.holdings !== 'object' || !Array.isArray(d.journal)) {
-      return fail('Plik nie wygląda na kopię tej aplikacji.');
-    }
+    if (!validData(d)) return fail('Plik nie wygląda na kopię tej aplikacji.');
     const when = d.created ? new Date(d.created).toLocaleString('pl-PL') : 'nieznana data';
     if (!confirm(`Wczytać kopię z ${when}? Obecne pozycje, dziennik i ustawienia zostaną zastąpione.`)) return;
-    holdings = d.holdings; sanitizeHoldings(); saveHoldings();
-    journal = d.journal.filter(validEntry); saveJournal();
-    if (d.goal) { goal = {...GOAL_DEFAULTS, ...d.goal}; lsSet(LS.goal, goal); loadGoalInputs(); }
-    if (d.layout) { loadLayout(d.layout); saveLayout(); renderNav(); renderColSettings(); }
-    if (d.pit && typeof d.pit === 'object') { FILED_PIT = d.pit; lsSet(LS.pit, FILED_PIT); }
-    if (d.ladder && typeof d.ladder === 'object') { ladder = d.ladder; saveLadder(); }
-    if (d.snapshots && typeof d.snapshots === 'object') { snaps = {...d.snapshots, ...snaps}; lsSet(LS.snaps, snaps); }
-    if (d.vault && d.vault.pinWrap) { lsSet(LS.vault, d.vault); try { localStorage.removeItem(LS.savPlain); } catch (e) {} }
-    else if (d.savingsPlain) lsSet(LS.savPlain, d.savingsPlain);
-    if (d.ui) { ui = {...UI_DEFAULTS, ...d.ui}; lsSet(LS.ui, ui); applyUi(); }
-    if (d.plan && typeof d.plan === 'object' && typeof d.plan.text === 'string') { planState = {...planState, ...d.plan, analyses: Array.isArray(d.plan.analyses) ? d.plan.analyses : [], view: 0}; savePlan(); renderPlan(); }
-    if (d.market && typeof d.market === 'object') { lsSet(LS.mkt, d.market); MK.watch = null; mkLoadState(); MK.shell = false; }
-    lockSav();
-    lsSet(LS.holdingsVer, HOLDINGS_VERSION);
-    lsSet(LS.patches, HOLDINGS_PATCHES.map(p => p.id));
+    applyData(d);
     renderLadder(); fillMonthSelect();
     el.style.color = 'var(--green)';
     el.textContent = `Wczytano kopię: ${Object.keys(holdings).length} pozycji, ${journal.length} transakcji.`;
@@ -3477,6 +3503,7 @@ const segHtml = (key, opts) => opts.map(([v, l]) => `<button class="${ui[key] ==
 
 function renderSettings() {
   if (activeTab !== 'settings') return;
+  const cb = document.getElementById('cloudBody'); if (cb) cb.innerHTML = cloudSettingsHtml();
   const mode = resolvedMode();
   document.getElementById('themeGrid').innerHTML = THEMES.map(t => {
     const c = t[mode], r = t.r;
@@ -5332,6 +5359,412 @@ function mkRenderMovers() {
       <p class="small muted" style="margin:.4rem 0 0">Duże dzienne wzrosty małych monet często szybko się odwracają.</p>` : '<p class="muted">Ładowanie…</p>'}`;
 }
 
+/* =========================================================
+   KONTO W CHMURZE: logowanie mailem i hasłem (Firebase Auth, REST)
+   + jedna zaszyfrowana kopia danych na użytkownika (Firestore, REST).
+   Dane szyfrowane są w urządzeniu kluczem z Twojego hasła (PBKDF2 → AES-256-GCM),
+   więc na serwerze leży wyłącznie szyfrogram.
+   ========================================================= */
+var FIREBASE_CONFIG = null;   // uzupełnione po założeniu projektu Firebase
+LS.auth = 'ccAuth'; LS.cloudKey = 'ccCloudKey'; LS.cloudMeta = 'ccCloudMeta';
+var CL = {applying: false, pushing: false, again: false, timer: null, pullAt: 0, view: 'signup', busy: false, msg: '', msgOk: false, choice: null, pending: null};
+const CLOUD_LOCAL_ONLY = new Set(['cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
+const cloudOn = () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+const cloudAuth = () => { try { return JSON.parse(localStorage.getItem(LS.auth)) || null; } catch (e) { return null; } };
+const cloudMeta = () => { try { return JSON.parse(localStorage.getItem(LS.cloudMeta)) || {}; } catch (e) { return {}; } };
+const setCloudMeta = patch => { try { localStorage.setItem(LS.cloudMeta, JSON.stringify({...cloudMeta(), ...patch})); } catch (e) {} };
+const cloudReady = () => cloudOn() && !!cloudAuth() && !!localStorage.getItem(LS.cloudKey);
+
+/* ---------- pomocnicze: base64, szyfrowanie ---------- */
+async function cloudDerive(password, saltB64) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({name: 'PBKDF2', salt: unb64(saltB64), iterations: 310000, hash: 'SHA-256'}, base, 256);
+  return b64(new Uint8Array(bits));
+}
+const cloudKeyObj = rawB64 => crypto.subtle.importKey('raw', unb64(rawB64), 'AES-GCM', false, ['encrypt', 'decrypt']);
+const canGzip = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+async function streamBytes(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+async function cloudEncrypt(json, rawKey) {
+  let bytes = new TextEncoder().encode(json), gz = false;
+  if (canGzip()) { bytes = await streamBytes(bytes, new CompressionStream('gzip')); gz = true; }
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await cloudKeyObj(rawKey), bytes));
+  return {iv: b64(iv), data: b64(ct), gz};
+}
+async function cloudDecrypt(doc, rawKey) {
+  let bytes = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64(doc.iv)}, await cloudKeyObj(rawKey), unb64(doc.data)));
+  if (doc.gz) bytes = await streamBytes(bytes, new DecompressionStream('gzip'));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ---------- Firebase Auth (REST) ---------- */
+const AUTH_ERR = {
+  EMAIL_EXISTS: 'Konto z tym adresem już istnieje – zaloguj się.',
+  INVALID_LOGIN_CREDENTIALS: 'Nieprawidłowy e-mail lub hasło.', EMAIL_NOT_FOUND: 'Nie ma konta z tym adresem.', INVALID_PASSWORD: 'Nieprawidłowe hasło.',
+  INVALID_EMAIL: 'To nie wygląda na poprawny adres e-mail.', WEAK_PASSWORD: 'Hasło jest za słabe – użyj co najmniej 8 znaków.',
+  TOO_MANY_ATTEMPTS_TRY_LATER: 'Za dużo prób – spróbuj ponownie za kilka minut.', USER_DISABLED: 'To konto jest zablokowane.',
+  OPERATION_NOT_ALLOWED: 'Zakładanie kont jest wyłączone w ustawieniach Firebase.', ADMIN_ONLY_OPERATION: 'Zakładanie nowych kont jest wyłączone.',
+  CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'Zaloguj się ponownie i powtórz zmianę.', TOKEN_EXPIRED: 'Sesja wygasła – zaloguj się ponownie.',
+  INVALID_REFRESH_TOKEN: 'Sesja wygasła – zaloguj się ponownie.', USER_NOT_FOUND: 'Konto nie istnieje.'
+};
+async function authCall(path, body, host = 'identitytoolkit', form) {
+  const url = host === 'secure' ? `https://securetoken.googleapis.com/v1/${path}?key=${FIREBASE_CONFIG.apiKey}` : `https://identitytoolkit.googleapis.com/v1/${path}?key=${FIREBASE_CONFIG.apiKey}`;
+  let res;
+  try {
+    res = await fetch(url, {method: 'POST', headers: {'content-type': form ? 'application/x-www-form-urlencoded' : 'application/json'}, body: form ? new URLSearchParams(body).toString() : JSON.stringify(body)});
+  } catch (e) { throw new Error('Brak połączenia z internetem.'); }
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const code = String(d?.error?.message || '').split(' ')[0].split(':')[0];
+    const err = new Error(AUTH_ERR[code] || `Błąd logowania (${code || res.status}).`); err.code = code; throw err;
+  }
+  return d;
+}
+function saveAuth(d, email) {
+  const a = {uid: d.localId || d.user_id, email: d.email || email, idToken: d.idToken || d.id_token, refreshToken: d.refreshToken || d.refresh_token,
+    exp: Date.now() + (parseInt(d.expiresIn || d.expires_in, 10) || 3600) * 1000 - 60000};
+  try { localStorage.setItem(LS.auth, JSON.stringify(a)); } catch (e) {}
+  return a;
+}
+async function cloudToken() {
+  const a = cloudAuth();
+  if (!a) throw new Error('Nie jesteś zalogowany.');
+  if (Date.now() < a.exp) return a;
+  try {
+    const d = await authCall('token', {grant_type: 'refresh_token', refresh_token: a.refreshToken}, 'secure', true);
+    return saveAuth({...d, email: a.email}, a.email);
+  } catch (e) {
+    if (['INVALID_REFRESH_TOKEN', 'TOKEN_EXPIRED', 'USER_NOT_FOUND', 'USER_DISABLED'].includes(e.code)) cloudReauth('Sesja wygasła (np. po zmianie hasła na innym urządzeniu) – zaloguj się ponownie.');
+    throw e;
+  }
+}
+function cloudReauth(msg) {
+  const a = cloudAuth();
+  CL.email = a?.email || CL.email; CL.msg = msg; CL.msgOk = false; CL.choice = null;
+  try { localStorage.removeItem(LS.auth); localStorage.removeItem(LS.cloudKey); } catch (e) {}
+  cloudShowGate('signin');
+}
+
+/* ---------- Firestore (REST) ---------- */
+const docUrl = (uid, mask) => `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/users/${uid}${mask ? '?mask.fieldPaths=updatedAt&mask.fieldPaths=salt' : ''}`;
+async function fsGet(mask) {
+  const a = await cloudToken();
+  let res;
+  try { res = await fetch(docUrl(a.uid, mask), {headers: {authorization: 'Bearer ' + a.idToken}}); } catch (e) { throw new Error('Brak połączenia z internetem.'); }
+  if (res.status === 404) return null;
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(res.status === 403 ? 'Brak dostępu do danych w chmurze – sprawdź reguły Firestore.' : `Błąd chmury (${res.status}).`);
+  const f = d.fields || {}, v = k => f[k]?.stringValue ?? f[k]?.integerValue ?? f[k]?.booleanValue;
+  return {salt: v('salt'), iv: v('iv'), data: v('data'), gz: !!v('gz'), updatedAt: +v('updatedAt') || 0, device: v('device') || ''};
+}
+async function fsPut(doc) {
+  const a = await cloudToken();
+  const fields = {v: {integerValue: '2'}, salt: {stringValue: doc.salt}, iv: {stringValue: doc.iv}, data: {stringValue: doc.data}, gz: {booleanValue: !!doc.gz},
+    updatedAt: {integerValue: String(doc.updatedAt)}, device: {stringValue: deviceLabel()}};
+  let res;
+  try { res = await fetch(docUrl(a.uid), {method: 'PATCH', headers: {authorization: 'Bearer ' + a.idToken, 'content-type': 'application/json'}, body: JSON.stringify({fields})}); }
+  catch (e) { throw new Error('Brak połączenia z internetem.'); }
+  if (!res.ok) throw new Error(res.status === 403 ? 'Brak dostępu do danych w chmurze – sprawdź reguły Firestore.' : `Błąd zapisu w chmurze (${res.status}).`);
+}
+function deviceLabel() {
+  const u = navigator.userAgent;
+  return /iPhone/.test(u) ? 'iPhone' : /iPad/.test(u) ? 'iPad' : /Android/.test(u) ? 'Android' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : 'komputer';
+}
+
+/* ---------- synchronizacja ---------- */
+function cloudTouched(key) {
+  if (!CL.ready || CL.applying || CLOUD_LOCAL_ONLY.has(key) || !cloudReady()) return;
+  setCloudMeta({dirty: true});
+  clearTimeout(CL.timer);
+  CL.timer = setTimeout(() => cloudPush(), 2500);
+  cloudRenderStatus();
+}
+async function cloudPush(opts = {}) {
+  if (!cloudReady()) return false;
+  if (CL.pushing) { CL.again = true; return false; }
+  CL.pushing = true;
+  let ok = false;
+  try {
+    const meta = cloudMeta();
+    if (!opts.force) {
+      const head = await fsGet(true);
+      if (head && head.updatedAt > (meta.lastSync || 0)) { setCloudMeta({conflict: true}); cloudRenderStatus(); cloudShowConflict(); return false; }
+    }
+    const salt = meta.salt;
+    const enc = await cloudEncrypt(JSON.stringify(collectData()), localStorage.getItem(LS.cloudKey));
+    const now = Date.now();
+    await fsPut({...enc, salt, updatedAt: now});
+    setCloudMeta({lastSync: now, dirty: false, conflict: false, err: ''});
+    ok = true;
+  } catch (e) { setCloudMeta({err: e.message}); }
+  finally {
+    CL.pushing = false;
+    cloudRenderStatus();
+    if (CL.again) { CL.again = false; clearTimeout(CL.timer); CL.timer = setTimeout(() => cloudPush(), 1000); }
+  }
+  return ok;
+}
+async function cloudPull(opts = {}) {
+  if (!cloudReady() || CL.pushing) return;
+  if (!opts.force && Date.now() - CL.pullAt < 20000) return;
+  CL.pullAt = Date.now();
+  try {
+    const meta = cloudMeta();
+    const head = await fsGet(true);
+    if (!head) { await cloudPush({force: true}); return; }
+    if (head.updatedAt > (meta.lastSync || 0)) {
+      if (meta.dirty) { setCloudMeta({conflict: true}); cloudRenderStatus(); cloudShowConflict(); return; }
+      const doc = await fsGet(false);
+      const d = await cloudDecrypt(doc, localStorage.getItem(LS.cloudKey));
+      cloudApply(d, doc.updatedAt);
+      return;
+    }
+    if (meta.dirty) await cloudPush();
+    else { setCloudMeta({err: ''}); cloudRenderStatus(); }
+  } catch (e) {
+    if (e.name === 'OperationError') { cloudReauth('Hasło zostało zmienione na innym urządzeniu – zaloguj się nowym hasłem.'); return; }
+    setCloudMeta({err: e.message});
+    cloudRenderStatus();
+  }
+}
+function cloudApply(d, updatedAt) {
+  CL.applying = true;
+  try { applyData(d); } finally { CL.applying = false; }
+  setCloudMeta({lastSync: updatedAt, dirty: false, conflict: false, err: ''});
+  location.reload();
+}
+async function cloudResolve(useCloud) {
+  CL.choice = null; cloudHideGate();
+  if (useCloud) {
+    try { const doc = await fsGet(false); cloudApply(await cloudDecrypt(doc, localStorage.getItem(LS.cloudKey)), doc.updatedAt); }
+    catch (e) { setCloudMeta({err: e.message}); cloudRenderStatus(); }
+  } else {
+    setCloudMeta({conflict: false});
+    await cloudPush({force: true});
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (!cloudReady()) return;
+  if (document.visibilityState === 'visible') cloudPull();
+  else if (cloudMeta().dirty) { clearTimeout(CL.timer); cloudPush(); }
+});
+setInterval(() => { if (cloudReady() && cloudMeta().dirty && !CL.pushing && document.visibilityState === 'visible') cloudPush(); }, 60000);
+
+/* ---------- logowanie, zakładanie konta ---------- */
+const localHasData = () => Object.keys(holdings || {}).length > 0 || (journal || []).length > 0;
+async function cloudSignUp(email, pw, pw2) {
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Wpisz poprawny adres e-mail.');
+  if (pw.length < 8) throw new Error('Hasło musi mieć co najmniej 8 znaków.');
+  if (pw !== pw2) throw new Error('Hasła nie są takie same.');
+  const d = await authCall('accounts:signUp', {email, password: pw, returnSecureToken: true});
+  saveAuth(d, email);
+  const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+  localStorage.setItem(LS.cloudKey, await cloudDerive(pw, salt));
+  setCloudMeta({salt, lastSync: 0, dirty: true, conflict: false, err: ''});
+  const ok = await cloudPush({force: true});
+  if (!ok) throw new Error('Konto założone, ale nie udało się zapisać danych w chmurze: ' + (cloudMeta().err || '') + ' Spróbuję ponownie automatycznie.');
+}
+async function cloudSignIn(email, pw) {
+  if (!email || !pw) throw new Error('Wpisz e-mail i hasło.');
+  const d = await authCall('accounts:signInWithPassword', {email, password: pw, returnSecureToken: true});
+  saveAuth(d, email);
+  const doc = await fsGet(false);
+  if (!doc) {                                    // konto bez danych → wysyłam to, co jest w urządzeniu
+    const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+    localStorage.setItem(LS.cloudKey, await cloudDerive(pw, salt));
+    setCloudMeta({salt, lastSync: 0, dirty: true, conflict: false, err: ''});
+    await cloudPush({force: true});
+    return 'pushed';
+  }
+  const key = await cloudDerive(pw, doc.salt);
+  localStorage.setItem(LS.cloudKey, key);
+  setCloudMeta({salt: doc.salt, err: ''});
+  let remote;
+  try { remote = await cloudDecrypt(doc, key); }
+  catch (e) { CL.pending = {doc}; return 'undecryptable'; }
+  const same = JSON.stringify({h: holdings, j: journal}) === JSON.stringify({h: remote.holdings, j: remote.journal});
+  if (!localHasData() || same) { cloudApply(remote, doc.updatedAt); return 'applied'; }
+  CL.pending = {doc, remote};
+  return 'choose';
+}
+async function cloudReset(email) {
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Wpisz adres e-mail konta.');
+  await authCall('accounts:sendOobCode', {requestType: 'PASSWORD_RESET', email});
+}
+async function cloudChangePassword(cur, pw, pw2) {
+  const a = cloudAuth();
+  if (pw.length < 8) throw new Error('Nowe hasło musi mieć co najmniej 8 znaków.');
+  if (pw !== pw2) throw new Error('Nowe hasła nie są takie same.');
+  const d = await authCall('accounts:signInWithPassword', {email: a.email, password: cur, returnSecureToken: true});
+  saveAuth(d, a.email);
+  const u = await authCall('accounts:update', {idToken: d.idToken, password: pw, returnSecureToken: true});
+  saveAuth({...u, localId: u.localId || d.localId}, a.email);
+  const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+  localStorage.setItem(LS.cloudKey, await cloudDerive(pw, salt));
+  setCloudMeta({salt, dirty: true});
+  await cloudPush({force: true});
+}
+function cloudLogout(wipe) {
+  if (wipe && !confirm('Wylogować i usunąć wszystkie dane aplikacji z tego urządzenia? Dane w chmurze zostaną.')) return;
+  try { [LS.auth, LS.cloudKey, LS.cloudMeta].forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  if (wipe) { try { localStorage.clear(); } catch (e) {} }
+  location.reload();
+}
+
+/* ---------- ekran konta ---------- */
+function cloudShowGate(view) {
+  if (!cloudOn()) return;
+  if (view) CL.view = view;
+  let g = document.getElementById('authGate');
+  if (!g) { g = document.createElement('div'); g.id = 'authGate'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); document.body.appendChild(g); }
+  document.body.classList.add('gate-open');
+  cloudRenderGate();
+}
+function cloudHideGate() { document.getElementById('authGate')?.remove(); document.body.classList.remove('gate-open'); }
+function cloudShowConflict() { CL.choice = 'conflict'; cloudShowGate(); }
+function cloudRenderGate() {
+  const g = document.getElementById('authGate');
+  if (!g) return;
+  const v = CL.view, local = localHasData();
+  const msg = CL.msg ? `<p class="small gate-msg" style="color:${CL.msgOk ? 'var(--green)' : 'var(--red)'}">${esc(CL.msg)}</p>` : '';
+  let body;
+  if (CL.choice === 'choose' || CL.choice === 'conflict') {
+    const r = CL.pending?.remote;
+    body = `<h2>${CL.choice === 'conflict' ? 'Dane zmieniły się w dwóch miejscach' : 'Które dane zachować?'}</h2>
+      <p class="muted small">${CL.choice === 'conflict' ? 'Od ostatniej synchronizacji zmieniłeś coś na tym urządzeniu, a w międzyczasie konto zostało zaktualizowane z innego urządzenia.' : 'W koncie i na tym urządzeniu są różne dane.'} Wybierz, które mają zostać – drugie zostaną zastąpione.</p>
+      <div class="gate-choice">
+        <button class="action" onclick="cloudResolve(true)">Dane z konta${r ? `<span>${Object.keys(r.holdings || {}).length} pozycji · ${(r.journal || []).length} transakcji</span>` : '<span>ostatnio zapisane w chmurze</span>'}</button>
+        <button class="action secondary" onclick="cloudResolve(false)">Dane z tego urządzenia<span>${Object.keys(holdings).length} pozycji · ${journal.length} transakcji</span></button>
+      </div>
+      <p class="small muted">Nie wiesz? Zwykle właściwe są dane z urządzenia, na którym ostatnio coś wpisywałeś.</p>`;
+  } else if (CL.choice === 'undecryptable') {
+    body = `<h2>Nie mogę odczytać danych z konta</h2>
+      <p class="muted small">Dane w chmurze zostały zaszyfrowane innym hasłem (np. przed jego zresetowaniem). Bez tamtego hasła nie da się ich odczytać – nawet ja ani Google nie mamy do nich dostępu.</p>
+      <div class="gate-choice">
+        <button class="action" onclick="cloudResolve(false)">Zapisz w koncie dane z tego urządzenia<span>${Object.keys(holdings).length} pozycji · ${journal.length} transakcji</span></button>
+        <button class="action secondary" onclick="cloudLogout(false)">Wyloguj</button>
+      </div>`;
+  } else if (v === 'reset') {
+    body = `<h2>Nie pamiętasz hasła?</h2>
+      <p class="muted small">Wyślę link do ustawienia nowego hasła. Uwaga: dane w chmurze są zaszyfrowane starym hasłem. Po zmianie hasła zaloguj się na urządzeniu, na którym masz aktualne dane – aplikacja zapisze je w koncie na nowo.</p>
+      <label for="gEmail">E-mail</label><input type="email" id="gEmail" autocomplete="email" value="${esc(CL.email || '')}">
+      ${msg}
+      <button class="action gate-main" onclick="cloudGateSubmit()" ${CL.busy ? 'disabled' : ''}>${CL.busy ? 'Wysyłam…' : 'Wyślij link'}</button>
+      <p class="small"><a href="#" onclick="CL.view='signin';CL.msg='';cloudRenderGate();return false">← Wróć do logowania</a></p>`;
+  } else {
+    const up = v === 'signup';
+    body = `<div class="seg gate-tabs"><button class="${up ? 'on' : ''}" onclick="CL.view='signup';CL.msg='';cloudRenderGate()">Załóż konto</button><button class="${!up ? 'on' : ''}" onclick="CL.view='signin';CL.msg='';cloudRenderGate()">Zaloguj się</button></div>
+      <label for="gEmail">E-mail</label><input type="email" id="gEmail" autocomplete="email" inputmode="email" value="${esc(CL.email || '')}">
+      <label for="gPw">Hasło${up ? ' (min. 8 znaków)' : ''}</label><input type="password" id="gPw" autocomplete="${up ? 'new-password' : 'current-password'}">
+      ${up ? '<label for="gPw2">Powtórz hasło</label><input type="password" id="gPw2" autocomplete="new-password">' : ''}
+      ${msg}
+      <button class="action gate-main" onclick="cloudGateSubmit()" ${CL.busy ? 'disabled' : ''}>${CL.busy ? (up ? 'Zakładam konto…' : 'Loguję…') : (up ? 'Załóż konto' : 'Zaloguj się')}</button>
+      ${up ? (local ? `<p class="small gate-note">Dane, które masz w tym urządzeniu (${Object.keys(holdings).length} pozycji, ${journal.length} transakcji, oszczędności, plan, ustawienia), zostaną przypisane do nowego konta. Niczego nie wpisujesz od nowa.</p>` : '')
+        : `<p class="small"><a href="#" onclick="CL.view='reset';CL.msg='';cloudRenderGate();return false">Nie pamiętam hasła</a></p>`}
+      <p class="small muted gate-note">Dane szyfruję w tym urządzeniu Twoim hasłem – na serwerze leży tylko szyfrogram. Zapamiętaj hasło: bez niego danych z chmury nie da się odczytać.</p>`;
+  }
+  const keep = {}; g.querySelectorAll('input').forEach(i => { keep[i.id] = i.value; });
+  g.innerHTML = `<div class="gate-card">
+      <div class="brand gate-brand"><span class="brand-logo">CC</span><div><strong>Crypto Control</strong><span>${CL.choice ? 'synchronizacja' : 'konto'}</span></div></div>
+      ${body}
+      ${!CL.choice ? `<p class="small" style="margin:.8rem 0 0;text-align:center"><a href="#" class="muted" onclick="try{sessionStorage.setItem('ccGateSkip','1')}catch(e){};cloudHideGate();return false">Na razie bez konta</a></p>` : ''}
+    </div>`;
+  g.querySelectorAll('input').forEach(i => { if (keep[i.id]) i.value = keep[i.id]; });
+  const first = [...g.querySelectorAll('input')].find(i => !i.value) || g.querySelector('input');
+  if (first && !CL.busy) setTimeout(() => first.focus({preventScroll: true}), 50);
+  g.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') cloudGateSubmit(); }));
+}
+async function cloudGateSubmit() {
+  if (CL.busy) return;
+  const v = CL.view, email = (document.getElementById('gEmail')?.value || '').trim(), pw = document.getElementById('gPw')?.value || '', pw2 = document.getElementById('gPw2')?.value || '';
+  CL.email = email; CL.busy = true; CL.msg = ''; cloudRenderGate();
+  try {
+    if (v === 'reset') { await cloudReset(email); CL.msg = 'Wysłałem link na ' + email + '. Sprawdź też folder spam.'; CL.msgOk = true; CL.view = 'signin'; }
+    else if (v === 'signup') { await cloudSignUp(email, pw, pw2); CL.busy = false; cloudHideGate(); cloudRenderStatus(); renderSettings(); return; }
+    else {
+      const r = await cloudSignIn(email, pw);
+      if (r === 'choose' || r === 'undecryptable') { CL.choice = r; }
+      else if (r === 'pushed') { CL.busy = false; cloudHideGate(); cloudRenderStatus(); renderSettings(); return; }
+    }
+  } catch (e) { CL.msg = e.message; CL.msgOk = false; }
+  CL.busy = false;
+  cloudRenderGate();
+}
+
+/* ---------- status i ustawienia ---------- */
+function cloudStatusText() {
+  if (!cloudOn()) return '';
+  if (!cloudAuth()) return 'Bez konta – dane tylko w tym urządzeniu';
+  const m = cloudMeta();
+  if (m.conflict) return '⚠ Konflikt danych – wybierz wersję';
+  if (m.err) return '⚠ ' + m.err;
+  if (CL.pushing) return '☁ Zapisuję w chmurze…';
+  if (m.dirty) return '☁ Zmiany czekają na zapis';
+  return m.lastSync ? `☁ Zsynchronizowano ${new Date(m.lastSync).toLocaleString('pl-PL', {day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'})}` : '☁ Połączono';
+}
+function cloudRenderStatus() {
+  const f = document.getElementById('cloudFoot');
+  if (f) f.textContent = cloudStatusText();
+  const s = document.getElementById('cloudStatus');
+  if (s) s.textContent = cloudStatusText();
+}
+function cloudSettingsHtml() {
+  if (!cloudOn()) return `<p class="muted small" style="margin:0">Konto w chmurze nie jest jeszcze włączone w tej wersji aplikacji.</p>`;
+  const a = cloudAuth();
+  if (!a) return `<p class="muted small" style="margin-top:0">Załóż konto, żeby mieć te same dane na telefonie i komputerze – bez kopii zapasowych.</p>
+    <button class="action" onclick="cloudShowGate('signup')">Załóż konto / zaloguj się</button>`;
+  return `<div class="kv">
+      <div><span>Konto</span><strong style="word-break:break-all">${esc(a.email)}</strong></div>
+      <div><span>Synchronizacja</span><strong id="cloudStatus" style="font-size:.88rem">${esc(cloudStatusText())}</strong></div>
+    </div>
+    <div class="form-row" style="margin-top:.4rem">
+      <button class="action" onclick="cloudSyncNow()">↻ Synchronizuj teraz</button>
+      ${cloudMeta().conflict ? '<button class="action secondary" onclick="cloudShowConflict()">Rozwiąż konflikt</button>' : ''}
+    </div>
+    <details style="margin-top:.6rem"><summary><strong>Zmień hasło</strong></summary><div style="padding:.75rem 1rem">
+      <div class="form-row" style="align-items:flex-end">
+        <div><label for="cpCur">Obecne hasło</label><br><input type="password" id="cpCur" autocomplete="current-password"></div>
+        <div><label for="cpNew">Nowe hasło</label><br><input type="password" id="cpNew" autocomplete="new-password"></div>
+        <div><label for="cpNew2">Powtórz nowe</label><br><input type="password" id="cpNew2" autocomplete="new-password"></div>
+        <button class="action secondary" onclick="cloudChangePwUi()">Zmień</button>
+      </div>
+      <p class="small muted" style="margin:.3rem 0 0">Dane w chmurze zostaną od razu zaszyfrowane nowym hasłem. Na innych urządzeniach zaloguj się potem nowym hasłem.</p>
+    </div></details>
+    <p class="small" id="cloudMsg" style="min-height:1em"></p>
+    <div class="form-row">
+      <button class="action secondary" onclick="cloudLogout(false)">Wyloguj</button>
+      <button class="action secondary" onclick="cloudLogout(true)">Wyloguj i usuń dane z tego urządzenia</button>
+    </div>
+    <p class="small muted" style="margin:.4rem 0 0">Zmiany zapisują się w chmurze automatycznie po kilku sekundach, a przy każdym otwarciu aplikacji pobiera się najnowsza wersja z konta. Klucz AI zostaje tylko w tym urządzeniu.</p>`;
+}
+async function cloudSyncNow() {
+  const el = document.getElementById('cloudMsg');
+  if (el) { el.style.color = 'var(--muted)'; el.textContent = 'Synchronizuję…'; }
+  const m = cloudMeta();
+  if (m.dirty) await cloudPush(); else await cloudPull({force: true});
+  if (el) { const e = cloudMeta().err; el.style.color = e ? 'var(--red)' : 'var(--green)'; el.textContent = e || 'Gotowe.'; }
+}
+async function cloudChangePwUi() {
+  const el = document.getElementById('cloudMsg');
+  try {
+    el.style.color = 'var(--muted)'; el.textContent = 'Zmieniam hasło…';
+    await cloudChangePassword(val('cpCur'), val('cpNew'), val('cpNew2'));
+    el.style.color = 'var(--green)'; el.textContent = 'Hasło zmienione, dane zaszyfrowane nowym hasłem.';
+    ['cpCur', 'cpNew', 'cpNew2'].forEach(id => { const i = document.getElementById(id); if (i) i.value = ''; });
+  } catch (e) { el.style.color = 'var(--red)'; el.textContent = e.message; }
+}
+function cloudStart() {
+  cloudRenderStatus();
+  if (!cloudOn()) { CL.ready = true; return; }
+  if (!cloudAuth()) {
+    CL.ready = true;
+    let skip = false; try { skip = sessionStorage.getItem('ccGateSkip') === '1'; } catch (e) {}
+    if (!skip) cloudShowGate(localHasData() ? 'signup' : 'signin');
+    return;
+  }
+  cloudPull({force: true}).finally(() => { CL.ready = true; });
+}
+
 /* ---------- start ---------- */
 loadState();
 fillMonthSelect();
@@ -5355,6 +5788,7 @@ renderBackupInfo();
 updateEditForm();
 setCurrency(ui.defaultCur === 'PLN' ? 'PLN' : 'USD');
 fullRefresh();
+cloudStart();
 </script>
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
