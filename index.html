@@ -484,10 +484,12 @@
   @media (prefers-reduced-motion:reduce){.flash-up,.flash-down,.dot-live{animation:none}}
   @media (max-width:760px){ .mk-tools .seg button{padding:.38rem .55rem} .mk-hide-sm{display:none} .mk-big{font-size:1.55rem} .mk-2col{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:760px){
-    nav#sidebar{position:fixed;left:0;top:0;bottom:0;height:auto;width:270px;transform:translateX(-105%);transition:transform .2s ease;box-shadow:0 0 30px rgba(0,0,0,.5);
-      background:var(--card-solid)}
+    nav#sidebar{position:fixed;left:0;top:0;bottom:0;height:auto;width:270px;max-width:85vw;transform:translateX(-105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 30px rgba(0,0,0,.5);
+      background:var(--card-solid);touch-action:pan-y;overscroll-behavior:contain}
     body.nav-open nav#sidebar{transform:none}
-    body.nav-open .nav-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250}
+    .nav-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250;opacity:0;pointer-events:none;transition:opacity .25s ease;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    body.nav-open .nav-backdrop{opacity:1;pointer-events:auto}
+    body.nav-dragging nav#sidebar,body.nav-dragging .nav-backdrop{transition:none}
     .menu-btn.icon-btn{display:grid}
     header{padding:.75rem 1rem}
     header h1{font-size:1.2rem}
@@ -842,7 +844,7 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v14 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v15 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -858,7 +860,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v14 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v15 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -2865,6 +2867,49 @@ function resetLayout() {
 function toggleNav(force) {
   document.body.classList.toggle('nav-open', typeof force === 'boolean' ? force : !document.body.classList.contains('nav-open'));
 }
+/* Telefon: menu wysuwa się przeciągnięciem palcem od lewej krawędzi, chowa przeciągnięciem w lewo albo stuknięciem obok */
+(function navGestures() {
+  const mq = window.matchMedia('(max-width:760px)');
+  const nav = document.getElementById('sidebar'), bd = document.querySelector('.nav-backdrop');
+  const EDGE = 30;
+  let g = null;
+  const isOpen = () => document.body.classList.contains('nav-open');
+  document.addEventListener('touchstart', e => {
+    g = null;
+    if (!mq.matches || e.touches.length !== 1 || (typeof editing !== 'undefined' && editing)) return;
+    const t = e.touches[0], open = isOpen();
+    if (!open && t.clientX > EDGE) return;
+    g = {x0: t.clientX, y0: t.clientY, open, w: nav.offsetWidth * 1.05, drag: false, off: 0, lx: t.clientX, lt: e.timeStamp, v: 0};
+  }, {passive: true});
+  document.addEventListener('touchmove', e => {
+    if (!g) return;
+    const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+    if (!g.drag) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx) || (g.open && dx > 0) || (!g.open && dx < 0)) { g = null; return; }
+      g.drag = true;
+      document.body.classList.add('nav-dragging');
+    }
+    if (e.cancelable) e.preventDefault();
+    g.off = g.open ? Math.max(-g.w, Math.min(0, dx)) : Math.max(-g.w, Math.min(0, -g.w + dx));
+    nav.style.transform = `translateX(${g.off}px)`;
+    bd.style.opacity = String(1 + g.off / g.w);
+    bd.style.pointerEvents = 'none';
+    const dt = Math.max(1, e.timeStamp - g.lt);
+    g.v = (t.clientX - g.lx) / dt; g.lx = t.clientX; g.lt = e.timeStamp;
+  }, {passive: false});
+  const end = () => {
+    const s = g; g = null;
+    if (!s || !s.drag) return;
+    document.body.classList.remove('nav-dragging');
+    nav.style.transform = ''; bd.style.opacity = ''; bd.style.pointerEvents = '';
+    const open = s.v > 0.3 ? true : s.v < -0.3 ? false : (s.w + s.off) > s.w / 2;
+    toggleNav(open);
+  };
+  document.addEventListener('touchend', end);
+  document.addEventListener('touchcancel', end);
+  bd.addEventListener('touchend', e => { if (isOpen() && !document.body.classList.contains('nav-dragging')) { e.preventDefault(); toggleNav(false); } });
+})();
 function updateNavCount() {
   const btn = document.querySelector('#navItems button[data-tab="tasks"]');
   if (!btn) return;
