@@ -2,7 +2,7 @@
 <html lang="pl" data-theme="granat" data-mode="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Crypto Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -400,6 +400,8 @@
   /* iPhone: pola z czcionką mniejszą niż 16 px powodują automatyczne powiększenie strony przy pisaniu */
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   @media (max-width:760px),(pointer:coarse){ input,select,textarea{font-size:16px !important} }
+  #updBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1500;display:flex;align-items:center;gap:.75rem;
+    background:var(--card-solid);border:1px solid var(--border-strong);border-radius:var(--radius);padding:.6rem .7rem .6rem 1rem;font-size:.85rem;box-shadow:var(--shadow);max-width:calc(100vw - 32px)}
   /* ---------- KONTO ---------- */
   #authGate{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;overflow-y:auto;background:var(--bg);background-image:var(--bg-img);
     padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -868,7 +870,7 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v17 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v18 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -884,7 +886,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v17 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v18 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -5792,6 +5794,29 @@ updateEditForm();
 setCurrency(ui.defaultCur === 'PLN' ? 'PLN' : 'USD');
 fullRefresh();
 cloudStart();
+
+/* Automatyczna aktualizacja: po powrocie do aplikacji sprawdzam, czy na serwerze jest nowsza wersja */
+const APP_VER = +((document.querySelector('footer')?.textContent.match(/Crypto Control v(\d+)/) || [])[1] || 0);
+let verCheckAt = 0;
+async function checkAppUpdate() {
+  if (!location.protocol.startsWith('http') || Date.now() - verCheckAt < 60000) return;
+  verCheckAt = Date.now();
+  try {
+    const t = await (await fetch('./?v=' + Date.now(), {cache: 'no-store'})).text();
+    const v = +((t.match(/Crypto Control v(\d+)/) || [])[1] || 0);
+    if (v <= APP_VER) return;
+    const ae = document.activeElement, typing = /^(INPUT|TEXTAREA)$/.test(ae?.tagName || '') && !!ae.value;
+    if (!typing) { location.reload(); return; }
+    if (!document.getElementById('updBar')) {
+      const b = document.createElement('div');
+      b.id = 'updBar';
+      b.innerHTML = `Jest nowa wersja aplikacji (v${v}). <button class="action" onclick="location.reload()">Odśwież</button>`;
+      document.body.appendChild(b);
+    }
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkAppUpdate(); });
+setTimeout(checkAppUpdate, 5000);
 </script>
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
