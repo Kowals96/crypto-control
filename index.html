@@ -397,6 +397,27 @@
   [data-theme=terminal] .bar > div{background:var(--accent)}
 
   /* ---------- telefon ---------- */
+  /* ---------- PLAN (AI) ---------- */
+  textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:.9rem;line-height:1.55;color:var(--text);background:var(--input);
+    border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.75rem .85rem;resize:vertical;margin-top:.5rem}
+  textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+  .plan-score{display:flex;align-items:baseline;flex-wrap:wrap;gap:.1rem;padding:.55rem .9rem;border-radius:var(--radius-sm);background:var(--sunken);border:1px solid var(--border);max-width:150px}
+  .plan-score strong{font-size:1.9rem;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+  .plan-score span{color:var(--muted);font-weight:600}
+  .plan-score em{display:block;width:100%;font-style:normal;font-size:.75rem;color:var(--text-2);margin-top:.2rem}
+  .plan-cols{display:grid;column-gap:var(--gap);row-gap:.4rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .plan-cols > *{min-width:0}
+  .plan-cols h3{margin:.2rem 0 .3rem}
+  .plan-rules{column-gap:var(--gap)}
+  .plan-list{margin:.2rem 0 0;padding-left:1.1rem;font-size:.9rem;line-height:1.5}
+  .plan-list li{margin:.35rem 0}
+  .plan-steps{display:grid}
+  .plan-steps > div{display:grid;grid-template-columns:160px minmax(0,1fr);gap:.75rem;padding:.65rem 0;border-bottom:1px solid var(--border)}
+  .plan-steps > div:last-child{border-bottom:none}
+  .plan-steps span{font-size:.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;padding-top:.1rem}
+  .plan-steps p{margin:0;font-size:.9rem;line-height:1.5}
+  .plan-check{display:grid;gap:.45rem}
+  @media (max-width:760px){ .plan-steps > div{grid-template-columns:minmax(0,1fr);gap:.2rem} }
   /* ---------- RYNEK ---------- */
   :root{--c1:#3987e5;--c2:#c98500;--c3:#d55181}
   [data-mode=light]{--c1:#2a78d6;--c2:#eda100;--c3:#e87ba4}
@@ -821,10 +842,10 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v13 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v14 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
-  <section id="plan"><div class="card" id="planContent"></div></section>
+  <section id="plan"><div id="planBody"></div></section>
 
   <section id="new"><div class="card" id="newContent"></div></section>
 
@@ -837,7 +858,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v13 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v14 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1971,7 +1992,7 @@ function renderBackupInfo() {
 
 function exportBackup() {
   const data = {app:'crypto-control', version:11, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
-                vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt),
+                vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
                 pit: FILED_PIT, ladder, snapshots: snaps};
   downloadFile(`crypto-control-kopia-${todayStr()}.json`, JSON.stringify(data, null, 1), 'application/json');
   lsSet(LS.backup, Date.now());
@@ -2005,6 +2026,7 @@ function importBackup(file) {
     if (d.vault && d.vault.pinWrap) { lsSet(LS.vault, d.vault); try { localStorage.removeItem(LS.savPlain); } catch (e) {} }
     else if (d.savingsPlain) lsSet(LS.savPlain, d.savingsPlain);
     if (d.ui) { ui = {...UI_DEFAULTS, ...d.ui}; lsSet(LS.ui, ui); applyUi(); }
+    if (d.plan && typeof d.plan === 'object' && typeof d.plan.text === 'string') { planState = {...planState, ...d.plan, analyses: Array.isArray(d.plan.analyses) ? d.plan.analyses : [], view: 0}; savePlan(); renderPlan(); }
     if (d.market && typeof d.market === 'object') { lsSet(LS.mkt, d.market); MK.watch = null; mkLoadState(); MK.shell = false; }
     lockSav();
     lsSet(LS.holdingsVer, HOLDINGS_VERSION);
@@ -2066,20 +2088,460 @@ function describeRule(sym) {
   }
 }
 
+/* Analiza startowa planu – zrobiona przez Claude w rozmowie 24.10.2026 (bez kwot z portfela; „Teraz %” liczy aplikacja na żywo) */
+const PLAN_SEED_ANALYSIS = {
+  at: '2026-10-24T22:00:00+02:00',
+  result: {
+    title: 'Plan: rdzeń BTC/ETH/SOL, stałe dopłaty i rezerwa na spadki',
+    summary: 'Twój plan ma dobry szkielet: jasny podział na rdzeń, pozycje do trzymania, redukcji i loterie, konkretne progi i rozsądny budżet. Największe problemy to wykonalność: dokupy zależą tylko od spadku ceny, a ich wielkość (30% pozycji) przekracza miesięczny budżet; reguły redukcji DOT/ARB/JUP wymagają wzrostu ceny o kilkaset procent, więc praktycznie nigdy się nie uruchomią. Najważniejsza zmiana: stała miesięczna dopłata plus rezerwa w USDC na okazje i realna reguła wychodzenia ze słabych pozycji.',
+    score: {value: 6, label: 'Dobry szkielet'},
+    assessment: {
+      strengths: [
+        'Większość kapitału w BTC, ETH i SOL – najbardziej płynnych i najlepiej sprawdzonych sieciach.',
+        'Konkretne liczby zamiast ogólników: progi cen, udziały, role monet.',
+        'Rozsądny budżet: dopłacasz ok. 10% dochodów, nie pieniądze potrzebne na życie.',
+        'Zasada „kapitał z redukcji do rdzenia” – wymiana krypto→krypto nie rodzi podatku.',
+        'Loterie są małe i nie dokupujesz ich – strata na nich nie zaszkodzi celowi.'
+      ],
+      weaknesses: [
+        'Dokupy rdzenia uruchamiają się tylko przy spadku (BTC ≤ 75 000 $, ETH ≤ 2200 $, SOL ≤ 90 $). Jeśli rynek nie spadnie, przez wiele miesięcy nic nie kupujesz i cel się oddala.',
+        'Wielkość dokupu „30% obecnej pozycji” przy BTC szybko przekracza budżet 800 zł – reguła jest niewykonalna bez gotówki odłożonej wcześniej.',
+        'Redukcja DOT/ARB/JUP liczy odbicie od Twojej średniej ceny zakupu. Te monety są dużo poniżej średniej, więc do progu brakuje kilkuset procent wzrostu – w praktyce reguła nigdy nie zadziała.',
+        'Cele alokacji (BTC 45, ETH 25, SOL 20, PYTH 5, ADA 3, HBAR 2) sumują się do 100% i nie zostawiają miejsca na rezerwę USDC ani pozycje, które dopiero wygaszasz.',
+        'Brak zasad realizacji zysków dla rdzenia – plan mówi, kiedy kupować, ale nie, kiedy i ile sprzedać przy przegrzaniu rynku albo po osiągnięciu celu.'
+      ],
+      risks: [
+        'Cykl rynku: od halvingu BTC minęło ok. 2,5 roku – w poprzednich cyklach ten okres bywał późną fazą wzrostów albo początkiem długiej bessy ze spadkami o 50–80%.',
+        'Cały portfel jest w krypto, które poruszają się razem – przy dużym spadku BTC altcoiny zwykle tracą więcej.',
+        'SOL i altcoiny mają wyraźnie większą zmienność niż BTC; 20% w SOL to duży udział jednej, bardziej ryzykownej sieci.',
+        'Trzymanie wszystkiego na jednej giełdzie to ryzyko jej awarii lub upadku.',
+        'Emocje: bez z góry zapisanych zasad sprzedaży łatwo sprzedać w panice na dole albo nie sprzedać nic na górze.'
+      ]
+    },
+    changes: [
+      'Dodałem stałą miesięczną dopłatę (DCA) niezależną od ceny – dokupy przy spadkach zostają jako dodatek, finansowany z rezerwy.',
+      'Dodałem rezerwę USDC ok. 8% portfela na okazje przy spadkach; zmniejszyłem cele ETH (25→22%) i SOL (20→15%), żeby zrobić na nią miejsce.',
+      'Zmieniłem wielkość dokupu przy spadku z „30% pozycji” na „do 1/3 rezerwy USDC na jeden sygnał” – to zawsze jest wykonalne.',
+      'Zastąpiłem nierealne progi redukcji DOT/ARB/JUP regułą liczoną od obecnej ceny i stopniowym przenoszeniem do rdzenia.',
+      'Dodałem zasady realizacji zysków powiązane ze wskaźnikami z zakładki „Zyski i ryzyko” oraz zasady ograniczania ryzyka.',
+      'Loterie zostają bez zmian jako darmowe opcje, z jednym dodatkiem: przegląd raz w roku.'
+    ],
+    goal: {
+      text: 'Pierwszy cel: 50 000 zł, potem 100 000 zł, w horyzoncie 2–4 lat, przy dopłatach do 800 zł miesięcznie.',
+      note: 'Same dopłaty to 9 600 zł rocznie – pierwszy cel w 2–4 lata wymaga albo wzrostu rynku, albo wyższych dopłat. Zakładka Cel pokazuje scenariusze; traktuj daty jako orientacyjne.'
+    },
+    allocation: [
+      {sym: 'BTC', role: 'Rdzeń', target: 45, action: 'Dokupuj co miesiąc', why: 'Najstabilniejsza część portfela, fundament celu.'},
+      {sym: 'ETH', role: 'Rdzeń', target: 22, action: 'Dokupuj co miesiąc', why: 'Druga noga rdzenia; cel lekko obniżony na rzecz rezerwy.'},
+      {sym: 'SOL', role: 'Rdzeń (wyższe ryzyko)', target: 15, action: 'Dokupuj, ale nie ponad cel', why: 'Większa zmienność niż BTC/ETH – limit 15%.'},
+      {sym: 'USDC', role: 'Rezerwa', target: 8, action: 'Buduj z dopłat do 8%', why: 'Gotówka na dokupy przy spadkach i na „okazje”.'},
+      {sym: 'PYTH', role: 'Zostaw', target: 4, action: 'Trzymaj; dokup tylko przy ≤ 0,055 $', why: 'Pozycja wzrostowa, ale mała.'},
+      {sym: 'ADA', role: 'Zostaw', target: 3, action: 'Trzymaj; nadwyżkę ponad cel przenoś do BTC', why: 'Bez dokupów.'},
+      {sym: 'HBAR', role: 'Zostaw', target: 2, action: 'Trzymaj', why: 'Bez dokupów.'},
+      {sym: 'Do wygaszenia', group: ['DOT', 'ARB', 'JUP'], role: 'Redukcja', target: 0, action: 'Przenoś stopniowo do rdzenia', why: 'Reguła od obecnej ceny – patrz „Realizacja zysków”.'},
+      {sym: 'Loterie', group: ['POL', 'PORTAL', 'FLIP', 'APT', 'XAI', 'STRK', 'MYRIA'], role: 'Darmowe opcje', target: 1, action: 'Nie dokupuj, trzymaj', why: 'Sprzedaż tylko po Twoich progach (POL ≥ 0,25 $, PORTAL ≥ 0,08 $, FLIP ≥ 0,80 $).'}
+    ],
+    monthly_split: [
+      {sym: 'BTC', pct: 45, note: 'zawsze, niezależnie od ceny'},
+      {sym: 'ETH', pct: 25, note: 'zawsze, niezależnie od ceny'},
+      {sym: 'SOL', pct: 15, note: 'pomiń, jeśli SOL jest ponad celem 15%'},
+      {sym: 'USDC', pct: 15, note: 'rezerwa – gdy osiągnie 8% portfela, ta część idzie do BTC'}
+    ],
+    buy_rules: [
+      'Co miesiąc, w stały dzień (np. po wypłacie), kupuj według podziału dopłaty – bez patrzenia na cenę.',
+      'Dodatkowy dokup z rezerwy USDC, gdy BTC ≤ 75 000 $, ETH ≤ 2200 $ lub SOL ≤ 90 $: do 1/3 rezerwy na jeden sygnał, kolejny najwcześniej po tygodniu.',
+      'Nie dokupuj pozycji „Zostaw” (poza PYTH przy ≤ 0,055 $), pozycji do wygaszenia ani loterii.',
+      'Jeśli moneta rdzenia jest ponad celem o więcej niż 5 pp, jej część dopłaty kieruj do tej, która jest najbardziej poniżej celu.',
+      'Każdy zakup od razu wpisuj w „Edytuj / Dodaj” – koszt trafia do PIT-38.'
+    ],
+    sell_rules: [
+      'DOT, ARB, JUP: sprzedaj 1/3 pozycji przy +30% od obecnej ceny, kolejną 1/3 przy +60%, resztę przy +100% – całość wymieniaj na BTC/ETH (krypto→krypto, bez podatku). Jeśli do końca 2027 progi nie padną, przenieś resztę w 3 miesięcznych ratach.',
+      'Rdzeń: sprzedawaj stopniowo, gdy rynek jest przegrzany – np. 10% pozycji, gdy BTC ma Mayer powyżej 2,0 lub tygodniowy RSI powyżej 80, i kolejne 10% przy każdym następnym takim sygnale. Progi ustaw w „Zyski i ryzyko”.',
+      'Po osiągnięciu 50 000 zł przenieś część zysku (np. 20–30%) do bezpiecznych form poza krypto, zgodnie z Twoim podejściem 60% ryzyko / 40% bezpieczeństwo.',
+      'Przed każdą sprzedażą do PLN sprawdź w „Dziennik / PIT”, ile możesz sprzedać bez podatku dzięki kosztom z lat ubiegłych.',
+      'Loterie: sprzedaj 100% po osiągnięciu Twoich progów; bez progu – trzymaj.'
+    ],
+    risk_rules: [
+      'Żadna moneta poza BTC nie przekracza 25% portfela, a wszystkie altcoiny razem (bez BTC i ETH) – 35%.',
+      'Poduszka finansowa 3–6 miesięcy wydatków poza krypto jest ważniejsza niż zwiększanie dopłat.',
+      'Bez dźwigni, kontraktów i pożyczania na zakupy.',
+      'Gdy portfel spadnie o 50%: nic nie sprzedawaj z rdzenia, kontynuuj dopłaty i dokupy z rezerwy według zasad.',
+      'Nie trzymaj wszystkiego na jednej giełdzie; włącz 2FA. Gdy portfel przekroczy cel 50 000 zł, rozważ portfel sprzętowy dla BTC/ETH.',
+      'Przegląd planu raz na kwartał i ponowna analiza AI – nie częściej, żeby nie zmieniać zasad pod wpływem emocji.'
+    ],
+    next_steps: [
+      {when: 'Ten tydzień', what: 'Zrób kopię zapasową na telefonie i komputerze. Ustaw progi realizacji zysków dla BTC/ETH/SOL w „Zyski i ryzyko” zgodnie z zasadami.'},
+      {when: 'Najbliższa wypłata', what: 'Pierwsza dopłata według nowego podziału: BTC 45%, ETH 25%, SOL 15%, USDC 15%.'},
+      {when: 'Do końca roku', what: 'Zdecyduj o nowej regule dla DOT/ARB/JUP i wpisz jej progi w „Moje progi sprzedaży”.'},
+      {when: 'Styczeń 2027', what: 'Rozlicz PIT-38 za 2026 (zakładka Dziennik / PIT) i sprawdź, ile kosztów przechodzi na kolejny rok.'},
+      {when: 'Co kwartał', what: 'Przegląd planu: alokacja vs cel, rezerwa USDC, ponowna analiza AI.'}
+    ],
+    checklist: [
+      'Dopłata miesięczna kupiona według podziału i wpisana do dziennika',
+      'Rezerwa USDC na poziomie celu (ok. 8%)',
+      'Żadna moneta nie odjechała od celu o więcej niż 5 pp',
+      'Progi sprzedaży aktualne w „Zyski i ryzyko”',
+      'Kopia zapasowa zrobiona po zmianach'
+    ],
+    disclaimer: 'To analiza edukacyjna przygotowana przez AI, a nie porada inwestycyjna – decyzje i ryzyko są po Twojej stronie.'
+  }
+};
+
+/* =========================================================
+   PLAN: Twój plan (tekst) → analiza AI (Claude) → pełny plan
+   Analiza przez klucz API Claude (zapisany tylko w tym urządzeniu)
+   albo bez klucza: kopiujesz polecenie do Claude i wklejasz odpowiedź.
+   ========================================================= */
+LS.plan = 'ccPlan';
+LS.aiKey = 'ccAiKey';        // NIE trafia do kopii zapasowej
+LS.aiModel = 'ccAiModel';
+const AI_MODELS = [['claude-sonnet-5-5', 'Claude Sonnet 5.5 – szybki, tańszy (polecany)'], ['claude-opus-5-5', 'Claude Opus 5.5 – najdokładniejszy, droższy']];
+let planState = {text: '', savedAt: null, analyses: [], checks: {}, view: 0};
+let planBusy = false, planMsg = '', planMsgOk = true, planShowEditor = false;
+
+function strategyPlanText() {
+  const by = st => Object.keys(STRATEGY).filter(s => STRATEGY[s].status === st).map(s => `- ${s}: ${describeRule(s)}`).join('\n');
+  const targets = Object.entries(STRATEGY).filter(([, c]) => c.target).map(([s, c]) => `${s} ${c.target}%`).join(', ');
+  return `MÓJ PLAN – Crypto Control
+Horyzont: 2–4 lata. Podejście: 60% ryzyko / 40% bezpieczeństwo.
+Cel: ${upto(GOAL_DEFAULTS.g1, 0)} zł, a następnie ${upto(GOAL_DEFAULTS.g2, 0)} zł.
+Dopłaty: do ${GOAL_DEFAULTS.monthly} zł miesięcznie (ok. 10% moich dochodów).
+
+Rdzeń – trzymaj i dokupuj:
+${by('core')}
+
+Zostaw:
+${by('hold')}
+
+Redukcja przy odbiciu:
+${by('reduce')}
+
+Loterie:
+${by('lottery')}
+
+Stablecoiny:
+${by('stable')}
+
+Cele alokacji: ${targets}.
+
+Mikro-pozycje zostawiam jako darmowe opcje – nie sprzedaję ich „żeby było czysto”.`;
+}
+const textHash = t => { let h = 0; for (const ch of String(t).replace(/\s+/g, ' ').trim()) h = (h * 31 + ch.codePointAt(0)) | 0; return h; };
+
+function loadPlan() {
+  const s = lsGet(LS.plan);
+  if (s && typeof s === 'object' && typeof s.text === 'string') planState = {...planState, ...s, analyses: Array.isArray(s.analyses) ? s.analyses : []};
+  if (!planState.text) {
+    planState.text = strategyPlanText();
+    planState.savedAt = new Date().toISOString();
+  }
+  if (!planState.analyses.length && typeof PLAN_SEED_ANALYSIS === 'object' && PLAN_SEED_ANALYSIS) {
+    planState.analyses = [{at: PLAN_SEED_ANALYSIS.at, model: 'Claude (w rozmowie)', source: 'seed', hash: textHash(planState.text), result: PLAN_SEED_ANALYSIS.result}];
+  }
+  savePlan();
+}
+const savePlan = () => lsSet(LS.plan, planState);
+const aiKey = () => { try { return localStorage.getItem(LS.aiKey) || ''; } catch (e) { return ''; } };
+const aiModel = () => { try { return localStorage.getItem(LS.aiModel) || AI_MODELS[0][0]; } catch (e) { return AI_MODELS[0][0]; } };
+function setAiKey(v) { try { v ? localStorage.setItem(LS.aiKey, v.trim()) : localStorage.removeItem(LS.aiKey); } catch (e) {} renderPlan(); }
+function setAiModel(v) { try { localStorage.setItem(LS.aiModel, v); } catch (e) {} }
+
+function planSaveText() {
+  const el = document.getElementById('planText');
+  if (!el) return;
+  planState.text = el.value;
+  planState.savedAt = new Date().toISOString();
+  savePlan();
+  planMsg = 'Plan zapisany.'; planMsgOk = true;
+  renderPlan();
+}
+function planRestoreDefault() {
+  const el = document.getElementById('planText');
+  if (el) el.value = strategyPlanText();
+  planMsg = 'Wstawiłem plan z ustawień aplikacji – kliknij „Zapisz”, żeby go zachować.'; planMsgOk = true;
+  const m = document.getElementById('planMsg'); if (m) { m.textContent = planMsg; m.style.color = 'var(--green)'; }
+}
+
+/* ---------- kontekst dla AI (dane z tego urządzenia) ---------- */
+function planContext() {
+  const total = Object.keys(holdings).reduce((s, k) => s + valuePln(k), 0);
+  const pos = Object.keys(holdings).map(s => {
+    const v = valuePln(s), pos = holdings[s], p = prices[s]?.usd;
+    const m = riskMetrics(s);
+    return {sym: s, rola: statusOf(s), wartosc_zl: Math.round(v), udzial_pct: total ? +(v / total * 100).toFixed(1) : 0,
+      srednia_usd: pos.avg, cena_usd: p ?? null, wynik_pct: p && pos.avg ? +((p / pos.avg - 1) * 100).toFixed(1) : null,
+      regula_w_aplikacji: describeRule(s),
+      ...(m ? {od_ath_pct: +((p / m.ath - 1) * 100).toFixed(1), mayer: m.mayer ? +m.mayer.toFixed(2) : null, rsi_tyg: m.rsiW ? +m.rsiW.toFixed(0) : null} : {})};
+  }).sort((a, b) => b.wartosc_zl - a.wartosc_zl);
+  const cy = new Date().getFullYear(), tr = taxYears().find(r => r.y === cy);
+  return {
+    data: todayStr(),
+    portfel_zl: Math.round(total),
+    pozycje: pos,
+    cel: {pierwszy_zl: goal.g1, drugi_zl: goal.g2, doplata_miesieczna_zl: goal.monthly},
+    doplaty_w_tym_miesiacu_zl: Math.round(spentThisMonth()),
+    pit_38: tr ? {rok: cy, koszty_z_lat_ubieglych_zl: Math.round(tr.prev), zakupy_w_roku_zl: Math.round(tr.buys), sprzedaz_w_roku_zl: Math.round(tr.sells),
+      mozna_sprzedac_bez_podatku_zl: Math.max(0, Math.round(tr.buys + tr.prev - tr.sells))} : null,
+    rynek: {btc_usd: prices.BTC?.usd ?? null, strach_i_chciwosc: mkt.fng ? `${mkt.fng.v} (${mkt.fng.cls})` : null,
+      dominacja_btc_pct: MK.global?.btc ? +MK.global.btc.toFixed(1) : null, usd_pln: usdPlnRate}
+  };
+}
+const PLAN_SCHEMA = `{
+  "title": "krótki tytuł planu",
+  "summary": "2–4 zdania: ocena planu i najważniejsza zmiana",
+  "score": {"value": 1-10, "label": "jedno-dwa słowa"},
+  "assessment": {"strengths": ["..."], "weaknesses": ["..."], "risks": ["..."]},
+  "changes": ["co zmieniasz względem planu użytkownika i dlaczego"],
+  "goal": {"text": "cel i horyzont w 1–2 zdaniach", "note": "realność celu przy obecnych dopłatach"},
+  "allocation": [{"sym": "BTC", "group": ["opcjonalnie lista symboli, gdy wiersz obejmuje kilka monet"], "role": "Rdzeń", "target": 45, "action": "Dokupuj co miesiąc", "why": "krótko"}],
+  "monthly_split": [{"sym": "BTC", "pct": 45, "note": "krótko"}],
+  "buy_rules": ["..."], "sell_rules": ["..."], "risk_rules": ["..."],
+  "next_steps": [{"when": "Ten tydzień", "what": "..."}],
+  "checklist": ["rzeczy do odhaczania co miesiąc"],
+  "disclaimer": "1 zdanie"
+}`;
+function planPrompt() {
+  const system = `Jesteś doświadczonym, ostrożnym analitykiem portfeli kryptowalut. Odpowiadasz po polsku, prostym językiem.
+Dostajesz plan inwestycyjny napisany przez użytkownika oraz aktualne dane jego portfela z aplikacji Crypto Control.
+Twoje zadanie: (1) uczciwie ocenić plan – mocne strony, słabe strony, ryzyka; (2) zbudować z niego kompletny, spójny plan:
+docelowa alokacja (wszystkie posiadane monety; monety bez docelowego udziału możesz zgrupować w jednym wierszu z polem "group"; suma "target" = 100),
+podział miesięcznej dopłaty (suma "pct" = 100), zasady dokupów, realizacji zysków i zarządzania ryzykiem, najbliższe kroki i comiesięczna checklista.
+Zasady: szanuj intencje użytkownika i zmieniaj tylko to, co ma uzasadnienie – każdą zmianę wypisz w "changes".
+Sprawdzaj, czy reguły są wykonalne przy obecnych cenach i budżecie. Uwzględnij polski PIT-38 (wymiana krypto→krypto nie jest zdarzeniem podatkowym, sprzedaż do PLN – tak; koszty przechodzą na kolejne lata).
+Nie obiecuj wyników i nie przewiduj cen jako pewnika. To materiał edukacyjny, nie porada inwestycyjna.
+Odpowiedz WYŁĄCZNIE jednym obiektem JSON zgodnym ze schematem, bez komentarzy i bez bloku kodu:
+${PLAN_SCHEMA}`;
+  const user = `PLAN UŻYTKOWNIKA:\n"""\n${planState.text.trim()}\n"""\n\nDANE PORTFELA (JSON):\n${JSON.stringify(planContext(), null, 1)}`;
+  return {system, user};
+}
+function parsePlanJson(txt) {
+  const s = String(txt || ''), a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b <= a) throw new Error('W odpowiedzi nie ma planu w formacie JSON.');
+  const r = JSON.parse(s.slice(a, b + 1));
+  if (!r || typeof r !== 'object' || !r.summary || !Array.isArray(r.allocation)) throw new Error('Odpowiedź nie wygląda na plan z tej aplikacji.');
+  return r;
+}
+function addAnalysis(result, source, model) {
+  planState.analyses.unshift({at: new Date().toISOString(), model, source, hash: textHash(planState.text), result});
+  planState.analyses = planState.analyses.slice(0, 6);
+  planState.view = 0; planState.checks = {};
+  savePlan();
+}
+
+/* ---------- analiza przez API ---------- */
+async function planAnalyze() {
+  if (planBusy) return;
+  const el = document.getElementById('planText');
+  if (el && el.value !== planState.text) { planState.text = el.value; planState.savedAt = new Date().toISOString(); savePlan(); }
+  if (planState.text.trim().length < 40) { planMsg = 'Opisz swój plan trochę dokładniej (choć kilka zdań).'; planMsgOk = false; renderPlan(); return; }
+  const key = aiKey();
+  if (!key) { planMsg = 'Brak klucza Claude. Dodaj go niżej w „Połączenie z AI” albo użyj sposobu bez klucza (kopiuj → wklej).'; planMsgOk = false; planShowEditor = true; renderPlan(); return; }
+  planBusy = true; planMsg = 'Claude analizuje Twój plan… zwykle 20–60 sekund.'; planMsgOk = true; renderPlan();
+  const {system, user} = planPrompt();
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 180000);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal: ctrl.signal,
+      headers: {'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'},
+      body: JSON.stringify({model: aiModel(), max_tokens: 8000, system, messages: [{role: 'user', content: user}]})
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const m = data?.error?.message || '';
+      throw new Error(res.status === 401 ? 'Klucz API jest nieprawidłowy – sprawdź go w „Połączenie z AI”.'
+        : res.status === 402 || /credit|billing/i.test(m) ? 'Brak środków na koncie API Claude – doładuj je w console.anthropic.com.'
+        : res.status === 429 ? 'Za dużo zapytań naraz – spróbuj za minutę.'
+        : res.status === 529 || res.status >= 500 ? 'Serwery Claude są chwilowo przeciążone – spróbuj za kilka minut.'
+        : res.status === 404 ? 'Wybrany model jest niedostępny dla tego klucza – wybierz inny w „Połączenie z AI”.'
+        : `Błąd ${res.status}${m ? ': ' + m : ''}`);
+    }
+    const txt = (data?.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n');
+    addAnalysis(parsePlanJson(txt), 'api', aiModel());
+    planMsg = 'Gotowe – plan przeanalizowany.'; planMsgOk = true; planShowEditor = false;
+  } catch (e) {
+    planMsg = e.name === 'AbortError' ? 'Analiza trwała za długo – spróbuj ponownie.' : (e.message === 'Failed to fetch' ? 'Brak połączenia z Claude – sprawdź internet.' : e.message);
+    planMsgOk = false;
+  } finally {
+    clearTimeout(timer); planBusy = false; renderPlan();
+    if (planMsgOk) document.getElementById('planResult')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+}
+
+/* ---------- bez klucza: kopiuj polecenie / wklej odpowiedź ---------- */
+async function planCopyPrompt() {
+  const el = document.getElementById('planText');
+  if (el && el.value !== planState.text) { planState.text = el.value; savePlan(); }
+  const {system, user} = planPrompt();
+  const full = `${system}\n\n${user}`;
+  const msg = document.getElementById('planCopyMsg');
+  try {
+    await Promise.race([navigator.clipboard.writeText(full), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2000))]);
+    msg.textContent = 'Skopiowane. Wklej to w nowej rozmowie z Claude, a jego odpowiedź wklej poniżej.'; msg.style.color = 'var(--green)'; }
+  catch (e) {
+    const ta = document.getElementById('planPromptBox');
+    ta.value = full; ta.style.display = 'block'; ta.select();
+    msg.textContent = 'Nie udało się skopiować automatycznie – zaznaczyłem tekst, skopiuj go ręcznie.'; msg.style.color = 'var(--orange)';
+  }
+}
+function planPasteAnswer() {
+  const v = document.getElementById('planPaste')?.value || '';
+  try {
+    addAnalysis(parsePlanJson(v), 'manual', 'Claude (wklejona odpowiedź)');
+    planMsg = 'Gotowe – wczytałem plan od Claude.'; planMsgOk = true; planShowEditor = false;
+  } catch (e) { planMsg = e.message + ' Skopiuj całą odpowiedź Claude, od { do }.'; planMsgOk = false; }
+  renderPlan();
+}
+function planToggleCheck(i) { planState.checks[i] = !planState.checks[i]; savePlan(); }
+function planView(i) { planState.view = +i; planState.checks = {}; savePlan(); renderPlan(); }
+function planDeleteView() {
+  const i = planState.view;
+  if (!planState.analyses[i]) return;
+  planState.analyses.splice(i, 1); planState.view = 0; savePlan(); renderPlan();
+}
+
+/* ---------- widok ---------- */
+const liList = arr => Array.isArray(arr) && arr.length ? `<ul class="plan-list">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="muted small">—</p>';
+function renderPlanResult(A) {
+  const r = A.result;
+  const total = Object.keys(holdings).reduce((s, k) => s + valuePln(k), 0);
+  const nowPct = row => {
+    const syms = Array.isArray(row.group) && row.group.length ? row.group : [row.sym];
+    return total ? syms.reduce((s, x) => s + valuePln(x), 0) / total * 100 : 0;
+  };
+  const sc = Math.max(1, Math.min(10, +r.score?.value || 0));
+  const outdated = A.hash !== textHash(planState.text);
+  const src = A.source === 'seed' ? 'analiza startowa od Claude' : A.source === 'manual' ? 'odpowiedź Claude wklejona ręcznie' : esc(A.model);
+  const monthly = goal.monthly || 0;
+  const splitSum = (r.monthly_split || []).reduce((s, x) => s + (+x.pct || 0), 0) || 100;
+  return `
+    <div class="card" id="planResult">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;flex-wrap:wrap">
+        <div style="min-width:0">
+          <span class="small muted" style="text-transform:uppercase;letter-spacing:.06em;font-size:.68rem">Plan po analizie AI · ${new Date(A.at).toLocaleDateString('pl-PL')} · ${src}</span>
+          <h2 style="margin:.2rem 0 .4rem">${esc(r.title || 'Mój plan')}</h2>
+        </div>
+        <div class="plan-score" title="Ocena Twojego planu wg AI"><strong>${sc}</strong><span>/10</span><em>${esc(r.score?.label || '')}</em></div>
+      </div>
+      ${outdated ? `<div class="highlight bad" style="margin-top:0"><strong style="color:var(--orange)">Twój plan zmienił się od tej analizy.</strong> <span class="small">Kliknij „Analizuj z AI”, żeby dostać aktualną wersję.</span></div>` : ''}
+      <p style="font-size:.95rem;line-height:1.55;margin:.2rem 0 0">${esc(r.summary)}</p>
+      ${planState.analyses.length > 1 ? `<div class="form-row" style="margin:.8rem 0 0;align-items:center"><label for="planHist" class="small muted">Wcześniejsze analizy</label>
+        <select id="planHist" onchange="planView(this.value)">${planState.analyses.map((a, i) => `<option value="${i}" ${i === planState.view ? 'selected' : ''}>${new Date(a.at).toLocaleString('pl-PL', {dateStyle: 'short', timeStyle: 'short'})} – ${a.source === 'seed' ? 'startowa' : a.source === 'manual' ? 'wklejona' : 'API'}</option>`).join('')}</select>
+        <button class="action secondary" onclick="planDeleteView()">Usuń tę analizę</button></div>` : ''}
+    </div>
+
+    <div class="card">
+      <h2>Ocena Twojego planu</h2>
+      <div class="plan-cols">
+        <div><h3 class="positive">▲ Mocne strony</h3>${liList(r.assessment?.strengths)}</div>
+        <div><h3 style="color:var(--orange)">● Do poprawy</h3>${liList(r.assessment?.weaknesses)}</div>
+        <div><h3 class="negative">▼ Ryzyka</h3>${liList(r.assessment?.risks)}</div>
+      </div>
+      ${r.changes?.length ? `<h3 style="margin-top:1rem">Co zmieniłem względem Twojego planu</h3>${liList(r.changes)}` : ''}
+    </div>
+
+    <div class="card">
+      <h2>Cel</h2>
+      <p style="margin-top:0">${esc(r.goal?.text || '')}</p>
+      <div class="kv">
+        <div><span>Portfel teraz</span><strong class="sens">${zl(total)}</strong><span>${goal.g1 ? fixed(Math.min(100, total / goal.g1 * 100), 1) + '% celu ' + zl(goal.g1) : ''}</span></div>
+        <div><span>Same dopłaty do celu</span><strong>${monthly > 0 && goal.g1 > total ? Math.ceil((goal.g1 - total) / monthly) + ' mies.' : '—'}</strong><span>${zl(monthly)}/mies., bez wzrostów i spadków</span></div>
+      </div>
+      ${r.goal?.note ? `<p class="small muted" style="margin:.3rem 0 0">${esc(r.goal.note)}</p>` : ''}
+    </div>
+
+    <div class="card">
+      <h2>Docelowa alokacja</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Moneta</th><th class="num">Cel</th><th class="num">Teraz</th><th class="num">Różnica</th><th>Co robić</th></tr></thead>
+        <tbody>${(r.allocation || []).map(a => {
+          const now = nowPct(a), tg = +a.target || 0, d = now - tg;
+          return `<tr><td><strong>${esc(a.sym)}</strong>${a.role ? `<br><span class="small muted">${esc(a.role)}</span>` : ''}${Array.isArray(a.group) && a.group.length ? `<br><span class="small muted">${a.group.map(esc).join(', ')}</span>` : ''}</td>
+            <td class="num"><strong>${fixed(tg, 0)}%</strong></td>
+            <td class="num sens">${fixed(now, 1)}%</td>
+            <td class="num">${Math.abs(d) < 1.5 ? '<span class="tag tag-neu">w normie</span>' : d > 0 ? `<span class="tag tag-sell">+${fixed(d, 1)} pp</span>` : `<span class="tag tag-acc">${fixed(d, 1)} pp</span>`}</td>
+            <td class="small"><strong>${esc(a.action || '')}</strong>${a.why ? `<br><span class="muted">${esc(a.why)}</span>` : ''}</td></tr>`;
+        }).join('')}</tbody></table></div>
+      <p class="small muted" style="margin:.5rem 0 0">„Teraz” liczy się na żywo z Twojego portfela. Pomarańczowe – masz więcej niż w planie, niebieskie – mniej.</p>
+    </div>
+
+    ${r.monthly_split?.length ? `<div class="card">
+      <h2>Miesięczna dopłata ${monthly ? zl(monthly) : ''}</h2>
+      <div class="table-wrap"><table><tbody>${r.monthly_split.map(x => `<tr><td><strong>${esc(x.sym)}</strong>${x.note ? `<br><span class="small muted">${esc(x.note)}</span>` : ''}</td>
+        <td class="num">${fixed(+x.pct || 0, 0)}%</td><td class="num"><strong>${monthly ? zl(monthly * (+x.pct || 0) / splitSum) : '—'}</strong></td></tr>`).join('')}</tbody></table></div>
+      <p class="small muted" style="margin:.5rem 0 0">Kwota miesięczna pochodzi z zakładki Cel. Każdy zakup wpisz w „Edytuj / Dodaj” – trafi do dziennika i PIT.</p>
+    </div>` : ''}
+
+    <div class="plan-cols plan-rules">
+      <div class="card"><h2>Zasady dokupów</h2>${liList(r.buy_rules)}</div>
+      <div class="card"><h2>Realizacja zysków</h2>${liList(r.sell_rules)}</div>
+      <div class="card"><h2>Zarządzanie ryzykiem</h2>${liList(r.risk_rules)}</div>
+    </div>
+
+    <div class="card">
+      <h2>Najbliższe kroki</h2>
+      <div class="plan-steps">${(r.next_steps || []).map(x => `<div><span>${esc(x.when || '')}</span><p>${esc(x.what || '')}</p></div>`).join('')}</div>
+      ${r.checklist?.length ? `<h3 style="margin-top:1rem">Checklista na każdy miesiąc</h3>
+        <div class="plan-check">${r.checklist.map((c, i) => `<label class="check"><input type="checkbox" id="planChk${i}" ${planState.checks[i] ? 'checked' : ''} onchange="planToggleCheck(${i})"><span>${esc(c)}</span></label>`).join('')}</div>` : ''}
+      <p class="small muted" style="margin:.8rem 0 0">${esc(r.disclaimer || 'To materiał edukacyjny, nie porada inwestycyjna. Decyzje podejmujesz sam.')}</p>
+    </div>`;
+}
+
 function renderPlan() {
-  const list = st => '<ul>' + Object.keys(STRATEGY).filter(s => STRATEGY[s].status === st)
-    .map(s => `<li><strong>${s}</strong> – ${describeRule(s)}</li>`).join('') + '</ul>';
-  const targets = Object.entries(STRATEGY).filter(([, c]) => c.target).map(([s, c]) => `${s} ${c.target}%`).join(' · ');
-  document.getElementById('planContent').innerHTML = `
-    <h2>Plan</h2>
-    <p class="muted small">Ten widok i zadania korzystają z tych samych progów – zmiana w jednym miejscu (STRATEGY w kodzie) zmienia oba.</p>
-    <h3>Rdzeń – trzymaj i dokupuj</h3>${list('core')}
-    <h3>Zostaw</h3>${list('hold')}
-    <h3>Redukcja przy odbiciu</h3>${list('reduce')}
-    <h3>Loterie</h3>${list('lottery')}
-    <h3>Stablecoiny</h3>${list('stable')}
-    <h3>Cele alokacji</h3><p>${targets}</p>
-    <div class="warning">Mikro-pozycje zostawiamy jako darmowe opcje. Nie sprzedajemy ich „żeby było czysto”.</div>`;
+  const el = document.getElementById('planBody');
+  if (!el) return;
+  const A = planState.analyses[planState.view] || planState.analyses[0];
+  const key = aiKey(), model = aiModel();
+  const prevText = document.getElementById('planText')?.value;
+  const editorOpen = !A || planShowEditor;
+  const editor = `
+    <div class="card" id="planEditor">
+      <h2>${A ? 'Twój plan – treść' : 'Napisz swój plan'}</h2>
+      <p class="muted" style="font-size:.88rem;margin-top:0">Opisz własnymi słowami: cel i horyzont, ile dopłacasz, które monety są dla Ciebie podstawą, kiedy dokupujesz, kiedy sprzedajesz, czego unikasz.
+        Potem kliknij <strong>Analizuj z AI</strong> – Claude oceni plan i zbuduje z niego pełny plan z alokacją, zasadami i krokami.</p>
+      <textarea id="planText" rows="${editorOpen ? 16 : 8}" spellcheck="true" aria-label="Treść Twojego planu">${esc(prevText ?? planState.text)}</textarea>
+      <div class="form-row" style="margin:.6rem 0 0;align-items:center">
+        <button class="action" onclick="planAnalyze()" ${planBusy ? 'disabled' : ''}>${planBusy ? '⏳ Analizuję…' : '✦ Analizuj z AI'}</button>
+        <button class="action secondary" onclick="planSaveText()">Zapisz</button>
+        <button class="action secondary" onclick="planRestoreDefault()">Wstaw plan z ustawień aplikacji</button>
+      </div>
+      <p class="small" id="planMsg" style="color:${planMsgOk ? 'var(--green)' : 'var(--red)'};min-height:1.2em;margin:.5rem 0 0">${esc(planMsg)}</p>
+      ${planState.savedAt ? `<p class="small muted" style="margin:.1rem 0 0">Zapisano: ${new Date(planState.savedAt).toLocaleString('pl-PL')}</p>` : ''}
+
+      <details style="margin-top:.9rem" ${!key && editorOpen ? 'open' : ''}>
+        <summary><strong>Połączenie z AI</strong><span class="small muted">${key ? 'klucz zapisany w tym urządzeniu' : 'bez klucza – użyj Claude ręcznie'}</span></summary>
+        <div style="padding:.75rem 1rem">
+          <h3 style="margin-top:0">Sposób 1 – automatycznie (klucz API Claude)</h3>
+          <p class="small muted" style="margin-top:0">Klucz założysz na <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (konto API jest osobne od subskrypcji Claude i płatne za użycie – jedna analiza to zwykle grosze; ustaw tam limit miesięczny).
+            Klucz zostaje tylko w tym urządzeniu – nie trafia do kopii zapasowej ani nigdzie indziej. Wysyłany jest wyłącznie do Claude razem z treścią planu i danymi portfela.</p>
+          <div class="form-row" style="align-items:flex-end">
+            <div><label for="aiKey">Klucz API</label><br><input type="password" id="aiKey" autocomplete="off" placeholder="${key ? '•••••••• (zapisany)' : 'sk-ant-…'}" style="max-width:260px"></div>
+            <button class="action secondary" onclick="setAiKey(document.getElementById('aiKey').value)">Zapisz klucz</button>
+            ${key ? `<button class="action secondary" onclick="setAiKey('')">Usuń klucz</button>` : ''}
+          </div>
+          <div class="form-row"><div><label for="aiModel">Model</label><br><select id="aiModel" onchange="setAiModel(this.value)" style="max-width:none">${AI_MODELS.map(([v, l]) => `<option value="${v}" ${v === model ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
+
+          <h3>Sposób 2 – bez klucza, przez aplikację Claude</h3>
+          <ol class="small" style="padding-left:1.1rem;margin:.2rem 0 .6rem">
+            <li>Kliknij <strong>Kopiuj polecenie</strong> – skopiuje się Twój plan razem z danymi portfela.</li>
+            <li>Otwórz nową rozmowę z Claude, wklej i wyślij.</li>
+            <li>Skopiuj całą odpowiedź Claude, wklej ją poniżej i kliknij <strong>Wczytaj plan</strong>.</li>
+          </ol>
+          <div class="form-row"><button class="action secondary" onclick="planCopyPrompt()">Kopiuj polecenie</button><span class="small" id="planCopyMsg"></span></div>
+          <textarea id="planPromptBox" rows="6" style="display:none" readonly aria-label="Polecenie dla Claude"></textarea>
+          <textarea id="planPaste" rows="5" placeholder="Tu wklej odpowiedź Claude (zaczyna się od {)" aria-label="Odpowiedź Claude"></textarea>
+          <div class="form-row" style="margin-top:.5rem"><button class="action" onclick="planPasteAnswer()">Wczytaj plan</button></div>
+        </div>
+      </details>
+    </div>`;
+  if (!A) {
+    el.innerHTML = editor + `<div class="card"><p class="muted" style="margin:0">Pełny plan pojawi się tutaj po analizie AI.</p></div>`;
+    return;
+  }
+  el.innerHTML = (editorOpen ? editor : '') + renderPlanResult(A) + (editorOpen ? '' : `
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <div style="min-width:0"><h3 style="margin:0">Twój plan – treść</h3><p class="small muted" style="margin:.2rem 0 0">Chcesz coś zmienić? Edytuj plan i przeanalizuj go ponownie.</p></div>
+      <button class="action secondary" onclick="planShowEditor=true;renderPlan();document.getElementById('planEditor').scrollIntoView({behavior:'smooth'})">Edytuj plan</button>
+    </div>`) + (planMsg && !editorOpen ? `<p class="small" style="color:${planMsgOk ? 'var(--green)' : 'var(--red)'}">${esc(planMsg)}</p>` : '');
 }
 
 function renderNew() {
@@ -2426,6 +2888,7 @@ function openTab(id) {
   if (id === 'risk') { renderLadder(); renderRisk(); loadRiskData(); }
   if (id === 'savings') renderSavings();
   if (id === 'offers') { renderOffers(); loadLiveMacro(); }
+  if (id === 'plan') renderPlan();
   if (id === 'market') mkOpen();
   else if (prevTab === 'market') mkLeave();
   if (id === 'settings') renderSettings();
@@ -4839,6 +5302,7 @@ populateSymbols();
 loadGoalInputs();
 document.getElementById('jDate').value = todayStr();
 updateJournalForm();
+loadPlan();
 renderPlan();
 renderNew();
 renderJournal();
