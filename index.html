@@ -5365,7 +5365,7 @@ function mkRenderMovers() {
    Dane szyfrowane są w urządzeniu kluczem z Twojego hasła (PBKDF2 → AES-256-GCM),
    więc na serwerze leży wyłącznie szyfrogram.
    ========================================================= */
-var FIREBASE_CONFIG = null;   // uzupełnione po założeniu projektu Firebase
+var FIREBASE_CONFIG = {apiKey: "AIzaSyDVegYij8cRCOG4Y2bzA7mEvpzEpHL1VvU", projectId: "crypto-control-69e0f"};   // projekt Firebase (dane publiczne – dostęp chronią reguły i hasło)
 LS.auth = 'ccAuth'; LS.cloudKey = 'ccCloudKey'; LS.cloudMeta = 'ccCloudMeta';
 var CL = {applying: false, pushing: false, again: false, timer: null, pullAt: 0, view: 'signup', busy: false, msg: '', msgOk: false, choice: null, pending: null};
 const CLOUD_LOCAL_ONLY = new Set(['cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
