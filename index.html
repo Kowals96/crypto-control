@@ -439,6 +439,13 @@
   .imp-table td{vertical-align:middle} .imp-dim{opacity:.55}
   .bio-btn{display:inline-flex;align-items:center;gap:.5rem;margin:.4rem 0 0;padding:.7rem 1.2rem}
   .bio-btn svg{width:22px;height:22px}
+  .cal-list{display:grid}
+  .cal-item{display:grid;grid-template-columns:72px minmax(0,1fr);gap:.8rem;padding:.7rem 0;border-bottom:1px solid var(--border)}
+  .cal-item:last-child{border-bottom:none}
+  .cal-date strong{display:block;font-size:1.05rem;font-variant-numeric:tabular-nums}
+  .cal-date span{font-size:.72rem;color:var(--muted)}
+  .cal-item.soon .cal-date span{color:var(--orange);font-weight:600}
+  .bench-mine td{background:color-mix(in srgb,var(--accent) 8%,transparent)}
   /* ---------- PLAN (AI) ---------- */
   textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:.9rem;line-height:1.55;color:var(--text);background:var(--input);
     border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:.75rem .85rem;resize:vertical;margin-top:.5rem}
@@ -467,7 +474,7 @@
   .mk-grid > *{min-width:0}
   @media (max-width:1359px){
     .mk-side,.mk-main{display:contents}
-    #mkWatchCard{order:1} #mkChartCard{order:2} .mk-2col{order:3} #mkFc{order:4} #mkInfo{order:5} #mkMacro{order:6} #mkMovers{order:7} .mk-main > .info{order:8}
+    #mkWatchCard{order:1} #mkChartCard{order:2} .mk-2col{order:3} #mkFc{order:4} #mkInfo{order:5} #mkCal{order:6} #mkMacro{order:7} #mkMovers{order:8} .mk-main > .info{order:9}
   }
   @media (min-width:1360px){
     .mk-grid{grid-template-columns:minmax(0,1fr) 370px}
@@ -679,6 +686,11 @@
         Prawdziwy termin może wypaść dużo wcześniej albo dużo później, a wartość portfela może też spaść poniżej wpłaconej kwoty.
       </div>
     </div>
+    <div class="card" id="benchCard">
+      <h2>Czy Twoja strategia się opłaca?</h2>
+      <p class="muted" style="font-size:.88rem;margin-top:0">Te same wpłaty i wypłaty z dziennika, w tych samych dniach – porównane z prostszymi wariantami.</p>
+      <div id="benchBody"></div>
+    </div>
   </section>
 
   <!-- ===================== DOPŁATA ===================== -->
@@ -835,6 +847,10 @@
       <h2>Konto i synchronizacja</h2>
       <div id="cloudBody"></div>
     </div>
+    <div class="card" id="pushCard">
+      <h2>Powiadomienia w tle</h2>
+      <div id="pushBody"></div>
+    </div>
     <div class="card">
       <h2>Wygląd</h2>
       <p class="muted" style="font-size:.88rem;margin-top:0">Motyw zmienia cały charakter aplikacji: kolory, kształty, czcionkę i styl przycisków.</p>
@@ -893,7 +909,7 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v19 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center">Crypto Control v20 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -909,7 +925,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v19 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v20 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -2061,7 +2077,7 @@ function renderBackupInfo() {
 function collectData() {
   return {app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
           vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
-          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp)};
+          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom)};
 }
 const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && typeof d.holdings === 'object' && Array.isArray(d.journal);
 function applyData(d) {
@@ -2078,6 +2094,7 @@ function applyData(d) {
   if (d.plan && typeof d.plan === 'object' && typeof d.plan.text === 'string') { planState = {...planState, ...d.plan, analyses: Array.isArray(d.plan.analyses) ? d.plan.analyses : [], view: 0}; savePlan(); renderPlan(); }
   if (d.market && typeof d.market === 'object') { lsSet(LS.mkt, d.market); MK.watch = null; mkLoadState(); MK.shell = false; }
   if (d.importState && typeof d.importState === 'object') lsSet(LS.imp, d.importState);
+  if (Array.isArray(d.alerts)) lsSet(LS.alertsCustom, d.alerts);
   if ('strategy' in d) { lsSet(LS.strategy, d.strategy || null); applyStrategyOverrides(d.strategy); rebuildBnMap(); populateSymbols(); }
   lockSav();
   lsSet(LS.holdingsVer, HOLDINGS_VERSION);
@@ -3433,6 +3450,8 @@ function generateTasks() {
     if (Math.abs(d) > 5) tasks.push({type:'info', label: d > 0 ? 'PONAD CEL' : 'PONIŻEJ CELU',
       msg:`${sym}: ${pct(now)} portfela, cel ${c.target}% (${signed(d, v => fixed(v, 1) + ' pp')}). ${d > 0 ? 'Nie dokupuj – dopłaty kieruj do monet poniżej celu.' : 'Kieruj tu większą część dopłat.'}`});
   }
+  tasks.push(...calTasks());
+  if (typeof alertsSyncSoon === 'function') alertsSyncSoon();
   tasks.unshift(...ladderTasks());          // realizacja zysków na górze listy
   updateNotifications();
   renderTasks();
@@ -3658,7 +3677,7 @@ function openTab(id) {
   if (id === 'market') mkOpen();
   else if (prevTab === 'market') mkLeave();
   if (id === 'settings') renderSettings();
-  if (id === 'goal') renderMonth();
+  if (id === 'goal') { renderMonth(); if (!benchState.busy && (!benchState.res || Date.now() - benchState.at > 600000)) runBench(); else renderBench(); }
 }
 
 /* =========================================================
@@ -4200,6 +4219,7 @@ const segHtml = (key, opts) => opts.map(([v, l]) => `<button class="${ui[key] ==
 function renderSettings() {
   if (activeTab !== 'settings') return;
   const cb = document.getElementById('cloudBody'); if (cb) cb.innerHTML = cloudSettingsHtml();
+  renderPushCard();
   const mode = resolvedMode();
   document.getElementById('themeGrid').innerHTML = THEMES.map(t => {
     const c = t[mode], r = t.r;
@@ -5338,7 +5358,7 @@ window.addEventListener('resize', () => { if (activeTab === 'market') mkQueueDra
 /* ---------- otwieranie zakładki ---------- */
 function mkOpen() {
   mkRenderShell();
-  renderMacro(); loadLiveMacro();
+  renderMacro(); loadLiveMacro(); renderCal();
   mkStreamSyms();
   mkLoadTicks().catch(() => null).then(() => { mkRenderWatch(); mkRenderHead(); });
   mkConnect();
@@ -5425,6 +5445,7 @@ function mkRenderShell() {
         </div>
         <div class="card" id="mkFc"></div>
         <div class="card" id="mkInfo"></div>
+        <div class="card" id="mkCal"></div>
         <div class="card" id="mkMacro"></div>
         <div class="info">
           <strong>Jak korzystać z tej zakładki.</strong> Ceny i wykres przychodzą z Binance na żywo (WebSocket, co ok. 1 s). Analiza techniczna, poziomy i zakresy liczą się w przeglądarce ze świec Binance;
@@ -6123,7 +6144,7 @@ function mkRenderMovers() {
 var FIREBASE_CONFIG = {apiKey: "AIzaSyDVegYij8cRCOG4Y2bzA7mEvpzEpHL1VvU", projectId: "crypto-control-69e0f"};   // projekt Firebase (dane publiczne – dostęp chronią reguły i hasło)
 LS.auth = 'ccAuth'; LS.cloudKey = 'ccCloudKey'; LS.cloudMeta = 'ccCloudMeta';
 var CL = {applying: false, pushing: false, again: false, timer: null, pullAt: 0, view: 'signup', busy: false, msg: '', msgOk: false, choice: null, pending: null};
-const CLOUD_LOCAL_ONLY = new Set(['ccMonthSeen', 'ccBnApi', 'cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
+const CLOUD_LOCAL_ONLY = new Set(['ccPushSub', 'ccMonthSeen', 'ccBnApi', 'cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
 const cloudOn = () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
 const cloudAuth = () => { try { return JSON.parse(localStorage.getItem(LS.auth)) || null; } catch (e) { return null; } };
 const cloudMeta = () => { try { return JSON.parse(localStorage.getItem(LS.cloudMeta)) || {}; } catch (e) { return {}; } };
@@ -6217,7 +6238,7 @@ async function fsPut(doc) {
   const fields = {v: {integerValue: '2'}, salt: {stringValue: doc.salt}, iv: {stringValue: doc.iv}, data: {stringValue: doc.data}, gz: {booleanValue: !!doc.gz},
     updatedAt: {integerValue: String(doc.updatedAt)}, device: {stringValue: deviceLabel()}};
   let res;
-  try { res = await fetch(docUrl(a.uid), {method: 'PATCH', headers: {authorization: 'Bearer ' + a.idToken, 'content-type': 'application/json'}, body: JSON.stringify({fields})}); }
+  try { res = await fetch(docUrl(a.uid) + '?' + ['v', 'salt', 'iv', 'data', 'gz', 'updatedAt', 'device'].map(f => 'updateMask.fieldPaths=' + f).join('&'), {method: 'PATCH', headers: {authorization: 'Bearer ' + a.idToken, 'content-type': 'application/json'}, body: JSON.stringify({fields})}); }
   catch (e) { throw new Error('Brak połączenia z internetem.'); }
   if (!res.ok) throw new Error(res.status === 403 ? 'Brak dostępu do danych w chmurze – sprawdź reguły Firestore.' : `Błąd zapisu w chmurze (${res.status}).`);
 }
@@ -6518,6 +6539,369 @@ function cloudStart() {
     return;
   }
   cloudPull({force: true}).finally(() => { CL.ready = true; });
+}
+
+/* =========================================================
+   CZY STRATEGIA SIĘ OPŁACA: Twój portfel vs te same dopłaty w BTC, BTC+ETH, bezpiecznie, gotówka
+   ========================================================= */
+let benchState = {busy: false, err: '', res: null, at: 0}, benchSafe = 5;
+const nbpSeries = {};
+async function loadUsdPlnSeries(fromDate) {
+  const y0 = +fromDate.slice(0, 4), y1 = new Date().getFullYear();
+  for (let y = y0; y <= y1; y++) {
+    if (nbpSeries[y]) continue;
+    const from = `${y}-01-01`, to = y === y1 ? todayStr() : `${y}-12-31`;
+    try {
+      const r = await fetchJson(API.nbpRange('USD', from, to), 12000);
+      nbpSeries[y] = Object.fromEntries((r.rates || []).map(x => [x.effectiveDate, x.mid]));
+    } catch (e) { nbpSeries[y] = {}; }
+  }
+}
+function usdPlnOn(date) {
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(Date.parse(date + 'T12:00:00') - i * 86400000).toLocaleDateString('sv-SE');
+    const v = nbpSeries[+d.slice(0, 4)]?.[d];
+    if (v) return v;
+  }
+  return usdPlnRate;
+}
+function closeOn(map, date) {
+  for (let i = 0; i < 10; i++) { const d = new Date(Date.parse(date + 'T12:00:00') - i * 86400000).toLocaleDateString('sv-SE'); if (map[d]) return map[d]; }
+  return null;
+}
+function xirr(flows) {            // flows: [{t: ms, v: zł}] – ujemne wpłaty, dodatnie wypłaty/wartość
+  if (flows.length < 2 || !flows.some(f => f.v < 0) || !flows.some(f => f.v > 0)) return null;
+  const t0 = flows[0].t, npv = r => flows.reduce((s, f) => s + f.v / Math.pow(1 + r, (f.t - t0) / 31557600000), 0);
+  let lo = -0.99, hi = 10;
+  if (npv(lo) * npv(hi) > 0) return null;
+  for (let i = 0; i < 200; i++) { const mid = (lo + hi) / 2; if (npv(lo) * npv(mid) <= 0) hi = mid; else lo = mid; }
+  return (lo + hi) / 2 * 100;
+}
+async function runBench() {
+  if (benchState.busy) return;
+  const flows = journal.filter(e => e.pln > 0).map(e => ({date: e.date, pln: e.type === 'buy' ? e.pln : -e.pln})).sort((a, b) => a.date.localeCompare(b.date));
+  if (!flows.length) { benchState = {busy: false, err: 'Dziennik jest pusty – porównanie liczy się z wpłat i wypłat zapisanych w dzienniku.', res: null}; renderBench(); return; }
+  benchState.busy = true; benchState.err = ''; renderBench();
+  try {
+    await loadUsdPlnSeries(flows[0].date);
+    const [btcD, ethD] = await Promise.all([loadDailyPair('BTCUSDT'), loadDailyPair('ETHUSDT')]);
+    const m = d => Object.fromEntries(d.map(k => [new Date(k.t).toISOString().slice(0, 10), k.c]));
+    const px = {BTC: m(btcD), ETH: m(ethD)};
+    const nowPx = {BTC: prices.BTC?.usd || btcD[btcD.length - 1].c, ETH: prices.ETH?.usd || ethD[ethD.length - 1].c};
+    const nowT = Date.now();
+    const invested = flows.filter(f => f.pln > 0).reduce((s, f) => s + f.pln, 0);
+    const cashOut = flows.filter(f => f.pln < 0).reduce((s, f) => s - f.pln, 0);
+    const baseFlows = flows.map(f => ({t: Date.parse(f.date + 'T12:00:00'), v: -f.pln}));
+    const mk = (name, endValue, note) => ({name, note, end: endValue, total: endValue + cashOut, profit: endValue + cashOut - invested,
+      pct: invested > 0 ? (endValue + cashOut - invested) / invested * 100 : 0, irr: xirr([...baseFlows, {t: nowT, v: endValue}])});
+    const portfolio = (weights) => {
+      const units = Object.fromEntries(Object.keys(weights).map(a => [a, 0]));
+      for (const f of flows) {
+        const r = usdPlnOn(f.date), p = Object.fromEntries(Object.keys(weights).map(a => [a, (closeOn(px[a], f.date) || nowPx[a]) * r]));
+        if (f.pln > 0) Object.entries(weights).forEach(([a, w]) => { units[a] += f.pln * w / p[a]; });
+        else {
+          const val = Object.keys(units).reduce((s, a) => s + units[a] * p[a], 0);
+          const frac = val > 0 ? Math.min(1, -f.pln / val) : 0;
+          Object.keys(units).forEach(a => { units[a] *= 1 - frac; });
+        }
+      }
+      return Object.keys(units).reduce((s, a) => s + units[a] * nowPx[a] * usdPlnRate, 0);
+    };
+    let safe = 0, last = null;
+    for (const f of flows) {
+      const t = Date.parse(f.date + 'T12:00:00');
+      if (last) safe *= Math.pow(1 + benchSafe / 100, (t - last) / 31557600000);
+      safe = Math.max(0, safe + f.pln); last = t;
+    }
+    safe *= Math.pow(1 + benchSafe / 100, (nowT - last) / 31557600000);
+    const actual = totalPln();
+    benchState.res = {
+      from: flows[0].date, invested, cashOut, n: flows.length,
+      rows: [
+        {...mk('Twój portfel', actual, 'obecna wartość wszystkich monet'), mine: true},
+        mk('100% Bitcoin', portfolio({BTC: 1}), 'każda dopłata w BTC'),
+        mk('50% BTC + 50% ETH', portfolio({BTC: .5, ETH: .5}), 'dopłaty po równo'),
+        mk(`Bezpiecznie ${fixed(benchSafe, 1)}% rocznie`, safe, 'konto oszczędnościowe / obligacje'),
+        mk('Gotówka', Math.max(0, invested - cashOut), 'bez oprocentowania')
+      ]
+    };
+    benchState.at = Date.now();
+  } catch (e) { benchState.err = 'Nie udało się pobrać historii cen – spróbuj za chwilę.'; }
+  benchState.busy = false;
+  renderBench();
+}
+function renderBench() {
+  const el = document.getElementById('benchBody');
+  if (!el) return;
+  const R = benchState.res;
+  if (benchState.busy && !R) { el.innerHTML = '<p class="muted">Liczę na historii cen BTC, ETH i kursów NBP…</p>'; return; }
+  if (benchState.err) { el.innerHTML = `<p class="muted">${esc(benchState.err)}</p><button class="action secondary" onclick="runBench()">Spróbuj ponownie</button>`; return; }
+  if (!R) { el.innerHTML = '<button class="action" onclick="runBench()">Policz porównanie</button>'; return; }
+  const mine = R.rows[0], best = R.rows.reduce((a, b) => b.total > a.total ? b : a);
+  const vsBtc = mine.total - R.rows[1].total;
+  el.innerHTML = `
+    <p style="margin-top:0;font-size:.92rem">${vsBtc >= 0
+      ? `Twój portfel jest <strong class="positive sens">${zl(vsBtc)}</strong> przed wariantem „wszystko w BTC”.`
+      : `Gdyby każda dopłata szła w samego BTC, miałbyś dziś <strong class="negative sens">${zl(-vsBtc)} więcej</strong>.`}
+      ${best.mine ? ' Twoja strategia wypada najlepiej z porównywanych.' : ` Najlepiej wypada: <strong>${esc(best.name)}</strong>.`}</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Wariant</th><th class="num">Wartość + wypłacone</th><th class="num">Zysk</th><th class="num">Rocznie</th></tr></thead>
+      <tbody>${R.rows.map(r => `<tr${r.mine ? ' class="bench-mine"' : ''}>
+        <td><strong>${esc(r.name)}</strong>${r === best ? ' <span class="tag tag-buy">najlepszy</span>' : ''}<br><span class="small muted">${esc(r.note)}</span></td>
+        <td class="num sens">${zl(r.total)}</td>
+        <td class="num sens">${colored(r.profit, signed(r.profit, zl))}<br><span class="small">${colored(r.pct, signed(r.pct, pct))}</span></td>
+        <td class="num">${r.irr == null ? '—' : colored(r.irr, signed(r.irr, pct))}</td></tr>`).join('')}</tbody></table></div>
+    <div class="form-row" style="margin-top:.6rem;align-items:flex-end">
+      <div><label for="benchSafe">Bezpieczny wariant – oprocentowanie rocznie (%)</label><br><input type="number" id="benchSafe" step="0.5" min="0" max="20" value="${benchSafe}" onchange="benchSafe=Math.max(0,parseFloat(this.value)||0);runBench()"></div>
+      <button class="action secondary" onclick="runBench()">↻ Przelicz</button>
+    </div>
+    <p class="small muted" style="margin:.4rem 0 0">Liczone z ${R.n} wpłat i wypłat w dzienniku od ${fmtDate(R.from)}: wpłacono ${zl(R.invested)}, wypłacono ${zl(R.cashOut)}. Warianty kupują i sprzedają za te same kwoty w tych samych dniach
+      (ceny dzienne z Binance, kurs USD z NBP). „Rocznie” to stopa zwrotu z uwzględnieniem terminów dopłat (XIRR). To porównanie przeszłości, nie wskazówka na przyszłość.</p>`;
+}
+
+/* =========================================================
+   KALENDARZ: odblokowania tokenów i ważne daty makro (research z datą – aktualizacja na prośbę)
+   ========================================================= */
+const CAL = {
+  asOf: '2026-10-24',
+  unlocks: [   // cykliczne: dzień miesiąca, od–do; ilość ≈ na jedno odblokowanie
+    {sym: 'HYPE', day: 29, from: '2026-10-29', until: '2029-11-29', amount: '≈ 14,2 mln HYPE', pct: 1.4, who: 'Core Contributors', src: 'tokenomics.com'},
+    {sym: 'SUI', day: 3, from: '2026-11-03', until: '2030-12-03', amount: '≈ 13–22,6 mln SUI', pct: 0.2, who: 'społeczność, insiderzy, fundacja', note: 'trackery podają różne daty (31.10–3.11) i ilości', src: 'tokenomics.com, Tokenomist'},
+    {sym: 'APT', day: 12, from: '2026-11-12', until: '2044-09-12', amount: '≈ 14,4 mln APT', pct: 0.7, who: 'społeczność, zespół, inwestorzy', src: 'tokenomics.com'},
+    {sym: 'STRK', day: 15, from: '2026-11-15', until: '2027-03-15', amount: '127 mln STRK', pct: 1.27, who: 'wcześni współtwórcy i inwestorzy', src: 'The Block, Tokenomist'},
+    {sym: 'ARB', day: 23, from: '2026-11-23', until: '2027-03-23', amount: '≈ 139 mln ARB', pct: 1.4, who: 'zespół, doradcy, inwestorzy', src: 'tokenomics.com'}
+  ],
+  oneOff: [
+    {date: '2027-05-19', sym: 'PYTH', type: 'unlock', title: 'Duże coroczne odblokowanie PYTH', text: 'Coroczne odblokowanie (w maju 2026 było to ok. 2,13 mld PYTH). Dokładna ilość na 2027 nie jest jeszcze podana.', src: 'Tokenomist, CoinMarketCal'},
+    {date: '2026-10-28', type: 'fed', title: 'Decyzja Fed (FOMC)', text: 'Decyzja o stopach w USA, 20:00 czasu polskiego. Zmiany stóp i ton komunikatu często poruszają całym rynkiem krypto.', src: 'Fed'},
+    {date: '2026-12-09', type: 'fed', title: 'Decyzja Fed (FOMC)', text: 'Ostatnie posiedzenie w 2026, z nowymi prognozami Fed.', src: 'Fed'},
+    {date: '2027-01-27', type: 'fed', title: 'Decyzja Fed (FOMC)', text: '', src: 'Fed'},
+    {date: '2027-03-17', type: 'fed', title: 'Decyzja Fed (FOMC)', text: '', src: 'Fed'},
+    {date: '2026-11-04', type: 'rpp', title: 'Decyzja RPP (posiedzenie 3–4.11)', text: 'Decyzja o stopach NBP – z nową projekcją inflacji. Wpływa na kurs złotego i oprocentowanie lokat.', src: 'NBP'},
+    {date: '2026-12-02', type: 'rpp', title: 'Decyzja RPP (posiedzenie 1–2.12)', text: '', src: 'NBP'},
+    {date: '2026-11-10', type: 'cpi', title: 'Inflacja w USA (CPI za październik)', text: '14:30 czasu polskiego. Wyższa od oczekiwań inflacja zwykle szkodzi krypto.', src: 'BLS'},
+    {date: '2026-12-10', type: 'cpi', title: 'Inflacja w USA (CPI za listopad)', text: '14:30 czasu polskiego.', src: 'BLS'},
+    {date: '2027-01-13', type: 'cpi', title: 'Inflacja w USA (CPI za grudzień)', text: '', src: 'BLS'},
+    {date: '2026-11-30', type: 'cpi', title: 'Inflacja w Polsce – szybki szacunek GUS (listopad)', text: 'GUS publikuje szybki szacunek zwykle w ostatni dzień roboczy miesiąca.', src: 'GUS'},
+    {date: '2026-12-31', type: 'cpi', title: 'Inflacja w Polsce – szybki szacunek GUS (grudzień)', text: 'Termin orientacyjny.', src: 'GUS'},
+    {date: '2027-04-30', type: 'tax', title: 'Termin złożenia PIT-38 za 2026', text: 'Do 30 kwietnia. Kwoty policzysz w zakładce Dziennik / PIT.', src: 'Ordynacja podatkowa'}
+  ],
+  noUnlocks: 'JUP: według DefiLlama brak zaplanowanych odblokowań (emisja zespołu wstrzymana). DOT, ADA, HBAR, POL: bez dużych jednorazowych odblokowań – podaż rośnie stopniowo (inflacja lub skarbiec).',
+  sources: [
+    ['Tokenomics.com – harmonogramy odblokowań', 'https://app.tokenomics.com/tokenomics/arbitrum/unlocks'],
+    ['Tokenomist', 'https://tokenomist.ai/'],
+    ['DefiLlama – Jupiter', 'https://defillama.com/unlocks/jupiter'],
+    ['The Block – harmonogram STRK', 'https://www.theblock.co/post/278714/starkware-opts-to-gradually-release-strk-token-following-user-feedback'],
+    ['Terminy FOMC 2026–2027', 'https://therighttrader.com/economic-calendar/fomc'],
+    ['Harmonogram RPP 2026 (Infor)', 'https://ksiegowosc.infor.pl/obrot-gospodarczy/finanse-i-inwestycje/7451398,harmonogram-posiedzen-rady-polityki-pienieznej-w-2026-roku.html'],
+    ['Terminy publikacji CPI (BLS)', 'https://www.bls.gov/schedule/news_release/cpi.htm']
+  ]
+};
+const CAL_TYPES = {unlock: ['Odblokowanie', 'var(--orange)'], fed: ['Fed', 'var(--accent)'], rpp: ['RPP', 'var(--accent-2)'], cpi: ['Inflacja', 'var(--purple)'], tax: ['Podatki', 'var(--green)']};
+let calOnlyMine = false;
+function calEvents(days = 120) {
+  const today = todayStr(), end = new Date(Date.now() + days * 86400000).toLocaleDateString('sv-SE'), out = [];
+  CAL.unlocks.forEach(u => {
+    const d = new Date(Date.parse(u.from + 'T12:00:00'));
+    for (let i = 0; i < 24; i++) {
+      const dt = new Date(d.getFullYear(), d.getMonth() + i, u.day, 12).toLocaleDateString('sv-SE');
+      if (dt > u.until || dt > end) break;
+      if (dt < today) continue;
+      out.push({date: dt, sym: u.sym, type: 'unlock', title: `Odblokowanie ${u.sym}`, text: `${u.amount} (${upto(u.pct, 2)}% podaży) – ${u.who}. Cykl co miesiąc do ${fmtDate(u.until)}.${u.note ? ' Uwaga: ' + u.note + '.' : ''}`, src: u.src});
+    }
+  });
+  CAL.oneOff.forEach(e => { if (e.date >= today && e.date <= end) out.push(e); });
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+const daysUntil = date => Math.round((Date.parse(date + 'T12:00:00') - Date.parse(todayStr() + 'T12:00:00')) / 86400000);
+const calWhen = n => n === 0 ? 'dziś' : n === 1 ? 'jutro' : `za ${n} dni`;
+function renderCal() {
+  const el = document.getElementById('mkCal');
+  if (!el) return;
+  const mineSet = new Set([...Object.keys(holdings), ...(typeof mkWatch === 'function' ? mkWatch() : [])]);
+  let ev = calEvents(120);
+  if (calOnlyMine) ev = ev.filter(e => !e.sym || holdings[e.sym]);
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <h2 style="margin:0">Kalendarz: odblokowania i wydarzenia</h2>
+      <span class="seg"><button class="${!calOnlyMine ? 'on' : ''}" onclick="calOnlyMine=false;renderCal()">Wszystko</button><button class="${calOnlyMine ? 'on' : ''}" onclick="calOnlyMine=true;renderCal()">Moje monety + makro</button></span>
+    </div>
+    <p class="small muted" style="margin:.4rem 0 .6rem">Odblokowanie to moment, gdy na rynek trafiają tokeny zespołu, inwestorów lub fundacji. Większa podaż często dociska cenę w dniach wokół odblokowania – ale nie zawsze.</p>
+    <div class="cal-list">${ev.length ? ev.map(e => {
+      const n = daysUntil(e.date), [tl, tc] = CAL_TYPES[e.type] || ['', 'var(--muted)'], held = e.sym && holdings[e.sym];
+      return `<div class="cal-item${n <= 7 ? ' soon' : ''}">
+        <div class="cal-date"><strong>${e.date.slice(8, 10)}.${e.date.slice(5, 7)}</strong><span>${calWhen(n)}</span></div>
+        <div style="min-width:0"><span class="tag" style="background:color-mix(in srgb,${tc} 15%,transparent);color:${tc}">${tl}</span>${held ? ' <span class="tag tag-acc">masz w portfelu</span>' : e.sym && mineSet.has(e.sym) ? ' <span class="tag tag-neu">obserwujesz</span>' : ''}
+          <strong style="display:block;margin-top:.25rem">${esc(e.title)}</strong>${e.text ? `<span class="small muted">${esc(e.text)}</span>` : ''}</div>
+      </div>`;
+    }).join('') : '<p class="muted small">Brak wydarzeń w najbliższych 4 miesiącach.</p>'}</div>
+    <p class="small muted" style="margin:.7rem 0 0">${esc(CAL.noUnlocks)}</p>
+    <p class="small muted" style="margin:.4rem 0 0">Stan na ${fmtDate(CAL.asOf)} – daty pochodzą z publicznych harmonogramów i mogą się zmienić. Odblokowania miesięczne aplikacja wylicza sama na kolejne miesiące; o aktualizację listy poproś mnie.
+      Źródła: ${CAL.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
+}
+function calTasks() {
+  return calEvents(7).filter(e => e.type === 'unlock' && holdings[e.sym]).map(e => ({type: 'info', label: 'ODBLOKOWANIE',
+    msg: `${e.sym}: ${calWhen(daysUntil(e.date))} (${fmtDate(e.date)}) na rynek trafi ${e.text.split(' – ')[0]}. Po odblokowaniach cena często bywa niższa (choć nie zawsze) – weź to pod uwagę przy dokupach.`}));
+}
+
+/* =========================================================
+   POWIADOMIENIA W TLE (Web Push)
+   Aplikacja zapisuje w koncie (pole "alerts") tylko progi cenowe i terminy – bez kwot portfela.
+   Co ~10 minut GitHub Actions sprawdza ceny i wysyła powiadomienie na zapisane urządzenia.
+   ========================================================= */
+const VAPID_PUBLIC = 'BDR7TxxUAkK0iNQV02R0rofQPxN3gxKPqwBq0n9DMEv9U6z9mtZbByvlyI3MImPkjtUrfzXkn8Y40MSHRmX7xHI';
+LS.pushSub = 'ccPushSub';      // subskrypcja tego urządzenia (lokalnie)
+LS.alertsCustom = 'ccAlerts';  // własne alerty cenowe (synchronizowane)
+let testRule = null, pushMsg = '', pushMsgOk = true, pushRemote = null, alertsTimer = null, lastRulesJson = '';
+const customAlerts = () => { const a = lsGet(LS.alertsCustom); return Array.isArray(a) ? a : []; };
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && window.isSecureContext && location.protocol !== 'file:';
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+const mySub = () => { try { return JSON.parse(localStorage.getItem(LS.pushSub)); } catch (e) { return null; } };
+const u8FromB64u = s => { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+
+function alertRules() {
+  const r = [], bn = s => STRATEGY[s]?.bn || null;
+  Object.entries(ladder).forEach(([s, l]) => (l || []).forEach(x => {
+    if (!x.done && bn(s) && holdings[s]) r.push({id: 'l:' + x.id, pair: bn(s), dir: 'above', price: x.price, title: `Realizuj zysk: ${s}`, body: `Cena doszła do progu ${usdP(x.price)} – plan: sprzedaj ${x.pct}% pozycji (${x.why || 'próg sprzedaży'}).`});
+  }));
+  Object.entries(STRATEGY).forEach(([s, c]) => {
+    if (!c.bn || !holdings[s]) return;
+    if (c.buyBelow) r.push({id: `b:${s}:${c.buyBelow}`, pair: c.bn, dir: 'below', price: c.buyBelow, title: `Okazja do dokupu: ${s}`, body: `Cena spadła do ${usd(c.buyBelow)} lub niżej – Twój plan przewiduje dokup.`});
+    if (c.status === 'lottery' && c.sellAt) r.push({id: `s:${s}:${c.sellAt}`, pair: c.bn, dir: 'above', price: c.sellAt, title: `Loteria trafiła: ${s}`, body: `Cena przekroczyła ${usd(c.sellAt)} – plan: sprzedaj całość, kapitał do rdzenia.`});
+    if (c.status === 'reduce' && c.reboundPct) {
+      const p = (c.reboundBase || holdings[s].avg) * (1 + c.reboundPct / 100);
+      r.push({id: `r:${s}:${nice(p)}`, pair: c.bn, dir: 'above', price: nice(p), title: `Redukcja: ${s}`, body: `Odbicie +${c.reboundPct}% – plan: sprzedaj ${c.sellPct || 100}% pozycji, kapitał do rdzenia.`});
+    }
+  });
+  customAlerts().forEach(a => {
+    const pair = bn(a.sym) || a.sym + 'USDT';
+    r.push({id: 'c:' + a.id, pair, dir: a.dir, price: a.price, title: `${a.sym} ${a.dir === 'below' ? 'poniżej' : 'powyżej'} ${usd(a.price)}`, body: a.note || `Cena ${a.sym} ${a.dir === 'below' ? 'spadła poniżej' : 'przekroczyła'} ${usd(a.price)}.`});
+  });
+  if (goal.monthly > 0) {
+    const d = new Date(), day = goal.dcaDay || 10;
+    let y = d.getFullYear(), m = d.getMonth();
+    if (d.getDate() > day) { m++; if (m > 11) { m = 0; y++; } }
+    const date = new Date(y, m, day, 12).toLocaleDateString('sv-SE');
+    const split = (goal.split || []).filter(x => x.pct > 0), ssum = split.reduce((t, x) => t + x.pct, 0) || 100;
+    r.push({id: 'dca:' + date.slice(0, 7), at: date + 'T09:00', until: new Date(y, m, day + 3, 12).toLocaleDateString('sv-SE') + 'T23:59', title: 'Dzień dopłaty',
+      body: `Jeśli jeszcze nie dopłaciłeś w tym miesiącu: ${zl(goal.monthly)}${split.length ? ' – ' + split.map(x => `${x.sym} ${zl(goal.monthly * x.pct / ssum)}`).join(', ') : ''}.`});
+  }
+  if (typeof calEvents === 'function') calEvents(45).filter(e => e.type === 'unlock' && holdings[e.sym]).forEach(e => {
+    const before = new Date(Date.parse(e.date + 'T12:00:00') - 86400000).toLocaleDateString('sv-SE');
+    r.push({id: `u:${e.sym}:${e.date}`, at: before + 'T18:00', until: e.date + 'T23:59', title: `Jutro odblokowanie ${e.sym}`, body: `${fmtDate(e.date)} na rynek trafi ${e.text.split(' – ')[0]}.`});
+  });
+  if (testRule && Date.now() - +testRule.id.slice(2) < 3600000) r.push(testRule);
+  return r;
+}
+async function fsAlertsGet() {
+  const a = await cloudToken();
+  const res = await fetch(docUrl(a.uid).replace(/\?.*$/, '') + '?mask.fieldPaths=alerts&mask.fieldPaths=alertState', {headers: {authorization: 'Bearer ' + a.idToken}});
+  if (res.status === 404) return {alerts: null, state: null};
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`Błąd chmury (${res.status}).`);
+  const pj = v => { try { return JSON.parse(v); } catch (e) { return null; } };
+  return {alerts: pj(d.fields?.alerts?.stringValue), state: pj(d.fields?.alertState?.stringValue)};
+}
+async function fsAlertsPut(obj) {
+  const a = await cloudToken();
+  const res = await fetch(docUrl(a.uid) + '?updateMask.fieldPaths=alerts', {method: 'PATCH', headers: {authorization: 'Bearer ' + a.idToken, 'content-type': 'application/json'},
+    body: JSON.stringify({fields: {alerts: {stringValue: JSON.stringify(obj)}}})});
+  if (!res.ok) throw new Error(`Błąd zapisu powiadomień (${res.status}).`);
+}
+async function alertsSync(force, removeMine) {
+  if (!cloudReady() || (!mySub() && !removeMine)) return;
+  const rules = alertRules(), json = JSON.stringify(rules);
+  if (!force && json === lastRulesJson) return;
+  try {
+    const cur = await fsAlertsGet();
+    pushRemote = cur;
+    const dead = new Set(cur.state?.dead || []), me = mySub();
+    let subs = (cur.alerts?.subs || []).filter(s => s?.endpoint && !dead.has(s.endpoint) && s.endpoint !== me?.endpoint);
+    if (!removeMine && me) subs.push({...me, device: deviceLabel()});
+    await fsAlertsPut({v: 1, subs, rules, updatedAt: Date.now()});
+    lastRulesJson = json;
+  } catch (e) { pushMsg = e.message; pushMsgOk = false; }
+  if (activeTab === 'settings') renderPushCard();
+}
+function alertsSyncSoon() { clearTimeout(alertsTimer); alertsTimer = setTimeout(() => alertsSync(false), 4000); }
+
+async function pushEnable() {
+  pushMsg = ''; pushMsgOk = true;
+  try {
+    if (!cloudReady()) throw new Error('Najpierw zaloguj się do konta (Ustawienia → Konto i synchronizacja) – powiadomienia działają przez konto.');
+    if (isIOS() && !isStandalone()) throw new Error('Na iPhonie powiadomienia działają tylko w aplikacji dodanej do ekranu początkowego: Safari → Udostępnij → „Do ekranu początkowego”, potem otwórz ją z ikony.');
+    if (!pushSupported()) throw new Error('Ta przeglądarka nie obsługuje powiadomień w tle.');
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('Nie zezwolono na powiadomienia. Zmienisz to w Ustawieniach iPhone’a → Powiadomienia → Crypto Control.');
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: u8FromB64u(VAPID_PUBLIC)});
+    localStorage.setItem(LS.pushSub, JSON.stringify(sub.toJSON()));
+    await alertsSync(true);
+    if (pushMsgOk) pushMsg = 'Powiadomienia włączone na tym urządzeniu.';
+  } catch (e) { pushMsg = e.message; pushMsgOk = false; }
+  renderPushCard();
+}
+async function pushDisable() {
+  try {
+    const reg = await navigator.serviceWorker?.ready;
+    const sub = await reg?.pushManager?.getSubscription();
+    await alertsSync(true, true);
+    if (sub) await sub.unsubscribe();
+  } catch (e) {}
+  try { localStorage.removeItem(LS.pushSub); } catch (e) {}
+  pushMsg = 'Powiadomienia wyłączone na tym urządzeniu.'; pushMsgOk = true;
+  renderPushCard();
+}
+async function pushTest() {
+  const at = new Date(Date.now() - 60000);
+  const p2 = n => String(n).padStart(2, '0');
+  const local = `${at.toLocaleDateString('sv-SE')}T${p2(at.getHours())}:${p2(at.getMinutes())}`;
+  testRule = {id: 't:' + Date.now(), at: local, until: new Date(Date.now() + 3600000).toLocaleDateString('sv-SE') + 'T23:59', title: 'Test powiadomień', body: 'Działa! Powiadomienia z Crypto Control docierają na to urządzenie.'};
+  lastRulesJson = '';
+  await alertsSync(true);
+  pushMsg = 'Wysłane do sprawdzenia – powiadomienie testowe przyjdzie w ciągu ok. 10 minut (tak często serwer sprawdza progi).'; pushMsgOk = true;
+  renderPushCard();
+}
+
+function alertAdd() {
+  const sym = String(val('alSym') || '').trim().toUpperCase().replace(/USDT$/, ''), price = parseFloat(String(val('alPrice')).replace(',', '.')), dir = val('alDir');
+  if (!/^[A-Z0-9]{2,12}$/.test(sym) || !(price > 0)) { pushMsg = 'Podaj symbol monety i cenę w USD.'; pushMsgOk = false; renderPushCard(); return; }
+  const list = customAlerts(); list.push({id: Math.random().toString(36).slice(2, 9), sym, dir, price, note: String(val('alNote') || '').slice(0, 80)});
+  lsSet(LS.alertsCustom, list);
+  pushMsg = `Dodano alert: ${sym} ${dir === 'below' ? 'poniżej' : 'powyżej'} ${usd(price)}.`; pushMsgOk = true;
+  alertsSync(false); renderPushCard();
+}
+function alertDel(id) { lsSet(LS.alertsCustom, customAlerts().filter(a => a.id !== id)); alertsSync(false); renderPushCard(); }
+
+async function renderPushCard() {
+  const el = document.getElementById('pushBody');
+  if (!el) return;
+  const on = !!mySub(), rules = alertRules();
+  const st = pushRemote?.state, checked = st?.checkedAt;
+  const priceRules = rules.filter(r => r.pair), dateRules = rules.filter(r => r.at);
+  el.innerHTML = `
+    <p class="muted" style="font-size:.88rem;margin-top:0">Powiadomienia przyjdą nawet przy zamkniętej aplikacji: gdy cena dojdzie do Twoich progów, w dniu dopłaty i dzień przed odblokowaniem tokenów, które masz.
+      Serwer sprawdza ceny co ok. 10 minut i zna tylko progi – nie Twoje kwoty.</p>
+    <div class="set-row"><div><strong>${on ? 'Włączone na tym urządzeniu ✓' : 'Wyłączone na tym urządzeniu'}</strong>
+      <span class="small">${checked ? `Serwer ostatnio sprawdzał ceny: ${new Date(checked).toLocaleString('pl-PL', {dateStyle: 'short', timeStyle: 'short'})}${Date.now() - checked > 40 * 60000 ? ' – <span style="color:var(--orange)">dawno; sprawdź konfigurację na GitHubie</span>' : ''}` : on ? 'Czekam na pierwsze sprawdzenie przez serwer (do ~10 minut).' : 'Na iPhonie działa w aplikacji z ikony na ekranie początkowym (iOS 16.4+).'}</span></div>
+      ${on ? '<button class="action secondary" onclick="pushDisable()">Wyłącz</button>' : '<button class="action" onclick="pushEnable()">Włącz powiadomienia</button>'}</div>
+    ${on ? '<div class="form-row" style="margin:.2rem 0 .4rem"><button class="action secondary" onclick="pushTest()">Wyślij powiadomienie testowe</button></div>' : ''}
+    <p class="small" style="color:${pushMsgOk ? 'var(--green)' : 'var(--red)'};min-height:1em;margin:.3rem 0">${esc(pushMsg)}</p>
+    <details><summary><strong>Aktywne alerty</strong><span class="small muted">${priceRules.length} cenowych · ${dateRules.length} terminów</span></summary><div style="padding:.6rem .9rem">
+      <ul class="plan-list" style="margin:0">${rules.map(r => `<li><strong>${esc(r.title)}</strong> – <span class="muted">${r.pair ? `${r.dir === 'below' ? 'cena ≤' : 'cena ≥'} ${usdP(r.price)}` : `${fmtDate(r.at.slice(0, 10))} ${r.at.slice(11)}`}</span></li>`).join('') || '<li class="muted">Brak – ustaw progi w „Zyski i ryzyko” albo dodaj własny alert niżej.</li>'}</ul>
+      <p class="small muted" style="margin:.5rem 0 0">Alerty powstają automatycznie z Twoich progów sprzedaży, progów dokupu z planu, loterii, redukcji, dnia dopłaty i kalendarza odblokowań.</p>
+    </div></details>
+    <details style="margin-top:.4rem"><summary><strong>Własne alerty cenowe</strong><span class="small muted">${customAlerts().length || 'brak'}</span></summary><div style="padding:.6rem .9rem">
+      ${customAlerts().map(a => `<div class="set-row" style="padding:.3rem 0"><div><strong>${a.sym} ${a.dir === 'below' ? '≤' : '≥'} ${usd(a.price)}</strong>${a.note ? `<span class="small">${esc(a.note)}</span>` : ''}</div><button class="icon-x" onclick="alertDel('${a.id}')" aria-label="Usuń alert">×</button></div>`).join('')}
+      <div class="form-row" style="align-items:flex-end;margin-top:.4rem">
+        <div><label for="alSym">Moneta</label><br><input type="text" id="alSym" placeholder="np. BTC" maxlength="12" style="max-width:110px;text-transform:uppercase"></div>
+        <div><label for="alDir">Kiedy</label><br><select id="alDir"><option value="below">cena spadnie do</option><option value="above">cena wzrośnie do</option></select></div>
+        <div><label for="alPrice">Cena (USD)</label><br><input type="number" id="alPrice" step="any" min="0" style="max-width:130px"></div>
+        <div><label for="alNote">Notatka (opcjonalnie)</label><br><input type="text" id="alNote" maxlength="80" style="max-width:220px"></div>
+        <button class="action" onclick="alertAdd()">Dodaj alert</button>
+      </div></div></details>`;
+  if (on && cloudReady() && !pushRemote) { try { pushRemote = await fsAlertsGet(); renderPushCard(); } catch (e) {} }
 }
 
 /* ---------- start ---------- */

@@ -1,5 +1,5 @@
 // Service worker: aplikacja działa offline (z ostatnimi zapisanymi cenami) i może pokazywać powiadomienia.
-const CACHE = 'crypto-control-v' + '19';
+const CACHE = 'crypto-control-v' + '20';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
@@ -13,6 +13,11 @@ self.addEventListener('fetch', e => {
     fetch(e.request).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
       .catch(() => caches.match(e.request).then(r => r || caches.match('index.html')))
   );
+});
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = {body: e.data ? e.data.text() : ''}; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Crypto Control', {body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag, data: {url: d.url || './'}}));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();

@@ -1,0 +1,31 @@
+name: Powiadomienia (progi cenowe)
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: alerts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalacja web-push
+        working-directory: alerts
+        run: npm install --no-save --no-audit --no-fund web-push@3.6.7
+      - name: Sprawdzenie cen i wysyłka powiadomień
+        working-directory: alerts
+        run: node check.js
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
