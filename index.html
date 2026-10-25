@@ -801,7 +801,7 @@
   <section id="portfolio" class="active">
     <div class="card">
       <div class="pf-hero"><div id="pfHeroVal"></div>
-        <span class="seg"><button id="btnPLN" onclick="setCurrency('PLN')">PLN</button><button id="btnUSD" onclick="setCurrency('USD')">USD</button></span></div>
+        <span class="seg"><button id="btnUSD" onclick="setCurrency('USD')">USD</button><button id="btnPLN" onclick="setCurrency('PLN')">PLN</button></span></div>
       <div class="summary-bar pf-tiles" id="summaryBar"></div>
       <div class="pf-roles" id="pfRoles"></div>
       <div class="edit-only" id="colSettings"></div>
@@ -1108,7 +1108,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v24 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v25 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -4678,7 +4678,7 @@ const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
    USTAWIENIA: wygląd, prywatność, aplikacja
    ========================================================= */
 LS.ui = 'ccSettings';
-const UI_DEFAULTS = {theme:'granat', mode:'dark', density:'comfortable', privacy:false, defaultCur:'PLN', sound:true, autoLock:'leave'};
+const UI_DEFAULTS = {theme:'granat', mode:'dark', density:'comfortable', privacy:false, defaultCur:'USD', sound:true, autoLock:'leave'};
 let ui = {...UI_DEFAULTS};
 const THEMES = [
   {id:'granat',   name:'Granat',   desc:'Szkło, błękit i indygo – klasyczny',          r:10, font:"'Inter',sans-serif",
@@ -4697,7 +4697,7 @@ const mqLight = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') 
 function loadUi() {
   const u = lsGet(LS.ui);
   if (u && typeof u === 'object') ui = {...UI_DEFAULTS, ...u};
-  if (!ui.curV2) { ui.defaultCur = 'PLN'; ui.curV2 = true; lsSet(LS.ui, ui); }
+  if (!ui.curV3) { ui.defaultCur = 'USD'; ui.curV2 = ui.curV3 = true; lsSet(LS.ui, ui); }
   ui.theme = ({grafit: 'obsydian', terminal: 'cupertino'})[ui.theme] || ui.theme;
   if (!THEMES.some(t => t.id === ui.theme)) ui.theme = 'granat';
   applyUi();
@@ -7681,6 +7681,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '25', date: '2026-10-25', title: 'Portfel domyślnie w dolarach', items: [
+    'Portfel znowu otwiera się w USD. Na złotówki przełączysz obok wartości portfela albo w Ustawieniach → Aplikacja.']},
   {v: '24', date: '2026-10-25', title: 'Własna kolejność kafelków i logo bez migania', items: [
     'Podkategorie w każdej sekcji (Portfel, Finanse, Rynek, Ustawienia) przestawisz, przytrzymując kafelek przez 3 sekundy i przeciągając go w nowe miejsce.',
     'Tak samo zmienisz kolejność przycisków na dolnym pasku (także „+”) i w menu z boku na komputerze.',
@@ -7695,7 +7697,6 @@ const CHANGELOG = [
     'Nowy wygląd Portfela: duża wartość z wynikiem, przewijane kafelki, pasek ról i lista monet z prawdziwymi logo, ceną i zmianą z 24 h.',
     'Usunięty przycisk „Odśwież ceny” – ceny i tak aktualizują się na żywo.',
     'Okna na telefonie wysuwają się od dołu jak w iOS i zamykasz je przeciągnięciem w dół. Nowe okno szczegółów monety z przyciskami „Kup / Sprzedaj” i „Wykres w Rynku”.',
-    'Kwoty domyślnie w złotówkach.',
     'Powiadomienia: poprawiony opis częstotliwości sprawdzania i nowsze akcje GitHuba.']},
   {v: '22', date: '2026-10-25', title: 'Zarządzanie finansami i poranny skrót', items: [
     'Zakładka Oszczędności nazywa się teraz „Zarządzanie finansami” i ma podkategorie: Oszczędności (przegląd i cele), Subskrypcje i opłaty, Ważne daty.',
