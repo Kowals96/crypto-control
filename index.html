@@ -681,6 +681,16 @@
   .cm-price strong{display:block;font-size:1.15rem}
   .cm-plan{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:14px;padding:.75rem .9rem;font-size:.88rem;line-height:1.45;margin:.8rem 0}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  /* przestawianie kafelków: przytrzymaj 3 s */
+  [data-order] > [data-k]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  [data-order] > [data-k].hold-pre{transform:scale(.92);opacity:.85;transition:transform 2.6s ease,opacity 2.6s ease}
+  [data-order] > [data-k].dragging{transform:scale(1.08);z-index:5;position:relative;box-shadow:0 10px 24px -8px rgba(0,0,0,.55);transition:transform .15s}
+  [data-order].reordering > [data-k]:not(.dragging){animation:reoWiggle .28s ease-in-out infinite alternate}
+  @keyframes reoWiggle{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
+  #reoHint{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:2000;background:var(--card-solid);color:var(--text);
+    border:1px solid var(--border-strong);border-radius:999px;padding:.5rem 1rem;font-size:.85rem;font-weight:600;box-shadow:var(--shadow);pointer-events:none}
+  @media (prefers-reduced-motion:reduce){[data-order].reordering > [data-k]{animation:none}}
+
   @media (max-width:760px){
     nav#sidebar,.nav-backdrop,.menu-btn.icon-btn{display:none !important}
     #tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:300;
@@ -1098,7 +1108,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v23 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v24 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1630,12 +1640,16 @@ function renderTable(rows) {
   };
   document.getElementById('portfolioHead').innerHTML = `<tr>${th('sym', 'Projekt')}${cols.map(c => th(c, COLUMNS[c].label)).join('')}</tr>`;
   const tbody = document.querySelector('#portfolioTable tbody');
+  const oldIc = {};
+  tbody.querySelectorAll('.ic-coin[data-ik]').forEach(n => { oldIc[n.dataset.ik] = n; });
   tbody.innerHTML = '';
   list.forEach(r => {
     const tr = document.createElement('tr');
     tr.className = 'clickable';
     tr.onclick = () => openModal(r.sym);
     tr.innerHTML = `<td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<strong>${r.sym}</strong></span></td>` + cols.map(c => `<td>${COLUMNS[c].fmt(r)}</td>`).join('');
+    const ni = tr.querySelector('.ic-coin[data-ik]'), oi = ni && oldIc[ni.dataset.ik];
+    if (oi) { ni.replaceWith(oi); delete oldIc[ni.dataset.ik]; }
     tbody.appendChild(tr);
   });
   if (!list.length) {
@@ -2321,9 +2335,9 @@ function openModal(sym) {
   const p = prices[sym];
   const row = (k, v, cls = '') => `<div class="modal-row"><span>${k}</span><strong class="${cls}">${v}</strong></div>`;
   const ch = p?.ch24, mkName = (typeof MK !== 'undefined' && MK.cgm?.[sym]?.name) || '';
-  document.getElementById('modalTitle').innerHTML = `<span class="cm-head">${coinIcon(sym, 'lg')}<span><span style="display:block">${sym}${mkName && mkName.toUpperCase() !== sym ? ` <span class="muted" style="font-weight:500">${esc(mkName)}</span>` : ''}</span>
+  setHtmlKeepIcons(document.getElementById('modalTitle'), `<span class="cm-head">${coinIcon(sym, 'lg')}<span><span style="display:block">${sym}${mkName && mkName.toUpperCase() !== sym ? ` <span class="muted" style="font-weight:500">${esc(mkName)}</span>` : ''}</span>
     <span class="small muted" style="font-weight:500">${STATUS_LABEL[st]}${r.hasPrice ? ' · ' + pct(r.alloc) + ' portfela' : ''}</span></span>
-    <span class="cm-price"><strong>${r.hasPrice ? moneyPrice(r.price) : '—'}</strong>${Number.isFinite(ch) ? `<span class="small">${colored(ch, signed(ch, pct) + ' (24 h)')}</span>` : ''}</span></span>`;
+    <span class="cm-price"><strong>${r.hasPrice ? moneyPrice(r.price) : '—'}</strong>${Number.isFinite(ch) ? `<span class="small">${colored(ch, signed(ch, pct) + ' (24 h)')}</span>` : ''}</span></span>`);
   document.getElementById('modalBody').innerHTML = `
     <div class="kv">
       <div><span>Ilość</span><strong class="sens">${fmtQty(r.pos.qty)}</strong></div>
@@ -3751,6 +3765,92 @@ function resetLayout() {
 const ICON_SUN = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
 const ICON_TREND = svg('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>');
 const ICON_PLUS = svg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>');
+/* ---------- własna kolejność kafelków (przytrzymaj 3 s i przeciągnij) ---------- */
+const orderGet = id => { const v = lsGet('ccOrder_' + id); return Array.isArray(v) ? v : null; };
+function ordered(id, items, keyOf = x => x[0]) {
+  const o = orderGet(id);
+  if (!o) return items;
+  const idx = k => { const i = o.indexOf(k); return i < 0 ? 1e3 : i; };
+  return items.map((x, i) => [x, i]).sort((a, b) => (idx(keyOf(a[0])) - idx(keyOf(b[0]))) || a[1] - b[1]).map(a => a[0]);
+}
+function afterReorder(id) {
+  if (id === 'tabbar') renderNav();
+  else if (id.startsWith('grp_')) updateNavState();
+  else if (id.startsWith('sub_')) applySub(id.slice(4));
+}
+(function reorderEngine() {
+  const HOLD = 3000, SEL = '[data-order] > [data-k]';
+  let st = null, noClickUntil = 0, hint = null;
+  const items = nav => [...nav.querySelectorAll(':scope > [data-k]')];
+  const vertical = nav => nav.id === 'navItems';
+  function showHint(on) {
+    if (on && !hint) { hint = document.createElement('div'); hint.id = 'reoHint'; hint.textContent = 'Przeciągnij, żeby zmienić kolejność'; document.body.appendChild(hint); }
+    if (!on && hint) { hint.remove(); hint = null; }
+  }
+  function cancel() {
+    if (!st) return;
+    clearTimeout(st.timer); clearTimeout(st.pre);
+    st.btn.classList.remove('hold-pre', 'dragging'); st.nav.classList.remove('reordering');
+    showHint(false); st = null;
+  }
+  function start(x, y, btn) {
+    cancel();
+    const nav = btn.parentElement;
+    st = {btn, nav, x0: x, y0: y, active: false};
+    st.pre = setTimeout(() => st && st.btn.classList.add('hold-pre'), 350);
+    st.timer = setTimeout(() => {
+      if (!st) return;
+      st.active = true;
+      st.btn.classList.remove('hold-pre'); st.btn.classList.add('dragging'); st.nav.classList.add('reordering');
+      try { navigator.vibrate?.(25); } catch (e) {}
+      showHint(true);
+    }, HOLD);
+  }
+  function move(x, y, ev) {
+    if (!st) return;
+    if (!st.active) { if (Math.hypot(x - st.x0, y - st.y0) > 12) cancel(); return; }
+    if (ev.cancelable) ev.preventDefault();
+    const {btn, nav} = st, v = vertical(nav), sibs = items(nav).filter(b => b !== btn);
+    const target = sibs.find(b => { const r = b.getBoundingClientRect(); return v ? y < r.top + r.height / 2 : x < r.left + r.width / 2; });
+    if (target) { if (btn.nextElementSibling !== target) nav.insertBefore(btn, target); }
+    else { const last = sibs[sibs.length - 1]; if (last && last.nextElementSibling !== btn) nav.insertBefore(btn, last.nextElementSibling); }
+    if (!v) { const r = nav.getBoundingClientRect(); if (x < r.left + 36) nav.scrollLeft -= 10; else if (x > r.right - 36) nav.scrollLeft += 10; }
+  }
+  function end() {
+    if (!st) return;
+    const s = st, wasActive = s.active;
+    cancel();
+    if (!wasActive) return;
+    noClickUntil = Date.now() + 500;
+    const id = s.nav.dataset.order;
+    let keys = items(s.nav).map(b => b.dataset.k);
+    if (id === 'tabbar' && !keys.includes('add')) {      // menu z boku nie ma „+” – zostaw je tam, gdzie było
+      const old = orderGet('tabbar') || [...GROUPS.map(g => g.id), 'add'], ai = old.indexOf('add');
+      keys.splice(ai < 0 ? keys.length : Math.min(ai, keys.length), 0, 'add');
+    }
+    lsSet('ccOrder_' + id, keys);
+    afterReorder(id);
+  }
+  document.addEventListener('touchstart', e => { const b = e.target.closest(SEL); if (b && e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY, b); else cancel(); }, {passive: true});
+  document.addEventListener('touchmove', e => { if (st) move(e.touches[0].clientX, e.touches[0].clientY, e); }, {passive: false});
+  document.addEventListener('touchend', end);
+  document.addEventListener('touchcancel', () => cancel());
+  document.addEventListener('mousedown', e => { if (e.button !== 0) return; const b = e.target.closest(SEL); if (b) start(e.clientX, e.clientY, b); });
+  document.addEventListener('mousemove', e => { if (st) move(e.clientX, e.clientY, e); });
+  document.addEventListener('mouseup', end);
+  document.addEventListener('click', e => { if (Date.now() < noClickUntil && e.target.closest(SEL)) { e.stopPropagation(); e.preventDefault(); } }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest(SEL)) e.preventDefault(); });
+})();
+
+/* ---------- logo monet bez migania: przy odświeżaniu przenosimy istniejące obrazki do nowego HTML ---------- */
+function setHtmlKeepIcons(el, html) {
+  if (!el) return;
+  const old = {};
+  el.querySelectorAll('.ic-coin[data-ik]').forEach(n => { (old[n.dataset.ik] = old[n.dataset.ik] || []).push(n); });
+  el.innerHTML = html;
+  el.querySelectorAll('.ic-coin[data-ik]').forEach(n => { const o = old[n.dataset.ik]?.shift(); if (o) n.replaceWith(o); });
+}
+
 const GROUPS = [
   {id: 'today', label: 'Dziś', icon: ICON_SUN, items: [['today', 'Dziś']]},
   {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż']]},
@@ -3770,19 +3870,23 @@ function goGroup(gid) {
   if (!g) return;
   let last = null;
   try { last = localStorage.getItem('ccGrpLast_' + gid); } catch (e) {}
-  if (groupOf(activeTab) === g && g.items.length > 1) last = g.items[0][0];    // drugie stuknięcie: pierwsza podkategoria
-  navTo(last && g.items.some(([k]) => k === last) ? last : g.items[0][0]);
+  const first = ordered('grp_' + g.id, g.items)[0][0];
+  if (groupOf(activeTab) === g && g.items.length > 1) last = first;    // drugie stuknięcie: pierwsza podkategoria
+  navTo(last && g.items.some(([k]) => k === last) ? last : first);
 }
 function renderNav() {
   const nav = document.getElementById('navItems');
   if (!nav) return;
   const cur = groupOf(activeTab).id;
-  nav.innerHTML = GROUPS.map(g => `<button data-grp="${g.id}" class="${cur === g.id ? 'active' : ''}" onclick="goGroup('${g.id}')">
+  const tabOrd = ordered('tabbar', [...GROUPS.map(g => [g.id, g]), ['add', null]]);
+  nav.dataset.order = 'tabbar';
+  nav.innerHTML = tabOrd.filter(([k]) => k !== 'add').map(([, g]) => `<button data-grp="${g.id}" data-k="${g.id}" class="${cur === g.id ? 'active' : ''}" onclick="goGroup('${g.id}')">
       <span class="nav-ic">${g.icon}</span><span class="nav-label">${g.label}</span>${g.id === 'today' ? '<span class="nav-count" hidden></span>' : ''}</button>`).join('')
     + `<button class="nav-add" onclick="quickAdd()"><span class="nav-ic">${ICON_PLUS}</span><span class="nav-label">Dodaj transakcję</span></button>`;
   const tb = document.getElementById('tabbar');
-  if (tb) tb.innerHTML = GROUPS.map(g => `<button data-grp="${g.id}" class="${cur === g.id ? 'on' : ''}" onclick="goGroup('${g.id}')" aria-label="${g.label}">${g.icon}<span>${g.label}</span>${g.id === 'today' ? '<b class="tb-badge" hidden></b>' : ''}</button>`).join('')
-    + `<button class="tb-add" onclick="quickAdd()" aria-label="Dodaj transakcję"><span class="tb-plus">${ICON_PLUS}</span></button>`;
+  if (tb) { tb.dataset.order = 'tabbar'; tb.innerHTML = tabOrd.map(([k, g]) => k === 'add'
+    ? `<button class="tb-add" data-k="add" onclick="quickAdd()" aria-label="Dodaj transakcję"><span class="tb-plus">${ICON_PLUS}</span></button>`
+    : `<button data-grp="${g.id}" data-k="${g.id}" class="${cur === g.id ? 'on' : ''}" onclick="goGroup('${g.id}')" aria-label="${g.label}">${g.icon}<span>${g.label}</span>${g.id === 'today' ? '<b class="tb-badge" hidden></b>' : ''}</button>`).join(''); }
   updateNavCount();
 }
 function updateNavState() {
@@ -3791,7 +3895,7 @@ function updateNavState() {
   document.querySelectorAll('#tabbar button[data-grp]').forEach(b => b.classList.toggle('on', b.dataset.grp === g.id));
   document.getElementById('setBtn')?.classList.toggle('on', activeTab === 'settings');
   const sub = document.getElementById('grpSubs'), key = itemKey(activeTab);
-  if (sub) sub.innerHTML = g.items.length > 1 ? g.items.map(([k, l]) => `<button role="tab" aria-selected="${k === key}" class="${k === key ? 'on' : ''}" onclick="navTo('${k}')">${l}</button>`).join('') : '';
+  if (sub) { sub.dataset.order = 'grp_' + g.id; sub.innerHTML = g.items.length > 1 ? ordered('grp_' + g.id, g.items).map(([k, l]) => `<button role="tab" data-k="${k}" aria-selected="${k === key}" class="${k === key ? 'on' : ''}" onclick="navTo('${k}')">${l}</button>`).join('') : ''; }
   try { if (g.items.length > 1) localStorage.setItem('ccGrpLast_' + g.id, key); } catch (e) {}
   const pt = document.getElementById('pageTitle'), ps = document.getElementById('pageSub');
   if (pt) pt.textContent = g.label;
@@ -3809,10 +3913,11 @@ let coinIcons = (() => { const v = lsGet(LS.icons); return v && typeof v === 'ob
 function coinColor(sym) { let h = 0; for (const ch of sym) h = (h * 31 + ch.charCodeAt(0)) % 360; return `hsl(${h} 70% 62%)`; }
 function coinIcon(sym, cls = '') {
   const u = coinIcons[sym];
-  return u ? `<span class="ic-coin ${cls}"><img src="${esc(u)}" alt="" loading="lazy" onerror="iconFail(this,'${sym}')"></span>`
-    : `<span class="ic-coin ${cls}" style="background:${coinColor(sym)}">${esc(sym.slice(0, 4))}</span>`;
+  const ik = `${sym}|${cls}|${u ? 1 : 0}`;
+  return u ? `<span class="ic-coin ${cls}" data-ik="${esc(ik)}"><img src="${esc(u)}" alt="" decoding="async" onerror="iconFail(this,'${sym}')"></span>`
+    : `<span class="ic-coin ${cls}" data-ik="${esc(ik)}" style="background:${coinColor(sym)}">${esc(sym.slice(0, 4))}</span>`;
 }
-function iconFail(img, sym) { const s = img.parentNode; if (!s) return; s.style.background = coinColor(sym); s.textContent = sym.slice(0, 4); }
+function iconFail(img, sym) { const s = img.parentNode; if (!s) return; s.style.background = coinColor(sym); s.textContent = sym.slice(0, 4); s.dataset.ik = 'x'; }
 async function loadCoinIcons() {
   const idOf = s => { try { return cgId(s); } catch (e) { return STRATEGY[s]?.id || null; } };
   const need = [...new Set([...Object.keys(holdings), 'BTC', 'ETH'])].filter(s => !coinIcons[s] && idOf(s));
@@ -3851,13 +3956,13 @@ function renderPfHero(rows, totVal, totCost) {
 function renderPfList(list) {
   const el = document.getElementById('pfList');
   if (!el) return;
-  el.innerHTML = list.map(r => {
+  setHtmlKeepIcons(el, list.map(r => {
     const c = prices[r.sym]?.ch24, st = statusOf(r.sym);
     return `<div class="coin-row" onclick="openModal('${r.sym}')">${coinIcon(r.sym)}
       <div class="cr-main"><div class="cr-sym">${r.sym}<span class="status status-${st}">${STATUS_LABEL[st]}</span></div>
         <div class="cr-sub">${r.hasPrice ? moneyPrice(r.price) : '—'} ${Number.isFinite(c) ? colored(c, signed(c, pct)) : ''}</div></div>
       <div class="cr-right sens"><strong>${r.hasPrice ? money(r.value) : '—'}</strong>${r.hasPrice ? `<span class="small">${colored(r.plPct, signed(r.plPct, pct))}</span>` : ''}</div></div>`;
-  }).join('') || '<p class="muted">Portfel jest pusty – dodaj pozycję przyciskiem „+”.</p>';
+  }).join('') || '<p class="muted">Portfel jest pusty – dodaj pozycję przyciskiem „+”.</p>');
 }
 
 /* ---------- Dziś ---------- */
@@ -3910,7 +4015,7 @@ function renderToday() {
   const fgCol = !fg ? 'var(--muted)' : fg.v < 25 ? 'var(--red)' : fg.v < 45 ? 'var(--orange)' : fg.v <= 55 ? 'var(--yellow)' : 'var(--green)';
   const movers = rows.filter(r => r.hasPrice && !isStable(r.sym) && Number.isFinite(prices[r.sym]?.ch24)).sort((a, b) => b.value - a.value).slice(0, 5);
   const mon = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
-  el.innerHTML = `
+  setHtmlKeepIcons(el, `
     <div class="td-hero link" onclick="goGroup('pf')">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><span style="font-weight:700">${greet}</span>
         <span class="small muted"><span class="dot-live"></span>na żywo</span></div>
@@ -3942,7 +4047,7 @@ function renderToday() {
         </div>
         ${movers.map(r => `<div class="td-row link" onclick="openModal('${r.sym}')">${coinIcon(r.sym, 'sm')}<div style="flex:1;font-weight:600">${r.sym} <span class="muted small" style="font-weight:500">${moneyPrice(r.price)}</span></div>${colored(prices[r.sym].ch24, signed(prices[r.sym].ch24, pct))}</div>`).join('')}
       </div>
-    </div>`;
+    </div>`);
 }
 
 /* ---------- okna jak w iOS: na telefonie wysuwają się od dołu, zamykasz przeciągnięciem w dół ---------- */
@@ -3998,7 +4103,8 @@ function setSub(id, k, silent) {
 function applySub(id) {
   const S = SUBS[id], cur = subGet(id), root = document.getElementById(S.root), nav = document.getElementById(S.nav);
   if (!root || !nav) return;
-  nav.innerHTML = S.items.map(([k, l]) => `<button role="tab" aria-selected="${k === cur}" class="${k === cur ? 'on' : ''}" onclick="setSub('${id}','${k}')">${l}</button>`).join('');
+  nav.dataset.order = 'sub_' + id;
+  nav.innerHTML = ordered('sub_' + id, S.items).map(([k, l]) => `<button role="tab" data-k="${k}" aria-selected="${k === cur}" class="${k === cur ? 'on' : ''}" onclick="setSub('${id}','${k}')">${l}</button>`).join('');
   root.querySelectorAll(':scope > [data-sub]').forEach(el => { el.hidden = el.dataset.sub !== cur; });
   if (id === 'market') { if (cur === 'quotes') mkQueueDraw(); if (cur === 'cal') renderCal(); if (cur === 'pl') renderMacro(); }
   if (id === 'fin') { if (cur === 'sav') renderSavings(); if (cur === 'subs') renderSubs(); if (cur === 'dates') renderDates(); }
@@ -7575,6 +7681,11 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '24', date: '2026-10-25', title: 'Własna kolejność kafelków i logo bez migania', items: [
+    'Podkategorie w każdej sekcji (Portfel, Finanse, Rynek, Ustawienia) przestawisz, przytrzymując kafelek przez 3 sekundy i przeciągając go w nowe miejsce.',
+    'Tak samo zmienisz kolejność przycisków na dolnym pasku (także „+”) i w menu z boku na komputerze.',
+    'Kolejność zapisuje się w koncie i działa na wszystkich Twoich urządzeniach. Pierwsza podkategoria otwiera się po ponownym stuknięciu sekcji.',
+    'Logo monet już nie migają przy zmianach cen – zmieniają się tylko liczby.']},
   {v: '23', date: '2026-10-25', title: 'Nowy układ: Dziś, dolny pasek i okna jak w iOS', items: [
     'Nowy ekran startowy „Dziś”: wartość portfela i zmiana z dnia, postęp do celu, co jest do zrobienia, co nadchodzi (rynek, płatności, terminy) i nastroje rynku.',
     'Cztery sekcje zamiast jedenastu zakładek: Dziś · Portfel · Rynek · Finanse. Na telefonie dolny pasek z przyciskiem „+” do dodania transakcji.',
