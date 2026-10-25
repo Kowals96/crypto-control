@@ -1,10 +1,12 @@
 // Crypto Control – powiadomienia w tle.
 // Uruchamiane co ~10 minut przez GitHub Actions (.github/workflows/alerts.yml).
-// Czyta progi cenowe i terminy zapisane przez aplikację (pole "alerts" w Firestore – bez kwot portfela),
-// sprawdza ceny i wysyła powiadomienia push (Web Push, VAPID) na zapisane urządzenia.
+// Czyta progi cenowe, terminy i ustawienia porannego skrótu zapisane przez aplikację (pole "alerts" w Firestore –
+// bez kwot portfela: tylko progi, procentowe udziały monet, nazwy i daty płatności), sprawdza ceny
+// i wysyła powiadomienia push (Web Push, VAPID) na zapisane urządzenia.
 'use strict';
 const crypto = require('crypto');
 const webpush = require('web-push');
+const BRIEF = require('./brief-shared.js');
 
 const VAPID_PUBLIC = 'BDR7TxxUAkK0iNQV02R0rofQPxN3gxKPqwBq0n9DMEv9U6z9mtZbByvlyI3MImPkjtUrfzXkn8Y40MSHRmX7xHI';
 const SA = JSON.parse(process.env.FIREBASE_SA || '{}');
@@ -42,6 +44,54 @@ async function prices(pairs) {
   }
   return out;
 }
+async function tickers24(pairs) {          // {PARA: {p, ch}} – zmiana z 24 h
+  const out = {};
+  if (!pairs.length) return out;
+  for (const host of ['https://data-api.binance.vision', 'https://api.binance.com']) {
+    try {
+      const r = await fetch(`${host}/api/v3/ticker/24hr?type=MINI&symbols=${encodeURIComponent(JSON.stringify(pairs))}`);
+      if (!r.ok) continue;
+      (await r.json()).forEach(t => { const o = +t.openPrice, c = +t.lastPrice; if (o > 0) out[t.symbol] = {p: c, ch: (c / o - 1) * 100}; });
+      if (Object.keys(out).length) return out;
+    } catch (e) {}
+  }
+  for (const p of pairs) {
+    try { const r = await fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?type=MINI&symbol=${p}`); if (r.ok) { const t = await r.json(); if (+t.openPrice > 0) out[p] = {p: +t.lastPrice, ch: (+t.lastPrice / +t.openPrice - 1) * 100}; } } catch (e) {}
+  }
+  return out;
+}
+let fgCache;
+async function fearGreed() {
+  if (fgCache !== undefined) return fgCache;
+  try { const x = (await (await fetch('https://api.alternative.me/fng/?limit=1')).json()).data[0]; fgCache = {v: +x.value, l: BRIEF.FG_PL[String(x.value_classification).toLowerCase()] || x.value_classification}; }
+  catch (e) { fgCache = null; }
+  return fgCache;
+}
+const hm = t => { const m = /^(\d\d):(\d\d)/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : 480; };
+// Poranny skrót i przypomnienia o płatnościach / terminach – raz dziennie o wybranej godzinie
+async function briefFor(B, S, now) {
+  if (!B) return null;
+  const today = now.slice(0, 10), t = hm(B.time), n = hm(now.slice(11));
+  const test = B.testAt && S.briefTest !== B.testAt && Date.now() - B.testAt < 3 * 3600000;
+  const timeDue = (B.on || B.rem) && S.briefDay !== today && n >= t && n < t + 240;
+  if (!test && !timeDue) return null;
+  if (timeDue) S.briefDay = today;
+  if (test) S.briefTest = B.testAt;
+  const on = B.on || test;
+  let pf = null, fg = null;
+  if (on && B.pf !== false && (B.coins || []).length) {
+    const coins = B.coins.filter(c => c.p);
+    const tk = await tickers24([...new Set([...coins.map(c => c.p), 'BTCUSDT'])]);
+    const px = {};
+    coins.forEach(c => { if (tk[c.p]) px[c.s] = tk[c.p]; });
+    if (tk.BTCUSDT) px.BTC = tk.BTCUSDT;
+    pf = BRIEF.portfolio(coins, px);
+  }
+  if (on && B.fg !== false) fg = await fearGreed();
+  const msg = BRIEF.compose({today, brief: {...B, on}, pf, fg, items: B.items, cal: B.events});
+  if (!on && !msg.hasRem) return null;          // same przypomnienia: tylko gdy jest o czym przypominać
+  return {id: 'brief:' + today + (test ? ':t' : ''), title: msg.title + (test && !timeDue ? ' (próbny)' : ''), body: msg.body};
+}
 function warsawNow() {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false})
     .formatToParts(new Date()).map(p => [p.type, p.value]));
@@ -64,6 +114,7 @@ function warsawNow() {
     const rules = A.rules || [];
     const px = await prices([...new Set(rules.filter(r => r.pair).map(r => r.pair))]);
     const fire = [];
+    try { const b = await briefFor(A.brief, S, now); if (b) fire.push(b); } catch (e) { console.log('skrót: błąd', e.message); }
     const live = new Set();
     for (const r of rules) {
       live.add(r.id);

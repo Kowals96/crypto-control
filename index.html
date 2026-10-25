@@ -6,11 +6,11 @@
 <title>Crypto Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* =====================================================
      CRYPTO CONTROL – system wyglądu
-     Motywy: granat (domyślny), grafit, aurora, terminal
+     Motywy: granat (domyślny), obsydian, aurora, cupertino
      Tryby: data-mode = dark | light   ·   gęstość: data-density
      ===================================================== */
   :root{
@@ -42,23 +42,29 @@
     --green:#16a34a; --red:#dc2626; --orange:#ea580c; --yellow:#a16207; --purple:#9333ea;
     --shadow:0 10px 30px -18px rgba(15,23,42,.35);
   }
-  /* ---------- GRAFIT: płaski, ostry, szmaragd ---------- */
-  [data-theme=grafit]{
-    --radius:8px; --radius-sm:6px; --blur:0px; --head-w:650;
-    --bg:#0c0e11; --bg-img:none;
-    --surface:#101215; --card:#15181c; --card-solid:#15181c; --input:#0e1013;
-    --border:#23272e; --border-strong:#323842; --hover:#1b1f24; --sunken:#111316;
-    --text:#e7e9ec; --text-2:#c9cdd3; --muted:#8a919b;
-    --accent:#10b981; --accent-2:#34d399; --accent-ink:#03140d;
-    --green:#34d399; --red:#f87171; --orange:#fb923c; --yellow:#fbbf24; --purple:#a78bfa;
-    --shadow:none; --btn-bg:var(--accent);
+  /* ---------- OBSYDIAN: głęboka czerń, limonka, siatka „bento”, cienkie świecące krawędzie ---------- */
+  [data-theme=obsydian]{
+    --font:'Inter',system-ui,sans-serif; --font-head:'Space Grotesk','Inter',sans-serif; --radius:20px; --radius-sm:12px; --blur:16px; --head-ls:-.03em; --head-w:700;
+    --bg:#060708;
+    --bg-img:radial-gradient(700px 420px at 100% -5%,rgba(190,242,100,.10),transparent 65%),radial-gradient(600px 400px at -5% 105%,rgba(45,212,191,.07),transparent 65%),
+      linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    --surface:rgba(10,11,13,.86); --card:#0e1012; --card-solid:#0e1012; --input:#08090a;
+    --border:rgba(255,255,255,.07); --border-strong:rgba(255,255,255,.14); --hover:rgba(255,255,255,.05); --sunken:#0a0b0d;
+    --text:#f2f4f0; --text-2:#d5d9d1; --muted:#8b918a;
+    --accent:#c4f04d; --accent-2:#2dd4bf; --accent-ink:#0b1300;
+    --green:#a3e635; --red:#fb7185; --orange:#fdba74; --yellow:#fde047; --purple:#c4b5fd;
+    --shadow:0 24px 48px -28px rgba(0,0,0,.9); --btn-bg:var(--accent);
   }
-  [data-theme=grafit][data-mode=light]{
-    --bg:#f3f4f6; --surface:#ffffff; --card:#ffffff; --card-solid:#ffffff; --input:#ffffff;
-    --border:#e3e6ea; --border-strong:#cfd4da; --hover:#f1f3f5; --sunken:#f8f9fa;
-    --text:#111418; --text-2:#22272e; --muted:#6b7280;
-    --accent:#059669; --accent-2:#10b981; --accent-ink:#ffffff;
-    --green:#059669; --red:#dc2626; --orange:#ea580c; --yellow:#b45309; --purple:#7c3aed;
+  [data-theme=obsydian][data-mode=light]{
+    --bg:#f3f4ef;
+    --bg-img:radial-gradient(700px 420px at 100% -5%,rgba(132,204,22,.16),transparent 65%),
+      linear-gradient(rgba(0,0,0,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.035) 1px,transparent 1px);
+    --surface:rgba(250,250,247,.9); --card:#ffffff; --card-solid:#ffffff; --input:#fafaf7;
+    --border:rgba(15,20,10,.08); --border-strong:rgba(15,20,10,.16); --hover:rgba(15,20,10,.04); --sunken:#f6f7f2;
+    --text:#0f130c; --text-2:#262b22; --muted:#6a7064;
+    --accent:#4d7c0f; --accent-2:#0f766e; --accent-ink:#f7fee7;
+    --green:#3f7d0b; --red:#e11d48; --orange:#c2410c; --yellow:#a16207; --purple:#6d28d9;
+    --shadow:0 18px 40px -30px rgba(20,30,10,.35); --btn-bg:#0f130c;
   }
   /* ---------- AURORA: miękkie, zaokrąglone, fiolet i róż ---------- */
   [data-theme=aurora]{
@@ -83,25 +89,25 @@
     --green:#059669; --red:#e11d48; --orange:#ea580c; --yellow:#a16207; --purple:#7c3aed;
     --shadow:0 18px 40px -24px rgba(124,58,237,.4);
   }
-  /* ---------- TERMINAL: giełdowy terminal, mono, bursztyn ---------- */
-  [data-theme=terminal]{
-    --font:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace; --radius:2px; --radius-sm:2px; --pill:2px; --blur:0px;
-    --head-tt:uppercase; --head-ls:.08em; --head-w:700;
-    --bg:#050505; --bg-img:repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px);
-    --surface:#070707; --card:#0b0b0b; --card-solid:#0b0b0b; --input:#000;
-    --border:#262626; --border-strong:#3a3a3a; --hover:#141414; --sunken:#070707;
-    --text:#e5e5e5; --text-2:#d4d4d4; --muted:#8a8a8a;
-    --accent:#f5a524; --accent-2:#22c55e; --accent-ink:#000;
-    --green:#22c55e; --red:#ef4444; --orange:#f97316; --yellow:#eab308; --purple:#a855f7;
-    --shadow:none; --btn-bg:transparent;
+  /* ---------- CUPERTINO: w stylu systemu Apple – czcionka systemowa, kolory systemowe, grupowane karty ---------- */
+  [data-theme=cupertino]{
+    --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,'Segoe UI',sans-serif; --font-head:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
+    --radius:14px; --radius-sm:10px; --blur:24px; --head-ls:-.022em; --head-w:700;
+    --bg:#000000; --bg-img:none;
+    --surface:rgba(22,22,24,.78); --card:#1c1c1e; --card-solid:#1c1c1e; --input:#2c2c2e;
+    --border:rgba(84,84,88,.42); --border-strong:rgba(120,120,128,.5); --hover:rgba(120,120,128,.18); --sunken:#2c2c2e;
+    --text:#ffffff; --text-2:rgba(235,235,245,.86); --muted:rgba(235,235,245,.6);
+    --accent:#0a84ff; --accent-2:#5e5ce6; --accent-ink:#ffffff;
+    --green:#30d158; --red:#ff453a; --orange:#ff9f0a; --yellow:#ffd60a; --purple:#bf5af2;
+    --shadow:none; --btn-bg:var(--accent);
   }
-  [data-theme=terminal][data-mode=light]{
-    --bg:#f6f1e4; --bg-img:none;
-    --surface:#efe8d6; --card:#fffcf3; --card-solid:#fffcf3; --input:#fffdf7;
-    --border:#d8cfb9; --border-strong:#bfb397; --hover:#f2ead6; --sunken:#f8f3e6;
-    --text:#1c1917; --text-2:#292524; --muted:#78716c;
-    --accent:#b45309; --accent-2:#15803d; --accent-ink:#fffcf3;
-    --green:#15803d; --red:#b91c1c; --orange:#c2410c; --yellow:#a16207; --purple:#7e22ce;
+  [data-theme=cupertino][data-mode=light]{
+    --bg:#f2f2f7;
+    --surface:rgba(249,249,251,.82); --card:#ffffff; --card-solid:#ffffff; --input:rgba(118,118,128,.12);
+    --border:rgba(60,60,67,.16); --border-strong:rgba(60,60,67,.29); --hover:rgba(116,116,128,.08); --sunken:#f2f2f7;
+    --text:#000000; --text-2:rgba(60,60,67,.9); --muted:rgba(60,60,67,.6);
+    --accent:#007aff; --accent-2:#5856d6; --accent-ink:#ffffff;
+    --green:#248a3d; --red:#d70015; --orange:#c93400; --yellow:#a05a00; --purple:#8944ab;
   }
   [data-density=compact]{ --pad:.95rem; --gap:.8rem; }
 
@@ -359,12 +365,23 @@
   body.privacy :is(.summary-item,.kv > div,tr,.highlight,.sens):hover :is(strong,td,.big,span){filter:none}
 
   /* ---------- akcenty motywów ---------- */
-  [data-theme=grafit] .card{box-shadow:none}
-  [data-theme=grafit] .summary-item,[data-theme=grafit] .kv > div{background:var(--sunken)}
-  [data-theme=grafit] #navItems button.active{background:var(--hover)}
-  [data-theme=grafit] #navItems button.active::before{box-shadow:none}
-  [data-theme=grafit] button.action{box-shadow:none}
-  [data-theme=grafit] .brand .brand-logo,[data-theme=grafit] #navItems button.active .nav-ic{background:var(--accent);box-shadow:none}
+  [data-theme=obsydian] .card{border:1px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box,
+    linear-gradient(150deg,color-mix(in srgb,var(--accent) 45%,transparent),var(--border) 32%,var(--border) 70%,color-mix(in srgb,var(--accent-2) 30%,transparent)) border-box}
+  [data-theme=obsydian] body{background-size:auto,auto,44px 44px,44px 44px,auto}
+  [data-theme=obsydian][data-mode=light] body{background-size:auto,44px 44px,44px 44px,auto}
+  [data-theme=obsydian] .summary-item strong,[data-theme=obsydian] .kv strong,[data-theme=obsydian] .big{font-family:var(--font-head);letter-spacing:-.02em}
+  [data-theme=obsydian] .summary-item,[data-theme=obsydian] .kv > div{background:var(--sunken);border-radius:16px}
+  [data-theme=obsydian] .summary-item:first-child{background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 16%,var(--sunken)),var(--sunken) 60%)}
+  [data-theme=obsydian] button.action{border-radius:12px;box-shadow:none;font-weight:650}
+  [data-theme=obsydian] button.action:not(.secondary):not(.danger){background:var(--btn-bg);color:var(--accent-ink)}
+  [data-theme=obsydian][data-mode=light] button.action:not(.secondary):not(.danger){color:#d9f99d}
+  [data-theme=obsydian] #navItems button.active{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--text)}
+  [data-theme=obsydian] #navItems button.active::before{background:var(--accent);box-shadow:0 0 14px var(--accent)}
+  [data-theme=obsydian] #navItems button.active .nav-ic{background:var(--accent);color:var(--accent-ink);box-shadow:0 0 18px -4px var(--accent)}
+  [data-theme=obsydian] .brand .brand-logo{background:var(--accent);color:var(--accent-ink);box-shadow:0 0 24px -6px var(--accent)}
+  [data-theme=obsydian] .subtabs button.on,[data-theme=obsydian] .seg button.on{background:var(--accent);color:var(--accent-ink)}
+  [data-theme=obsydian] header h1{font-family:var(--font-head);letter-spacing:-.035em}
+  [data-theme=obsydian] .bar > div{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
 
   [data-theme=aurora] .card{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 7%,var(--card)),var(--card) 45%,color-mix(in srgb,var(--accent-2) 8%,var(--card)))}
   [data-theme=aurora] #navItems button{border-radius:999px}
@@ -376,25 +393,33 @@
   [data-theme=aurora] .brand .brand-logo{border-radius:50%}
   [data-theme=aurora] header h1{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
 
-  [data-theme=terminal] .card{box-shadow:none;border-color:var(--border-strong)}
-  [data-theme=terminal] .card h2::before{content:'// ';color:var(--accent)}
-  [data-theme=terminal] header h1::before{content:'> ';color:var(--accent)}
-  [data-theme=terminal] header h1::after{content:'_';color:var(--accent);animation:blink 1s steps(1) infinite}
-  @keyframes blink{50%{opacity:0}}
-  [data-theme=terminal] .summary-item strong,[data-theme=terminal] .kv strong{color:var(--accent)}
-  [data-theme=terminal] .summary-item strong.positive,[data-theme=terminal] .summary-item strong.negative{color:inherit}
-  [data-theme=terminal] .summary-item strong.positive{color:var(--green)} [data-theme=terminal] .summary-item strong.negative{color:var(--red)}
-  [data-theme=terminal] button.action{color:var(--accent);border:1px solid var(--accent);box-shadow:none;text-transform:uppercase;letter-spacing:.06em;font-size:.78rem}
-  [data-theme=terminal] button.action:hover{background:var(--accent);color:var(--accent-ink);transform:none}
-  [data-theme=terminal] button.action.secondary{color:var(--text-2);border-color:var(--border-strong);background:transparent}
-  [data-theme=terminal] .seg button.on{background:var(--accent)}
-  [data-theme=terminal] #navItems button{text-transform:uppercase;font-size:.78rem;letter-spacing:.06em}
-  [data-theme=terminal] #navItems button.active{background:none;color:var(--accent)}
-  [data-theme=terminal] #navItems button.active::before{box-shadow:none;left:-.9rem;top:0;bottom:0}
-  [data-theme=terminal] #navItems button.active .nav-ic{background:none;color:var(--accent);border-color:var(--accent);box-shadow:none}
-  [data-theme=terminal] .brand .brand-logo{background:none;border:1px solid var(--accent);color:var(--accent);box-shadow:none}
-  [data-theme=terminal] td,[data-theme=terminal] th{border-bottom-style:dashed}
-  [data-theme=terminal] .bar > div{background:var(--accent)}
+  [data-theme=cupertino] .card{border:none;box-shadow:none}
+  [data-theme=cupertino][data-mode=light] .card{box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  [data-theme=cupertino] header h1{font-size:1.75rem;font-weight:800;letter-spacing:-.028em}
+  [data-theme=cupertino] header{background:var(--surface);backdrop-filter:saturate(180%) blur(var(--blur));-webkit-backdrop-filter:saturate(180%) blur(var(--blur));border-bottom:.5px solid var(--border)}
+  [data-theme=cupertino] nav#sidebar{backdrop-filter:saturate(180%) blur(var(--blur));-webkit-backdrop-filter:saturate(180%) blur(var(--blur));border-right:.5px solid var(--border)}
+  [data-theme=cupertino] #navItems button{border-radius:10px}
+  [data-theme=cupertino] #navItems button.active{background:var(--accent);color:#fff}
+  [data-theme=cupertino] #navItems button.active::before{display:none}
+  [data-theme=cupertino] #navItems button.active .nav-ic{background:transparent;color:#fff;box-shadow:none;border-color:transparent}
+  [data-theme=cupertino] #navItems .nav-ic{border-radius:7px}
+  [data-theme=cupertino] .brand .brand-logo{border-radius:11px;background:linear-gradient(180deg,#5ac8fa,#007aff);box-shadow:none;color:#fff}
+  [data-theme=cupertino] .summary-item,[data-theme=cupertino] .kv > div{background:var(--sunken);border:none;border-radius:12px}
+  [data-theme=cupertino] button.action{border-radius:12px;box-shadow:none;font-weight:600;letter-spacing:-.01em}
+  [data-theme=cupertino] button.action:not(.secondary):not(.danger){background:var(--accent);color:#fff}
+  [data-theme=cupertino] button.action:hover{transform:none;filter:brightness(1.08)}
+  [data-theme=cupertino] button.action.secondary{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border-color:transparent}
+  [data-theme=cupertino] .seg{background:rgba(118,118,128,.24);border:none;border-radius:9px;padding:2px}
+  [data-theme=cupertino][data-mode=light] .seg{background:rgba(118,118,128,.12)}
+  [data-theme=cupertino] .seg button{border-radius:7px;color:var(--text)}
+  [data-theme=cupertino] .seg button.on{background:#636366;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+  [data-theme=cupertino][data-mode=light] .seg button.on{background:#fff;color:#000}
+  [data-theme=cupertino] .subtabs button{border:none;background:rgba(118,118,128,.18);color:var(--text)}
+  [data-theme=cupertino] .subtabs button.on{background:var(--accent);color:#fff;box-shadow:none}
+  [data-theme=cupertino] input,[data-theme=cupertino] select{border:none;border-radius:10px}
+  [data-theme=cupertino] td,[data-theme=cupertino] th{border-bottom-width:.5px}
+  [data-theme=cupertino] .tag,[data-theme=cupertino] .status{border-radius:6px}
+  [data-theme=cupertino] .switch input:checked + span{background:var(--green)}
 
   /* ---------- telefon ---------- */
   /* iPhone: pola z czcionką mniejszą niż 16 px powodują automatyczne powiększenie strony przy pisaniu */
@@ -454,6 +479,43 @@
   [hidden]{display:none !important}
   .subtabs{display:flex;gap:.4rem;overflow-x:auto;margin:0 0 var(--gap);padding:.15rem .05rem .35rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .subtabs::-webkit-scrollbar{display:none}
+  /* zarządzanie finansami */
+  .fin-head{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .fin-presets{display:flex;flex-wrap:wrap;gap:.4rem}
+  .fin-presets .chip{padding:.38rem .75rem;font-size:.8rem;cursor:pointer;font:inherit;font-size:.8rem}
+  .fin-presets .chip.on{color:var(--accent-ink);background:var(--accent);border-color:transparent}
+  .fin-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem .9rem}
+  .fin-form .wide{grid-column:1/-1}
+  .fin-form label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:.28rem}
+  .fin-form input,.fin-form select{width:100%;max-width:none}
+  .fin-check{display:flex !important;align-items:center;gap:.5rem;font-size:.88rem !important;color:var(--text) !important}
+  .fin-check input{width:auto}
+  .fin-row{cursor:pointer;border-radius:10px;transition:background .15s}
+  .fin-row:hover{background:var(--hover)}
+  .fin-line{display:flex;justify-content:space-between;align-items:center;gap:.75rem;min-width:0}
+  .fin-line > div{min-width:0}
+  .fin-when{display:block;margin-top:.1rem}
+  .cal-item.late .cal-date span{color:var(--red);font-weight:600}
+  tr.fin-off td{opacity:.5}
+  .brief-prev{margin-top:.9rem}
+  .brief-n{display:flex;flex-direction:column;gap:.15rem;max-width:420px;padding:.8rem .95rem;border-radius:18px;background:color-mix(in srgb,var(--text) 7%,var(--card-solid));
+    border:1px solid var(--border);box-shadow:0 10px 28px -18px rgba(0,0,0,.6);font-size:.86rem;line-height:1.4}
+  .brief-n .brief-app{font-size:.66rem;letter-spacing:.08em;color:var(--muted);font-weight:600}
+  .brief-n strong{font-size:.92rem}
+  .brief-n span:not(.brief-app){color:var(--text-2)}
+  .ver-head{display:flex;align-items:center;gap:.9rem}
+  .ver-logo{width:52px;height:52px;flex:0 0 52px;border-radius:14px;display:grid;place-items:center;font-weight:800;color:var(--accent-ink);background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  .ver-list{margin:.2rem 0 0;padding-left:1.15rem;display:grid;gap:.3rem;font-size:.9rem}
+  .ver-list li::marker{color:var(--accent)}
+  .ver-old{display:grid;gap:.4rem}
+  .ver-item{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--sunken)}
+  .ver-item summary{display:flex;align-items:center;gap:.7rem;padding:.65rem .85rem;cursor:pointer;list-style:none}
+  .ver-item summary::-webkit-details-marker{display:none}
+  .ver-item summary::after{content:'›';margin-left:auto;color:var(--muted);font-size:1.2rem;transition:transform .15s}
+  .ver-item[open] summary::after{transform:rotate(90deg)}
+  .ver-item .ver-v{font-weight:700;color:var(--accent);min-width:3.2rem;font-variant-numeric:tabular-nums}
+  .ver-item .ver-t{font-weight:600;font-size:.9rem;flex:1;min-width:0}
+  .ver-item .ver-list{padding:0 .85rem .8rem 2.05rem}
   .subtabs button{flex:0 0 auto;border:1px solid var(--border);background:var(--card);color:var(--text-2);border-radius:var(--pill);padding:.5rem .95rem;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
   .subtabs button:hover{border-color:var(--border-strong);color:var(--text)}
   .subtabs button.on{background:var(--btn-bg);background-color:var(--accent);color:var(--accent-ink);border-color:transparent;box-shadow:0 6px 16px -10px color-mix(in srgb,var(--accent) 80%,transparent)}
@@ -600,7 +662,7 @@
     <button data-tab="edit">Kupno / Sprzedaż</button>
     <button data-tab="plan">Plan</button>
     <button data-tab="tasks">Zadania</button>
-    <button data-tab="savings">Oszczędności</button>
+    <button data-tab="savings">Zarządzanie finansami</button>
     <button data-tab="settings">Ustawienia</button>
   </div>
   <div class="nav-foot">Ceny na żywo · Binance<div id="cloudFoot"></div></div>
@@ -849,8 +911,13 @@
   <!-- ===================== PROPOZYCJE ===================== -->
 
 
-  <!-- ===================== OSZCZĘDNOŚCI ===================== -->
-  <section id="savings"><div id="savBody"></div></section>
+  <!-- ===================== ZARZĄDZANIE FINANSAMI ===================== -->
+  <section id="savings">
+    <nav class="subtabs" id="finSubs" role="tablist"></nav>
+    <div id="savBody" data-sub="sav"></div>
+    <div id="finSubsBody" data-sub="subs"></div>
+    <div id="finDatesBody" data-sub="dates"></div>
+  </section>
 
   <!-- ===================== USTAWIENIA ===================== -->
   <section id="settings">
@@ -862,6 +929,13 @@
     <div class="card" id="pushCard" data-sub="powiadomienia">
       <h2>Powiadomienia w tle</h2>
       <div id="pushBody"></div>
+    </div>
+    <div class="card" id="briefCard" data-sub="powiadomienia">
+      <h2>Poranny skrót i przypomnienia</h2>
+      <div id="briefBody"></div>
+    </div>
+    <div class="card" id="verCard" data-sub="wersja">
+      <div id="verBody"></div>
     </div>
     <div class="card" data-sub="wyglad">
       <h2>Wygląd</h2>
@@ -921,7 +995,7 @@
       <div class="set-row"><div><strong>Usuń wszystkie dane</strong><span class="small">Czyści portfel, dziennik, progi, oszczędności i ustawienia z tej przeglądarki i przywraca stan początkowy. Najpierw zrób kopię zapasową.</span></div>
         <button class="action danger" onclick="wipeAll()">Usuń dane</button></div>
     </div>
-    <p class="small muted" style="text-align:center">Crypto Control v21 · wszystkie dane są zapisane tylko w tej przeglądarce</p>
+    <p class="small muted" style="text-align:center" id="setVerLine"></p>
   </section>
 
   <section id="plan"><div id="planBody"></div></section>
@@ -937,7 +1011,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v21 · Dane lokalne (localStorage) · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v22 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -2090,7 +2164,7 @@ function renderBackupInfo() {
 function collectData() {
   return {app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
           vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
-          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom)};
+          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom), fin: lsGet(LS.fin)};
 }
 const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && typeof d.holdings === 'object' && Array.isArray(d.journal);
 function applyData(d) {
@@ -2108,6 +2182,7 @@ function applyData(d) {
   if (d.market && typeof d.market === 'object') { lsSet(LS.mkt, d.market); MK.watch = null; mkLoadState(); MK.shell = false; }
   if (d.importState && typeof d.importState === 'object') lsSet(LS.imp, d.importState);
   if (Array.isArray(d.alerts)) lsSet(LS.alertsCustom, d.alerts);
+  if (d.fin && typeof d.fin === 'object') lsSet(LS.fin, d.fin);
   if ('strategy' in d) { lsSet(LS.strategy, d.strategy || null); applyStrategyOverrides(d.strategy); rebuildBnMap(); populateSymbols(); }
   lockSav();
   lsSet(LS.holdingsVer, HOLDINGS_VERSION);
@@ -3464,6 +3539,7 @@ function generateTasks() {
       msg:`${sym}: ${pct(now)} portfela, cel ${c.target}% (${signed(d, v => fixed(v, 1) + ' pp')}). ${d > 0 ? 'Nie dokupuj – dopłaty kieruj do monet poniżej celu.' : 'Kieruj tu większą część dopłat.'}`});
   }
   tasks.push(...calTasks());
+  if (typeof finTasks === 'function') tasks.push(...finTasks());
   if (typeof alertsSyncSoon === 'function') alertsSyncSoon();
   tasks.unshift(...ladderTasks());          // realizacja zysków na górze listy
   updateNotifications();
@@ -3515,7 +3591,7 @@ const TAB_ICONS = {
   tasks:     svg('<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'),
   market:    svg('<path d="M6 3v4M6 15v6M12 2v6M12 15v7M18 5v5M18 16v3"/><rect x="4" y="7" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="7" rx="1"/><rect x="16" y="10" width="4" height="6" rx="1"/>'),
   offers:    svg('<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>'),
-  savings:   svg('<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1.2"/>'),
+  savings:   svg('<path d="M3 10h18L12 4z"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/>'),
   settings:  svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>')
 };
 const defaultLayout = () => ({tabs: [...DEFAULT_TABS], cols: [...DEFAULT_COLS], sort: {key: null, dir: 'desc'}, hideDust: false});
@@ -3609,7 +3685,8 @@ function resetLayout() {
 
 /* ---------- podkategorie (zakładki wewnątrz zakładki) ---------- */
 const SUBS = {
-  settings: {root: 'settings', nav: 'setSubs', def: 'konto', items: [['konto', 'Konto'], ['powiadomienia', 'Powiadomienia'], ['wyglad', 'Wygląd'], ['prywatnosc', 'Prywatność i PIN'], ['aplikacja', 'Aplikacja'], ['dane', 'Dane i kopia']]},
+  settings: {root: 'settings', nav: 'setSubs', def: 'konto', items: [['konto', 'Konto'], ['powiadomienia', 'Powiadomienia'], ['wyglad', 'Wygląd'], ['prywatnosc', 'Prywatność i PIN'], ['aplikacja', 'Aplikacja'], ['dane', 'Dane i kopia'], ['wersja', 'Wersja']]},
+  fin: {root: 'savings', nav: 'finSubs', def: 'sav', items: [['sav', 'Oszczędności'], ['subs', 'Subskrypcje i opłaty'], ['dates', 'Ważne daty']]},
   market: {root: 'marketBody', nav: 'mkSubs', def: 'quotes', items: [['quotes', 'Notowania i wykresy'], ['cal', 'Kalendarz wydarzeń'], ['pl', 'Polska – stopy i inflacja']]}
 };
 const subGet = id => { try { return localStorage.getItem('ccSub_' + id) || SUBS[id].def; } catch (e) { return SUBS[id].def; } };
@@ -3623,6 +3700,8 @@ function applySub(id) {
   nav.innerHTML = S.items.map(([k, l]) => `<button role="tab" aria-selected="${k === cur}" class="${k === cur ? 'on' : ''}" onclick="setSub('${id}','${k}')">${l}</button>`).join('');
   root.querySelectorAll(':scope > [data-sub]').forEach(el => { el.hidden = el.dataset.sub !== cur; });
   if (id === 'market') { if (cur === 'quotes') mkQueueDraw(); if (cur === 'cal') renderCal(); if (cur === 'pl') renderMacro(); }
+  if (id === 'fin') { if (cur === 'sav') renderSavings(); if (cur === 'subs') renderSubs(); if (cur === 'dates') renderDates(); }
+  if (id === 'settings' && cur === 'wersja') renderVersion();
 }
 function quickAdd() {
   openTab('edit');
@@ -3701,7 +3780,7 @@ function openTab(id) {
   document.body.classList.toggle('tab-edit', id === 'edit');
   window.scrollTo({top: 0});
   if (id === 'risk') { renderLadder(); renderRisk(); loadRiskData(); }
-  if (id === 'savings') { bioAuto = true; renderSavings(); }
+  if (id === 'savings') { bioAuto = true; applySub('fin'); }
   if (id === 'plan') renderPlan();
   if (id === 'edit') renderImport();
   if (id === 'market') mkOpen();
@@ -4204,12 +4283,12 @@ let ui = {...UI_DEFAULTS};
 const THEMES = [
   {id:'granat',   name:'Granat',   desc:'Szkło, błękit i indygo – klasyczny',          r:10, font:"'Inter',sans-serif",
    dark:['#0b1120','#141d2f','#38bdf8','#818cf8'], light:['#eef2f7','#ffffff','#0284c7','#6366f1']},
-  {id:'grafit',   name:'Grafit',   desc:'Płaski i ostry, szmaragdowe akcenty',         r:3,  font:"'Inter',sans-serif",
-   dark:['#0c0e11','#15181c','#10b981','#34d399'], light:['#f3f4f6','#ffffff','#059669','#10b981']},
+  {id:'obsydian', name:'Obsydian', desc:'Głęboka czerń, limonka i świecące krawędzie',  r:12, font:"'Space Grotesk',sans-serif",
+   dark:['#060708','#0e1012','#c4f04d','#2dd4bf'], light:['#f3f4ef','#ffffff','#4d7c0f','#0f766e']},
   {id:'aurora',   name:'Aurora',   desc:'Miękkie kształty, fiolet i róż',              r:16, font:"'Outfit',sans-serif",
    dark:['#110a1d','#2a1644','#e879f9','#8b5cf6'], light:['#fbf6ff','#ffffff','#c026d3','#7c3aed']},
-  {id:'terminal', name:'Terminal', desc:'Giełdowy terminal, czcionka mono, bursztyn',  r:0,  font:"'JetBrains Mono',monospace",
-   dark:['#050505','#0b0b0b','#f5a524','#22c55e'], light:['#f6f1e4','#fffcf3','#b45309','#15803d']}
+  {id:'cupertino', name:'Cupertino', desc:'W stylu systemu Apple: czysto, kolory systemowe', r:12, font:"-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
+   dark:['#000000','#1c1c1e','#0a84ff','#5e5ce6'], light:['#f2f2f7','#ffffff','#007aff','#5856d6']}
 ];
 const EYE = svg('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>');
 const EYE_OFF = svg('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>');
@@ -4218,6 +4297,7 @@ const mqLight = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') 
 function loadUi() {
   const u = lsGet(LS.ui);
   if (u && typeof u === 'object') ui = {...UI_DEFAULTS, ...u};
+  ui.theme = ({grafit: 'obsydian', terminal: 'cupertino'})[ui.theme] || ui.theme;
   if (!THEMES.some(t => t.id === ui.theme)) ui.theme = 'granat';
   applyUi();
 }
@@ -4249,7 +4329,9 @@ const segHtml = (key, opts) => opts.map(([v, l]) => `<button class="${ui[key] ==
 function renderSettings() {
   if (activeTab !== 'settings') return;
   const cb = document.getElementById('cloudBody'); if (cb) cb.innerHTML = cloudSettingsHtml();
-  renderPushCard();
+  renderPushCard(); renderBriefCard();
+  const vl = document.getElementById('setVerLine');
+  if (vl) vl.textContent = `Wersja ${appVersion()} · dane w tej przeglądarce${cloudReady() ? ' i zaszyfrowane w Twoim koncie w chmurze' : ''}`;
   const mode = resolvedMode();
   document.getElementById('themeGrid').innerHTML = THEMES.map(t => {
     const c = t[mode], r = t.r;
@@ -6831,6 +6913,447 @@ function calTasks() {
 }
 
 /* =========================================================
+   ZARZĄDZANIE FINANSAMI: subskrypcje i stałe opłaty, ważne daty, poranny skrót
+   Wspólny kod (BRIEF) liczy terminy i składa treść skrótu – ten sam w aplikacji i na serwerze
+   powiadomień (build kopiuje blok do alerts/brief-shared.js).
+   ========================================================= */
+/*BRIEF-SHARED-START*/
+var BRIEF = (function () {
+  var p2 = function (n) { return String(n).padStart(2, '0'); };
+  function ymd(s) { return s.split('-').map(Number); }
+  function dim(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function fromParts(y, m, d) {
+    var yy = y + Math.floor((m - 1) / 12), mm = ((m - 1) % 12 + 12) % 12 + 1;
+    return yy + '-' + p2(mm) + '-' + p2(Math.min(d, dim(yy, mm)));
+  }
+  function addDays(s, n) { var a = ymd(s); return new Date(Date.UTC(a[0], a[1] - 1, a[2] + n)).toISOString().slice(0, 10); }
+  function diffDays(a, b) { var A = ymd(a), B = ymd(b); return Math.round((Date.UTC(B[0], B[1] - 1, B[2]) - Date.UTC(A[0], A[1] - 1, A[2])) / 864e5); }
+  var STEP = {m: 1, q: 3, h: 6, y: 12, '2y': 24};
+  // najbliższe wystąpienie terminu (anchor = pierwsza data, e = okres) w dniu "from" lub później
+  function next(anchor, e, from) {
+    if (!anchor || !/^\d{4}-\d\d-\d\d$/.test(anchor)) return null;
+    if (from <= anchor) return anchor;
+    if (!e) return null;
+    if (e === 'w') return addDays(anchor, Math.ceil(diffDays(anchor, from) / 7) * 7);
+    var k = STEP[e]; if (!k) return null;
+    var a = ymd(anchor), f = ymd(from);
+    var i = Math.max(0, Math.floor(((f[0] * 12 + f[1]) - (a[0] * 12 + a[1])) / k));
+    for (var j = 0; j < 3; j++) { var c = fromParts(a[0], a[1] + (i + j) * k, a[2]); if (c >= from) return c; }
+    return null;
+  }
+  function occurs(anchor, e, d) { return next(anchor, e, d) === d; }
+  // przypomnienia na dziś: items = [{t: nazwa, k: 'pay'|'date', d: data, e: okres, pre: [dni przed]}]
+  function due(items, today) {
+    var seen = {}, out = [];
+    (items || []).forEach(function (it) {
+      (it.pre || []).slice().sort(function (a, b) { return a - b; }).forEach(function (n) {
+        var key = it.k + '|' + it.t + '|' + it.d;
+        if (seen[key]) return;
+        if (occurs(it.d, it.e, addDays(today, n))) { seen[key] = 1; out.push({t: it.t, k: it.k, n: n}); }
+      });
+    });
+    return out.sort(function (a, b) { return a.n - b.n; });
+  }
+  var when = function (n) { return n === 0 ? 'dziś' : n === 1 ? 'jutro' : 'za ' + n + ' dni'; };
+  var pc = function (v) { return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ',') + '%'; };
+  var usd = function (v) { return '$' + (v >= 100 ? Math.round(v).toLocaleString('pl-PL') : v.toPrecision(4).replace('.', ',')); };
+  var WD = ['niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota'];
+  // c = {today, brief:{on, rem, pf, fg, cal}, pf:{ch, btc:{p,ch}, best, worst}, fg:{v,l}, items, cal:[{d,t,h}]}
+  function compose(c) {
+    var a = ymd(c.today), b = c.brief || {}, L = [];
+    var r = b.rem === false ? [] : due(c.items, c.today);
+    var pays = r.filter(function (x) { return x.k === 'pay'; }), dates = r.filter(function (x) { return x.k === 'date'; });
+    if (pays.length) L.push('💳 Płatności: ' + pays.map(function (x) { return x.t + ' (' + when(x.n) + ')'; }).join(', '));
+    if (dates.length) L.push('📅 Terminy: ' + dates.map(function (x) { return x.t + ' (' + when(x.n) + ')'; }).join(', '));
+    var remLines = L.slice();
+    if (b.on) {
+      var top = [];
+      if (b.pf !== false && c.pf) {
+        top.push('📈 Portfel 24 h: ' + pc(c.pf.ch) + (c.pf.btc ? ' · BTC ' + usd(c.pf.btc.p) + ' (' + pc(c.pf.btc.ch) + ')' : ''));
+        if (c.pf.best && c.pf.worst && c.pf.best.s !== c.pf.worst.s) top.push('Najmocniej ' + c.pf.best.s + ' ' + pc(c.pf.best.ch) + ', najsłabiej ' + c.pf.worst.s + ' ' + pc(c.pf.worst.ch));
+      }
+      if (b.fg !== false && c.fg) top.push('🧭 Nastroje rynku: ' + c.fg.v + ' – ' + c.fg.l);
+      if (b.cal !== false) {
+        var tom = addDays(c.today, 1), ev = (c.cal || []).filter(function (e) { return e.d === c.today || e.d === tom; });
+        if (ev.length) L.push('🗓 Rynek: ' + ev.map(function (e) { return (e.d === c.today ? 'dziś ' : 'jutro ') + e.t + (e.h ? ' ' + e.h : ''); }).join(', '));
+      }
+      L = top.concat(L);
+    }
+    return {
+      title: b.on ? '☀️ Dzień dobry · ' + WD[new Date(Date.UTC(a[0], a[1] - 1, a[2])).getUTCDay()] + ' ' + a[2] + '.' + p2(a[1]) : '🔔 Przypomnienie',
+      body: (b.on ? L : remLines).join('\n') || 'Spokojny dzień – żadnych płatności ani terminów.',
+      lines: b.on ? L : remLines, hasRem: remLines.length > 0
+    };
+  }
+  var FG_PL = {'extreme fear': 'skrajny strach', 'fear': 'strach', 'neutral': 'neutralnie', 'greed': 'chciwość', 'extreme greed': 'skrajna chciwość'};
+  // pf z udziałów monet: coins = [{s, w}], px = {SYM: {p, ch}}
+  function portfolio(coins, px) {
+    var sw = 0, sc = 0, list = [];
+    (coins || []).forEach(function (c) { var q = px[c.s]; if (!q || !(q.p > 0) || !isFinite(q.ch)) return; sw += c.w; sc += c.w * q.ch; list.push({s: c.s, ch: q.ch}); });
+    if (!sw) return null;
+    list.sort(function (x, y) { return y.ch - x.ch; });
+    return {ch: sc / sw, btc: px.BTC && px.BTC.p > 0 ? px.BTC : null, best: list[0], worst: list[list.length - 1]};
+  }
+  return {next: next, occurs: occurs, due: due, compose: compose, portfolio: portfolio, addDays: addDays, diffDays: diffDays, when: when, FG_PL: FG_PL};
+})();
+if (typeof module !== 'undefined') module.exports = BRIEF;
+/*BRIEF-SHARED-END*/
+
+LS.fin = 'ccFin';
+const FIN_DEFAULTS = {subs: [], dates: [], brief: {on: true, time: '08:00', rem: true, pf: true, fg: true, cal: true, testAt: 0}};
+function finGet() {
+  const f = lsGet(LS.fin) || {};
+  return {...FIN_DEFAULTS, ...f, subs: Array.isArray(f.subs) ? f.subs : [], dates: Array.isArray(f.dates) ? f.dates : [], brief: {...FIN_DEFAULTS.brief, ...(f.brief || {})}};
+}
+function finSet(f) { lsSet(LS.fin, f); if (typeof alertsSyncSoon === 'function') alertsSyncSoon(); }
+const finId = () => Math.random().toString(36).slice(2, 9);
+
+const FIN_PERIODS = [['m', 'co miesiąc'], ['y', 'co rok'], ['q', 'co kwartał'], ['h', 'co pół roku'], ['w', 'co tydzień'], ['2y', 'co 2 lata'], ['', 'jednorazowo']];
+const finPeriod = e => (FIN_PERIODS.find(p => p[0] === (e || '')) || FIN_PERIODS[0])[1];
+const FIN_MONTHLY = {w: 52 / 12, m: 1, q: 1 / 3, h: 1 / 6, y: 1 / 12, '2y': 1 / 24, '': 0};
+const SUB_CATS = {stream: ['Rozrywka i streaming', 'var(--purple)'], tel: ['Telefon i internet', 'var(--accent)'], home: ['Dom i media', 'var(--orange)'],
+  ins: ['Ubezpieczenia', 'var(--green)'], car: ['Auto i transport', 'var(--yellow)'], health: ['Zdrowie i sport', 'var(--red)'],
+  soft: ['Aplikacje i chmura', 'var(--accent-2)'], loan: ['Kredyty i raty', 'var(--muted)'], other: ['Inne', 'var(--text-2)']};
+const SUB_PRESETS = [['Netflix', 'stream', 'm'], ['Spotify', 'stream', 'm'], ['YouTube Premium', 'stream', 'm'], ['Disney+', 'stream', 'm'], ['HBO Max', 'stream', 'm'],
+  ['iCloud+', 'soft', 'm'], ['Google One', 'soft', 'm'], ['ChatGPT', 'soft', 'm'], ['Claude', 'soft', 'm'], ['Abonament telefoniczny', 'tel', 'm'], ['Internet domowy', 'tel', 'm'],
+  ['Prąd', 'home', 'm'], ['Gaz', 'home', 'm'], ['Czynsz', 'home', 'm'], ['Siłownia', 'health', 'm'], ['OC samochodu', 'ins', 'y'], ['Ubezpieczenie mieszkania', 'ins', 'y'], ['Rata kredytu', 'loan', 'm']];
+const SUB_REM = [['', 'bez przypomnienia'], ['0', 'w dniu płatności'], ['1', 'dzień wcześniej'], ['3', '3 dni wcześniej'], ['7', 'tydzień wcześniej']];
+const DATE_CATS = {car: ['Auto', 'var(--yellow)'], doc: ['Dokumenty', 'var(--accent)'], tax: ['Podatki i urzędy', 'var(--green)'], home: ['Dom', 'var(--orange)'],
+  health: ['Zdrowie', 'var(--red)'], fam: ['Rodzina i znajomi', 'var(--purple)'], work: ['Praca', 'var(--accent-2)'], other: ['Inne', 'var(--muted)']};
+const DATE_PRE = [0, 1, 3, 7, 14, 30, 60, 90];
+const preLabel = n => n === 0 ? 'w dniu' : n === 1 ? '1 dzień' : n % 30 === 0 && n >= 60 ? `${n / 30} mies.` : `${n} dni`;
+function nextApril30() { const t = todayStr(), y = +t.slice(0, 4); return t <= `${y}-04-30` ? `${y}-04-30` : `${y + 1}-04-30`; }
+const DATE_PRESETS = [['OC samochodu', 'car', 'y', [30, 7, 1]], ['Przegląd techniczny', 'car', 'y', [14, 3]], ['Wymiana opon', 'car', 'h', [7]],
+  ['Ważność dowodu osobistego', 'doc', '', [90, 30]], ['Ważność paszportu', 'doc', '', [180, 60]], ['Ważność prawa jazdy', 'doc', '', [90, 30]],
+  ['PIT – zeznanie roczne', 'tax', 'y', [30, 7, 1], nextApril30], ['Koniec umowy u operatora', 'home', '', [60, 30]], ['Ubezpieczenie mieszkania', 'home', 'y', [30, 7]],
+  ['Dentysta – kontrola', 'health', 'h', [7, 1]], ['Urodziny', 'fam', 'y', [7, 1]], ['Rocznica', 'fam', 'y', [7, 1]]];
+
+function curToPln(amount, cur) {
+  if (cur === 'EUR') return amount * (eurPlnRate || 4.3);
+  if (cur === 'USD') return amount * usdPlnRate;
+  return amount;
+}
+const finMoney = (a, cur) => cur === 'PLN' || !cur ? zl2(a) : `${fixed(a, 2)} ${cur}`;
+const subMonthlyPln = s => s.active === false ? 0 : curToPln(s.amount || 0, s.cur) * (FIN_MONTHLY[s.e || ''] || 0);
+const subNext = s => BRIEF.next(s.d, s.e, todayStr());
+const dayBox = d => { const [, m, dd] = d.split('-'); return `<strong>${+dd}</strong><span>${['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'][+m - 1]} ${d.slice(0, 4) !== todayStr().slice(0, 4) ? d.slice(0, 4) : ''}</span>`; };
+const whenTxt = n => n < 0 ? `${-n} ${-n === 1 ? 'dzień' : 'dni'} temu` : BRIEF.when(n);
+
+/* ---------- Subskrypcje i stałe opłaty ---------- */
+function renderSubs() {
+  const el = document.getElementById('finSubsBody');
+  if (!el) return;
+  if (!eurPlnRate) loadEurRate();
+  const f = finGet(), today = todayStr();
+  const act = f.subs.filter(s => s.active !== false);
+  const monthly = act.reduce((t, s) => t + subMonthlyPln(s), 0);
+  const ups = [];
+  act.forEach(s => {
+    let d = BRIEF.next(s.d, s.e, today);
+    for (let i = 0; d && i < 10 && BRIEF.diffDays(today, d) <= 30; i++) { ups.push({s, d, n: BRIEF.diffDays(today, d)}); if (!s.e) break; d = BRIEF.next(s.d, s.e, BRIEF.addDays(d, 1)); }
+  });
+  ups.sort((a, b) => a.d.localeCompare(b.d));
+  const in30 = ups.reduce((t, u) => t + curToPln(u.s.amount || 0, u.s.cur), 0);
+  const byCat = {};
+  act.forEach(s => { const k = SUB_CATS[s.cat] ? s.cat : 'other'; byCat[k] = (byCat[k] || 0) + subMonthlyPln(s); });
+  const sorted = f.subs.slice().sort((a, b) => (a.active === false) - (b.active === false) || (subNext(a) || '9999').localeCompare(subNext(b) || '9999'));
+  const fx = f.subs.some(s => s.cur && s.cur !== 'PLN');
+  el.innerHTML = `
+    <div class="card">
+      <div class="fin-head"><h2 style="margin:0">Subskrypcje i stałe opłaty</h2><button class="action" onclick="subEdit()">+ Dodaj opłatę</button></div>
+      ${f.subs.length ? `<div class="summary-bar">
+        <div class="summary-item"><span>Miesięcznie</span><strong class="sens">${zl2(monthly)}</strong><span>${fx ? 'waluty po kursie NBP' : 'opłaty roczne rozłożone na miesiące'}</span></div>
+        <div class="summary-item"><span>Rocznie</span><strong class="sens">${zl(monthly * 12)}</strong><span>${act.length} aktywn${act.length === 1 ? 'a opłata' : act.length < 5 ? 'e opłaty' : 'ych opłat'}</span></div>
+        <div class="summary-item"><span>Najbliższe 30 dni</span><strong class="sens">${zl2(in30)}</strong><span>${ups.length} płatnoś${ups.length === 1 ? 'ć' : ups.length < 5 && ups.length ? 'ci' : 'ci'}</span></div>
+        <div class="summary-item"><span>Najbliższa płatność</span><strong>${ups[0] ? esc(ups[0].s.name) : '—'}</strong><span>${ups[0] ? `${BRIEF.when(ups[0].n)} · <span class="sens">${finMoney(ups[0].s.amount, ups[0].s.cur)}</span>` : 'brak w ciągu 30 dni'}</span></div>
+      </div>
+      ${monthly > 0 ? `<div class="stack">${Object.entries(byCat).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div style="width:${v / monthly * 100}%;background:${SUB_CATS[k][1]}" title="${SUB_CATS[k][0]}"></div>`).join('')}</div>
+        <div class="legend">${Object.entries(byCat).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span><i style="background:${SUB_CATS[k][1]}"></i>${SUB_CATS[k][0]}: <strong class="sens">${zl(v)}</strong>/mies.</span>`).join('')}</div>` : ''}`
+      : `<p class="muted" style="font-size:.9rem">Dopisz abonamenty, rachunki i raty – zobaczysz, ile kosztują miesięcznie i rocznie, a przed każdą płatnością dostaniesz przypomnienie w porannym skrócie.</p>
+        <div class="fin-presets">${SUB_PRESETS.slice(0, 12).map((p, i) => `<button class="chip" onclick="subEdit(null,${i})">+ ${esc(p[0])}</button>`).join('')}</div>`}
+    </div>
+    ${ups.length ? `<div class="card"><h3>Najbliższe 30 dni</h3><div class="cal-list">${ups.map(u => `
+      <div class="cal-item fin-row${u.n <= 2 ? ' soon' : ''}" onclick="subEdit('${u.s.id}')">
+        <div class="cal-date">${dayBox(u.d)}<span class="fin-when">${BRIEF.when(u.n)}</span></div>
+        <div class="fin-line"><div><strong>${esc(u.s.name)}</strong><br><span class="small muted">${(SUB_CATS[u.s.cat] || SUB_CATS.other)[0]} · ${finPeriod(u.s.e)}</span></div>
+          <strong class="sens">${finMoney(u.s.amount, u.s.cur)}</strong></div>
+      </div>`).join('')}</div></div>` : ''}
+    ${f.subs.length ? `<div class="card"><h3>Wszystkie opłaty</h3><div class="table-wrap"><table>
+      <thead><tr><th>Nazwa</th><th class="num">Kwota</th><th class="num">≈ miesięcznie</th><th>Następna płatność</th></tr></thead>
+      <tbody>${sorted.map(s => { const n = subNext(s); return `<tr class="clickable${s.active === false ? ' fin-off' : ''}" onclick="subEdit('${s.id}')">
+        <td><strong>${esc(s.name)}</strong><br><span class="small muted">${(SUB_CATS[s.cat] || SUB_CATS.other)[0]}${s.active === false ? ' · wstrzymana' : ''}${s.note ? ' · ' + esc(s.note) : ''}</span></td>
+        <td class="num sens">${finMoney(s.amount, s.cur)}<br><span class="small muted">${finPeriod(s.e)}</span></td>
+        <td class="num sens">${s.e && s.active !== false ? zl(subMonthlyPln(s)) : '—'}</td>
+        <td class="small">${n ? `${fmtDate(n)}<br><span class="muted">${BRIEF.when(BRIEF.diffDays(today, n))}${s.pre?.length ? ' · 🔔 ' + (s.pre[0] === 0 ? 'w dniu' : s.pre[0] === 1 ? 'dzień przed' : s.pre[0] + ' dni przed') : ''}</span>` : '<span class="muted">zapłacone</span>'}</td></tr>`; }).join('')}</tbody></table></div>
+      <p class="small muted" style="margin:.5rem 0 0">Kliknij opłatę, żeby ją zmienić, wstrzymać albo usunąć. Przypomnienia przychodzą w porannym skrócie (Ustawienia → Powiadomienia).</p></div>` : ''}`;
+}
+function subEdit(id, preset) {
+  const f = finGet(), s = f.subs.find(x => x.id === id) || {cur: 'PLN', e: 'm', cat: 'other', pre: [1], d: todayStr(), active: true};
+  if (preset != null) { const p = SUB_PRESETS[preset]; Object.assign(s, {name: p[0], cat: p[1], e: p[2]}); }
+  const opt = (list, cur) => list.map(([v, l]) => `<option value="${v}"${String(cur ?? '') === v ? ' selected' : ''}>${l}</option>`).join('');
+  document.getElementById('infoTitle').textContent = id ? 'Zmień opłatę' : 'Nowa opłata';
+  document.getElementById('infoBody').innerHTML = `
+    ${id ? '' : `<div class="fin-presets" style="margin-bottom:.8rem">${SUB_PRESETS.map((p, i) => `<button class="chip${s.name === p[0] ? ' on' : ''}" onclick="subEdit(null,${i})">${esc(p[0])}</button>`).join('')}</div>`}
+    <div class="fin-form">
+      <div class="wide"><label for="sbName">Nazwa</label><input type="text" id="sbName" maxlength="40" value="${esc(s.name || '')}" placeholder="np. Netflix"></div>
+      <div><label for="sbAmt">Kwota</label><input type="number" id="sbAmt" min="0" step="0.01" value="${s.amount || ''}" placeholder="0,00"></div>
+      <div><label for="sbCur">Waluta</label><select id="sbCur">${opt([['PLN', 'PLN'], ['EUR', 'EUR'], ['USD', 'USD']], s.cur)}</select></div>
+      <div><label for="sbE">Jak często</label><select id="sbE">${opt(FIN_PERIODS, s.e)}</select></div>
+      <div><label for="sbD">${id ? 'Data płatności (dowolna z cyklu)' : 'Najbliższa płatność'}</label><input type="date" id="sbD" value="${s.d || todayStr()}"></div>
+      <div><label for="sbCat">Kategoria</label><select id="sbCat">${opt(Object.entries(SUB_CATS).map(([k, v]) => [k, v[0]]), s.cat)}</select></div>
+      <div><label for="sbPre">Przypomnienie</label><select id="sbPre">${opt(SUB_REM, s.pre?.length ? String(s.pre[0]) : '')}</select></div>
+      <div class="wide"><label for="sbNote">Notatka (opcjonalnie)</label><input type="text" id="sbNote" maxlength="60" value="${esc(s.note || '')}" placeholder="np. karta Revolut, rodzinny plan"></div>
+      ${id ? `<label class="fin-check wide"><input type="checkbox" id="sbAct"${s.active !== false ? ' checked' : ''}> Aktywna (odznacz, żeby wstrzymać bez usuwania)</label>` : ''}
+    </div>
+    <p class="small" id="sbMsg" style="color:var(--red);min-height:1em;margin:.5rem 0"></p>
+    <div class="form-row" style="margin:0"><button class="action" onclick="subSave('${id || ''}')">Zapisz</button>
+      ${id ? `<button class="action danger" onclick="subDel('${id}')">Usuń</button>` : ''}<button class="action secondary" onclick="closeInfoModal()">Anuluj</button></div>`;
+  document.getElementById('infoModal').classList.add('open');
+}
+function subSave(id) {
+  const name = val('sbName').trim(), amount = parseFloat(String(val('sbAmt')).replace(',', '.')), d = val('sbD');
+  const msg = t => { document.getElementById('sbMsg').textContent = t; };
+  if (!name) return msg('Podaj nazwę opłaty.');
+  if (!(amount > 0)) return msg('Podaj kwotę większą od zera.');
+  if (!/^\d{4}-\d\d-\d\d$/.test(d)) return msg('Wybierz datę płatności.');
+  const f = finGet(), pre = val('sbPre');
+  const s = {id: id || finId(), name, amount, cur: val('sbCur') || 'PLN', e: val('sbE'), d, cat: val('sbCat') || 'other', pre: pre === '' ? [] : [+pre],
+    note: val('sbNote').trim(), active: id ? document.getElementById('sbAct').checked : true};
+  const i = f.subs.findIndex(x => x.id === s.id);
+  if (i >= 0) f.subs[i] = s; else f.subs.push(s);
+  finSet(f); closeInfoModal(); renderSubs();
+}
+function subDel(id) {
+  const f = finGet(), s = f.subs.find(x => x.id === id);
+  if (!s || !confirmDel(`Usunąć opłatę „${s.name}”?`)) return;
+  f.subs = f.subs.filter(x => x.id !== id); finSet(f); closeInfoModal(); renderSubs();
+}
+let finConfirmAt = 0, finConfirmMsg = '';
+function confirmDel(m) {   // bez okien systemowych: drugie kliknięcie w ciągu 4 s potwierdza
+  if (finConfirmMsg === m && Date.now() - finConfirmAt < 4000) { finConfirmMsg = ''; return true; }
+  finConfirmMsg = m; finConfirmAt = Date.now();
+  const e = document.getElementById('sbMsg') || document.getElementById('dtMsg');
+  if (e) e.textContent = m + ' Kliknij „Usuń” jeszcze raz, żeby potwierdzić.';
+  return false;
+}
+
+/* ---------- Ważne daty ---------- */
+function dateNext(x) { return BRIEF.next(x.d, x.e, todayStr()); }
+function renderDates() {
+  const el = document.getElementById('finDatesBody');
+  if (!el) return;
+  const f = finGet(), today = todayStr();
+  const open = f.dates.filter(x => !x.done);
+  const items = open.map(x => { const n = dateNext(x); return {x, d: n || x.d, n: BRIEF.diffDays(today, n || x.d), past: !n}; }).sort((a, b) => a.d.localeCompare(b.d));
+  const groups = [['Minęły – do załatwienia', items.filter(i => i.past)], ['Najbliższe 30 dni', items.filter(i => !i.past && i.n <= 30)], ['Później', items.filter(i => !i.past && i.n > 30)]];
+  const done = f.dates.filter(x => x.done);
+  const row = i => {
+    const c = DATE_CATS[i.x.cat] || DATE_CATS.other;
+    return `<div class="cal-item fin-row${i.past ? ' late' : i.n <= 7 ? ' soon' : ''}" onclick="dateEdit('${i.x.id}')">
+      <div class="cal-date">${dayBox(i.d)}<span class="fin-when">${whenTxt(i.n)}</span></div>
+      <div class="fin-line"><div><strong>${esc(i.x.title)}</strong> <span class="tag" style="background:color-mix(in srgb,${c[1]} 16%,transparent);color:${c[1]}">${c[0]}</span><br>
+        <span class="small muted">${i.x.e ? finPeriod(i.x.e) : 'jednorazowo'}${i.x.pre?.length ? ' · 🔔 ' + i.x.pre.slice().sort((a, b) => b - a).map(preLabel).join(', ') : ''}${i.x.note ? ' · ' + esc(i.x.note) : ''}</span></div>
+        ${i.past ? `<button class="action secondary" onclick="event.stopPropagation();dateDone('${i.x.id}')">Załatwione</button>` : ''}</div>
+    </div>`;
+  };
+  el.innerHTML = `
+    <div class="card">
+      <div class="fin-head"><h2 style="margin:0">Ważne daty</h2><button class="action" onclick="dateEdit()">+ Dodaj datę</button></div>
+      <p class="small muted" style="margin:.4rem 0 .2rem">Ubezpieczenia, przeglądy, ważność dokumentów, podatki, urodziny. Przypomnienie przyjdzie w porannym skrócie tyle dni wcześniej, ile wybierzesz. Wystarczy nazwa i data – nie wpisuj numerów dokumentów.</p>
+      ${open.length ? '' : `<div class="fin-presets" style="margin-top:.7rem">${DATE_PRESETS.map((p, i) => `<button class="chip" onclick="dateEdit(null,${i})">+ ${esc(p[0])}</button>`).join('')}</div>`}
+    </div>
+    ${groups.filter(g => g[1].length).map(([t, l]) => `<div class="card"><h3>${t}</h3><div class="cal-list">${l.map(row).join('')}</div></div>`).join('')}
+    ${done.length ? `<div class="card"><details><summary><strong>Załatwione</strong><span class="small muted">${done.length}</span></summary><div style="padding:.5rem .2rem">
+      ${done.map(x => `<div class="set-row" style="padding:.35rem 0"><div><strong>${esc(x.title)}</strong><span class="small">${fmtDate(x.d)}</span></div>
+        <span><button class="action secondary" onclick="dateUndo('${x.id}')">Przywróć</button> <button class="icon-x" onclick="dateDrop('${x.id}')" aria-label="Usuń">×</button></span></div>`).join('')}
+    </div></details></div>` : ''}`;
+}
+function dateEdit(id, preset) {
+  const f = finGet(), x = f.dates.find(y => y.id === id) || {cat: 'other', e: '', pre: [7, 1], d: ''};
+  if (preset != null) { const p = DATE_PRESETS[preset]; Object.assign(x, {title: p[0], cat: p[1], e: p[2], pre: p[3].slice(), d: p[4] ? p[4]() : x.d}); }
+  const opt = (list, cur) => list.map(([v, l]) => `<option value="${v}"${String(cur ?? '') === v ? ' selected' : ''}>${l}</option>`).join('');
+  document.getElementById('infoTitle').textContent = id ? 'Zmień datę' : 'Nowa ważna data';
+  document.getElementById('infoBody').innerHTML = `
+    ${id ? '' : `<div class="fin-presets" style="margin-bottom:.8rem">${DATE_PRESETS.map((p, i) => `<button class="chip${x.title === p[0] ? ' on' : ''}" onclick="dateEdit(null,${i})">${esc(p[0])}</button>`).join('')}</div>`}
+    <div class="fin-form">
+      <div class="wide"><label for="dtTitle">Co</label><input type="text" id="dtTitle" maxlength="50" value="${esc(x.title || '')}" placeholder="np. OC samochodu"></div>
+      <div><label for="dtD">Data</label><input type="date" id="dtD" value="${x.d || ''}"></div>
+      <div><label for="dtE">Powtarzaj</label><select id="dtE">${opt([['', 'nie powtarzaj'], ['y', 'co rok'], ['h', 'co pół roku'], ['q', 'co kwartał'], ['m', 'co miesiąc'], ['2y', 'co 2 lata']], x.e)}</select></div>
+      <div><label for="dtCat">Kategoria</label><select id="dtCat">${opt(Object.entries(DATE_CATS).map(([k, v]) => [k, v[0]]), x.cat)}</select></div>
+      <div class="wide"><label>Przypomnij</label><div class="fin-presets" id="dtPre">${DATE_PRE.map(n => `<button type="button" class="chip${(x.pre || []).includes(n) ? ' on' : ''}" data-n="${n}" onclick="this.classList.toggle('on')">${n === 0 ? 'w dniu' : preLabel(n) + ' przed'}</button>`).join('')}</div></div>
+      <div class="wide"><label for="dtNote">Notatka (opcjonalnie)</label><input type="text" id="dtNote" maxlength="60" value="${esc(x.note || '')}" placeholder="np. ubezpieczyciel, gdzie załatwić"></div>
+    </div>
+    <p class="small" id="dtMsg" style="color:var(--red);min-height:1em;margin:.5rem 0"></p>
+    <div class="form-row" style="margin:0"><button class="action" onclick="dateSave('${id || ''}')">Zapisz</button>
+      ${id ? `<button class="action danger" onclick="dateDel('${id}')">Usuń</button>` : ''}<button class="action secondary" onclick="closeInfoModal()">Anuluj</button></div>`;
+  document.getElementById('infoModal').classList.add('open');
+}
+function dateSave(id) {
+  const title = val('dtTitle').trim(), d = val('dtD');
+  const msg = t => { document.getElementById('dtMsg').textContent = t; };
+  if (!title) return msg('Wpisz, czego dotyczy data.');
+  if (!/^\d{4}-\d\d-\d\d$/.test(d)) return msg('Wybierz datę.');
+  if (/\b[A-Z]{3}\s?\d{6}\b|\b\d{11}\b/.test(title + ' ' + val('dtNote'))) return msg('Wygląda na numer dokumentu lub PESEL – usuń go, wystarczy nazwa i data.');
+  const f = finGet();
+  const x = {id: id || finId(), title, d, e: val('dtE'), cat: val('dtCat') || 'other', pre: [...document.querySelectorAll('#dtPre .chip.on')].map(b => +b.dataset.n), note: val('dtNote').trim(), done: false};
+  const i = f.dates.findIndex(y => y.id === x.id);
+  if (i >= 0) f.dates[i] = x; else f.dates.push(x);
+  finSet(f); closeInfoModal(); renderDates();
+}
+function dateDel(id) {
+  const f = finGet(), x = f.dates.find(y => y.id === id);
+  if (!x || !confirmDel(`Usunąć „${x.title}”?`)) return;
+  f.dates = f.dates.filter(y => y.id !== id); finSet(f); closeInfoModal(); renderDates();
+}
+function dateDone(id) { const f = finGet(), x = f.dates.find(y => y.id === id); if (x) { x.done = true; finSet(f); renderDates(); } }
+function dateUndo(id) { const f = finGet(), x = f.dates.find(y => y.id === id); if (x) { x.done = false; finSet(f); renderDates(); } }
+function dateDrop(id) { const f = finGet(); f.dates = f.dates.filter(y => y.id !== id); finSet(f); renderDates(); }
+
+/* Zadania: płatności i terminy z bliskim przypomnieniem */
+function finTasks() {
+  const f = finGet(), today = todayStr(), out = [];
+  BRIEF.due(finItems(f), today).forEach(r => out.push({type: r.k === 'pay' ? 'info' : 'buy', label: r.k === 'pay' ? 'PŁATNOŚĆ' : 'TERMIN',
+    msg: `${esc(r.t)} – ${BRIEF.when(r.n)}.${r.k === 'pay' ? ' Sprawdź, czy na koncie są pieniądze.' : ''}`}));
+  f.dates.filter(x => !x.done && !dateNext(x)).forEach(x => out.push({type: 'sell', label: 'TERMIN MINĄŁ', msg: `${esc(x.title)} (${fmtDate(x.d)}) – oznacz jako załatwione w Zarządzaniu finansami → Ważne daty.`}));
+  return out;
+}
+function finItems(f) {
+  return [...f.subs.filter(s => s.active !== false && s.pre?.length).map(s => ({t: s.name, k: 'pay', d: s.d, e: s.e || '', pre: s.pre})),
+    ...f.dates.filter(x => !x.done && x.pre?.length).map(x => ({t: x.title, k: 'date', d: x.d, e: x.e || '', pre: x.pre}))];
+}
+
+/* ---------- Poranny skrót: dane dla serwera i podgląd ---------- */
+function briefCoins() {
+  try {
+    const {rows, total} = computeRows();
+    return rows.filter(r => r.hasPrice && !isStable(r.sym) && total > 0).sort((a, b) => b.value - a.value).slice(0, 15)
+      .map(r => ({s: r.sym, p: STRATEGY[r.sym]?.bn || r.sym + 'USDT', w: Math.round(r.value / total * 1000) / 10})).filter(c => c.w >= 0.5);
+  } catch (e) { return []; }
+}
+function briefCal() {
+  if (typeof calEvents !== 'function') return [];
+  return calEvents(35).filter(e => e.type !== 'unlock' || holdings[e.sym]).map(e => ({d: e.date, t: e.title.replace(/\s*\(.*?\)\s*$/, ''), h: ((e.text || '').match(/(\d{1,2}:\d\d) czasu polskiego/) || [])[1] || ''}));
+}
+function briefPayload() {
+  const f = finGet(), b = f.brief;
+  return {on: !!b.on, rem: b.rem !== false, time: b.time || '08:00', pf: b.pf !== false, fg: b.fg !== false, cal: b.cal !== false, testAt: b.testAt || 0,
+    items: finItems(f), events: briefCal()};
+}
+function briefPreview() {
+  const f = finGet(), px = {};
+  Object.keys(holdings).forEach(s => { if (prices[s]?.usd > 0 && prices[s].ch24 != null) px[s] = {p: prices[s].usd, ch: prices[s].ch24}; });
+  if (prices.BTC?.usd > 0 && prices.BTC.ch24 != null) px.BTC = {p: prices.BTC.usd, ch: prices.BTC.ch24};
+  const fg = typeof mkt !== 'undefined' && mkt.fng ? {v: mkt.fng.v, l: BRIEF.FG_PL[String(mkt.fng.cls || '').toLowerCase()] || mkt.fng.cls} : null;
+  return BRIEF.compose({today: todayStr(), brief: {...f.brief, on: true}, pf: BRIEF.portfolio(briefCoins(), px), fg, items: finItems(f), cal: briefCal()});
+}
+function briefSet(k, v) { const f = finGet(); f.brief[k] = v; finSet(f); renderBriefCard(); }
+async function briefTest() {
+  const f = finGet(); f.brief.testAt = Date.now(); lsSet(LS.fin, f);
+  lastRulesJson = ''; await alertsSync(true);
+  briefMsg = pushMsgOk ? 'Wysłane – próbny skrót przyjdzie przy najbliższym sprawdzeniu serwera (do ok. 10–15 minut).' : pushMsg;
+  renderBriefCard();
+}
+let briefMsg = '';
+function renderBriefCard() {
+  const el = document.getElementById('briefBody');
+  if (!el) return;
+  const f = finGet(), b = f.brief, on = !!mySub(), pv = briefPreview();
+  const sw = (k, label, sub) => `<div class="set-row"><div><strong>${label}</strong>${sub ? `<span class="small">${sub}</span>` : ''}</div>
+    <label class="switch"><input type="checkbox"${b[k] !== false && b[k] ? ' checked' : ''} onchange="briefSet('${k}', this.checked)"><span></span></label></div>`;
+  el.innerHTML = `
+    <p class="muted" style="font-size:.88rem;margin-top:0">Jedno powiadomienie rano: jak zmienił się portfel, nastroje rynku, dzisiejsze wydarzenia oraz płatności i terminy, o których chcesz pamiętać.</p>
+    ${on ? '' : '<p class="warning" style="margin:.2rem 0 .6rem">Najpierw włącz powiadomienia w tle (karta wyżej) – skrót przychodzi tą samą drogą.</p>'}
+    ${sw('on', 'Poranny skrót', 'Codziennie o wybranej godzinie.')}
+    <div class="set-row"><div><strong>Godzina</strong><span class="small">Serwer sprawdza co ok. 10 minut, więc skrót może przyjść kilka minut później.</span></div>
+      <input type="time" value="${esc(b.time || '08:00')}" step="900" style="max-width:150px" onchange="briefSet('time', this.value || '08:00')"></div>
+    ${b.on ? `${sw('pf', 'Zmiana portfela', 'Procentowa zmiana z 24 h, BTC, najmocniejsza i najsłabsza moneta.')}${sw('fg', 'Nastroje rynku', 'Indeks Fear &amp; Greed.')}${sw('cal', 'Wydarzenia z kalendarza', 'Fed, RPP, inflacja i odblokowania Twoich monet – dziś i jutro.')}` : ''}
+    ${sw('rem', 'Przypomnienia o płatnościach i terminach', b.on ? 'Dołączane do skrótu.' : 'Przyjdą osobno o tej godzinie – tylko w dni, gdy jest o czym przypomnieć.')}
+    <div class="brief-prev"><div class="brief-n"><span class="brief-app">CRYPTO CONTROL</span><strong>${esc(pv.title)}</strong>${pv.lines.length ? pv.lines.map(l => `<span>${esc(l)}</span>`).join('') : `<span>${esc(pv.body)}</span>`}</div>
+      <p class="small muted" style="margin:.4rem 0 0">Podgląd na dziś, z aktualnymi cenami.</p></div>
+    ${on ? '<div class="form-row" style="margin:.7rem 0 0"><button class="action secondary" onclick="briefTest()">Wyślij próbny skrót</button></div>' : ''}
+    <p class="small" style="color:var(--green);min-height:1em;margin:.3rem 0">${esc(briefMsg)}</p>
+    <p class="small muted" style="margin:0">Do skrótu serwer dostaje listę Twoich monet z procentowym udziałem oraz nazwy i daty płatności i terminów – bez kwot. Płatności i daty dodajesz w zakładce Zarządzanie finansami.</p>`;
+}
+
+/* =========================================================
+   WERSJE: historia zmian (Ustawienia → Wersja)
+   ========================================================= */
+function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
+const CHANGELOG = [
+  {v: '22', date: '2026-10-25', title: 'Zarządzanie finansami i poranny skrót', items: [
+    'Zakładka Oszczędności nazywa się teraz „Zarządzanie finansami” i ma podkategorie: Oszczędności (przegląd i cele), Subskrypcje i opłaty, Ważne daty.',
+    'Subskrypcje i stałe opłaty: koszt miesięczny i roczny, podział na kategorie, płatności w najbliższych 30 dniach, przypomnienie przed płatnością.',
+    'Ważne daty: ubezpieczenia, przeglądy, ważność dokumentów, podatki, urodziny – z powtarzaniem i przypomnieniami kilka dni wcześniej.',
+    'Poranny skrót: jedno powiadomienie o wybranej godzinie – zmiana portfela, nastroje rynku, wydarzenia dnia oraz płatności i terminy.',
+    'Zbliżające się płatności i terminy pokazują się też w Zadaniach.',
+    'Ustawienia → Wersja: aktualna wersja i historia zmian.',
+    'Nowe motywy: Cupertino (w stylu systemu Apple) zamiast Terminala oraz Obsydian zamiast Grafitu.']},
+  {v: '21', date: '2026-10-25', title: 'Powiększanie wykresów, podkategorie i interaktywne kafelki', items: [
+    'Powiększanie wykresów w Rynku: szczypanie dwoma palcami, kółko myszy, przeciąganie, przyciski ＋ − ⟲ i pełny ekran.',
+    'Podkategorie na górze Rynku (Notowania, Kalendarz wydarzeń, Polska) i Ustawień.',
+    'Klikalne kafelki portfela: wartość według ról, koszt rok po roku i na bieżąco, wynik według monet.',
+    'Okno „USDC na giełdzie”: ile USDC zainwestować w którą monetę według Twojej strategii.']},
+  {v: '20', date: '2026-10-24', title: 'Powiadomienia w tle i benchmark', items: [
+    'Powiadomienia push przy zamkniętej aplikacji: progi sprzedaży i dokupu, dzień dopłaty, odblokowania tokenów, własne alerty cenowe.',
+    '„Czy strategia się opłaca” – porównanie Twoich wyników z prostymi alternatywami.',
+    'Kalendarz odblokowań tokenów i ważnych dat makro (Fed, RPP, inflacja, PIT).']},
+  {v: '19', date: '2026-10-24', title: 'Kupno / Sprzedaż, strategia i Face ID', items: [
+    '„Edytuj / Dodaj” zmienione na „Kupno / Sprzedaż” – z automatycznym pobieraniem transakcji (Binance API lub plik CSV/XLSX z giełdy).',
+    'Edytor strategii i przycisk „Zastosuj plan” z analizy AI (z możliwością cofnięcia).',
+    'Propozycje i Nowe projekty połączone z zakładką Rynek.',
+    'Szybki przycisk „+” do dodania transakcji.',
+    'Odblokowanie Oszczędności przez Face ID / Touch ID.',
+    'Podsumowanie poprzedniego miesiąca po jego zakończeniu.']},
+  {v: '18', date: '2026-10-24', title: 'Blokada powiększania i automatyczne aktualizacje', items: [
+    'Strona nie powiększa się już przy pisaniu na iPhonie.',
+    'Aplikacja sama sprawdza, czy jest nowa wersja, i odświeża się, gdy niczego nie wpisujesz.']},
+  {v: '17', date: '2026-10-24', title: 'Pisanie na iPhonie', items: [
+    'Większa czcionka w polach tekstowych – pierwsza poprawka powiększania strony na iPhonie.']},
+  {v: '16', date: '2026-10-24', title: 'Konto w chmurze', items: [
+    'Konto z adresem e-mail i hasłem przy otwarciu aplikacji.',
+    'Synchronizacja między urządzeniami – dane szyfrowane na urządzeniu kluczem z hasła, serwer widzi tylko szyfrogram.',
+    'Przeniesienie dotychczasowych danych do konta.']},
+  {v: '15', date: '2026-10-24', title: 'Gesty w menu', items: [
+    'Na telefonie menu wysuwa się przeciągnięciem palcem od lewej krawędzi, a chowa przeciągnięciem w lewo lub stuknięciem obok.']},
+  {v: '14', date: '2026-10-24', title: 'Plan z analizą AI', items: [
+    'Zakładka Plan: wpisujesz własny plan, AI go analizuje i dopiero wtedy pokazuje pełny plan.',
+    'Twój plan zapisany razem z analizą startową.']},
+  {v: '13', date: '2026-10-24', title: 'Aplikacja na telefon', items: [
+    'Wersja na telefon (PWA): ikona na ekranie początkowym, działa także offline z ostatnimi cenami.',
+    'Aktualizacje publikowane automatycznie przez GitHub – bez wgrywania plików.']},
+  {v: '12', date: '', title: 'Rynek i Propozycje', items: [
+    'Zakładka Rynek: ceny na żywo, wykresy świecowe, analiza techniczna i zakresy statystyczne.',
+    'Propozycje: stopy NBP, inflacja, złoto, konta oszczędnościowe, lokaty i obligacje.',
+    'Cele w Oszczędnościach.',
+    'Kopia zapasowa i import z CoinMarketCap przeniesione do Ustawień.']},
+  {v: '4–11', date: '', title: 'Rozbudowa z Claude', items: [
+    'Historia transakcji wczytana z arkusza i sprawdzona pod kątem PIT-38.',
+    'Backtest strategii.',
+    'Zakładka Zyski i ryzyko: drabinka sprzedaży, analiza ryzyka, test odporności portfela.',
+    'Podsumowanie miesiąca.',
+    'System wyglądu: motywy, tryb jasny i ciemny, gęstość.',
+    'Zakładka Ustawienia oraz zakładka Oszczędności chroniona PIN-em.',
+    'Dokładny podział tych zmian na poszczególne wersje się nie zachował.']},
+  {v: '1–3', date: '', title: 'Początki', items: [
+    'Pierwsze wersje zbudowane z Grokiem: portfel z cenami, plan portfela, cel i dopłaty.']}
+];
+function renderVersion() {
+  const el = document.getElementById('verBody');
+  if (!el) return;
+  const cur = CHANGELOG.find(c => c.v === String(appVersion())) || CHANGELOG[0];
+  const li = c => `<ul class="ver-list">${c.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`;
+  el.innerHTML = `
+    <div class="ver-head"><div class="brand-logo ver-logo">CC</div>
+      <div><span class="small muted">Crypto Control</span><h2 style="margin:0">Wersja ${cur.v}</h2>
+        <span class="small muted">${cur.date ? fmtDate(cur.date) + ' · ' : ''}${esc(cur.title)}</span></div></div>
+    <h3 style="margin:1rem 0 .3rem;font-size:.95rem">Co nowego</h3>${li(cur)}
+    <h3 style="margin:1.2rem 0 .5rem;font-size:.95rem">Poprzednie wersje</h3>
+    <div class="ver-old">${CHANGELOG.filter(c => c !== cur).map(c => `<details class="ver-item"><summary><span class="ver-v">v${c.v}</span><span class="ver-t">${esc(c.title)}</span>
+      <span class="small muted">${c.date ? fmtDate(c.date) : ''}</span></summary>${li(c)}</details>`).join('')}</div>
+    <p class="small muted" style="margin:.8rem 0 0">Aplikacja aktualizuje się sama – nowa wersja wczytuje się przy kolejnym otwarciu.</p>`;
+}
+
+/* =========================================================
    POWIADOMIENIA W TLE (Web Push)
    Aplikacja zapisuje w koncie (pole "alerts") tylko progi cenowe i terminy – bez kwot portfela.
    Co ~10 minut GitHub Actions sprawdza ceny i wysyła powiadomienie na zapisane urządzenia.
@@ -6897,7 +7420,7 @@ async function fsAlertsPut(obj) {
 }
 async function alertsSync(force, removeMine) {
   if (!cloudReady() || (!mySub() && !removeMine)) return;
-  const rules = alertRules(), json = JSON.stringify(rules);
+  const rules = alertRules(), brief = briefPayload(), json = JSON.stringify({rules, brief}) + '|' + todayStr();
   if (!force && json === lastRulesJson) return;
   try {
     const cur = await fsAlertsGet();
@@ -6905,10 +7428,10 @@ async function alertsSync(force, removeMine) {
     const dead = new Set(cur.state?.dead || []), me = mySub();
     let subs = (cur.alerts?.subs || []).filter(s => s?.endpoint && !dead.has(s.endpoint) && s.endpoint !== me?.endpoint);
     if (!removeMine && me) subs.push({...me, device: deviceLabel()});
-    await fsAlertsPut({v: 1, subs, rules, updatedAt: Date.now()});
+    await fsAlertsPut({v: 2, subs, rules, brief: {...brief, coins: briefCoins()}, updatedAt: Date.now()});
     lastRulesJson = json;
   } catch (e) { pushMsg = e.message; pushMsgOk = false; }
-  if (activeTab === 'settings') renderPushCard();
+  if (activeTab === 'settings') { renderPushCard(); renderBriefCard(); }
 }
 function alertsSyncSoon() { clearTimeout(alertsTimer); alertsTimer = setTimeout(() => alertsSync(false), 4000); }
 
