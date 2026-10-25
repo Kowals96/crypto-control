@@ -954,6 +954,12 @@
       <p class="pos-info" id="posInfo"></p>
       <div class="form-row">
         <div><label for="editQty" id="lblQty">Ilość</label><br><input type="number" id="editQty" step="any" min="0" placeholder="np. 0.5"></div>
+        <div id="fldPay" style="display:none"><label for="editPay" id="lblPay">Zapłacono</label><br>
+          <span style="display:inline-flex;gap:.35rem;flex-wrap:wrap;align-items:center">
+            <input type="number" id="editPay" step="any" min="0" placeholder="np. 150" style="max-width:120px" oninput="payPreview()">
+            <select id="editPayCur" onchange="payPrefs();payPreview()"><option value="PLN">zł</option><option value="USD">USD</option></select>
+            <select id="editPayKind" onchange="payPrefs();payPreview()"><option value="total">łącznie</option><option value="unit">za 1 szt.</option></select>
+          </span></div>
         <div id="fldUsd"><label for="editAvg" id="lblUsd">Cena zakupu USD</label><br><input type="number" id="editAvg" step="any" min="0" placeholder="np. 65000"></div>
         <div id="fldPln"><label for="editPln" id="lblPln">Cena zakupu PLN (opcjonalnie)</label><br><input type="number" id="editPln" step="any" min="0" placeholder="z bieżącego kursu"></div>
         <div id="fldSellPln" style="display:none"><label for="editSellPln">Otrzymano zł (tylko sprzedaż za PLN)</label><br><input type="number" id="editSellPln" step="any" min="0" placeholder="puste = krypto→krypto"></div>
@@ -962,6 +968,7 @@
       </div>
       <label class="check" id="lblJournal"><input type="checkbox" id="editJournal" checked>
         <span>Kupione za złotówki lub inną walutę tradycyjną – zapisz w dzienniku jako koszt do PIT-38 i wlicz do budżetu miesiąca. Odznacz, jeśli płaciłeś inną kryptowalutą (np. USDT).</span></label>
+      <p class="small muted" id="payInfo" style="margin:-.3rem 0 .5rem"></p>
       <p id="editMessage" style="font-size:.85rem"></p>
       <p class="small muted" id="modeHelp"></p>
     </div>
@@ -1108,7 +1115,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v25 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v26 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -3480,20 +3487,41 @@ function updateEditForm() {
   document.getElementById('posInfo').textContent = pos
     ? `Obecnie: ${fmtQty(pos.qty)} ${sym} · średnia ${usd(pos.avg)} · średnia PLN ${plnApprox(pos) ? '≈ ' : ''}${pln(avgPlnOf(pos))}`
     : `Brak pozycji ${sym}.`;
-  const isSell = mode === 'sell';
-  document.getElementById('fldUsd').style.display = isSell ? 'none' : '';
-  document.getElementById('fldPln').style.display = isSell ? 'none' : '';
+  const isSell = mode === 'sell', isBuy = mode === 'buy';
+  document.getElementById('fldUsd').style.display = isSell || isBuy ? 'none' : '';
+  document.getElementById('fldPln').style.display = isSell || isBuy ? 'none' : '';
+  document.getElementById('fldPay').style.display = isBuy ? '' : 'none';
+  if (isBuy) { try { const c = localStorage.getItem('ccPayCur'), k = localStorage.getItem('ccPayKind'); if (c) document.getElementById('editPayCur').value = c; if (k) document.getElementById('editPayKind').value = k; } catch (e) {} }
+  payPreview();
   document.getElementById('fldSellPln').style.display = isSell ? '' : 'none';
   document.getElementById('lblJournal').style.display = mode === 'buy' ? '' : 'none';
   document.getElementById('lblQty').textContent = isSell ? 'Ilość do sprzedaży' : mode === 'buy' ? 'Kupiona ilość' : 'Ilość łącznie';
   document.getElementById('lblUsd').textContent = mode === 'buy' ? 'Cena zakupu USD' : 'Średnia cena USD';
   document.getElementById('lblPln').textContent = mode === 'buy' ? 'Cena zakupu PLN (opcjonalnie)' : 'Średnia cena PLN (opcjonalnie)';
   document.getElementById('modeHelp').textContent = {
-    buy: 'Dokup: dodaje ilość i przelicza średnią ważoną. Bez ceny PLN użyje bieżącego kursu – wpisz ją, jeśli kupowałeś wcześniej.',
+    buy: 'Dokup: wpisz, ile kupiłeś i ile zapłaciłeś – w złotówkach albo dolarach, łącznie albo za sztukę. Aplikacja przeliczy średnią ważoną w USD i w PLN (kurs NBP).',
     sell: 'Sprzedaj część: zmniejsza ilość, średnia zostaje bez zmian. Jeśli sprzedałeś za złotówki, wpisz otrzymaną kwotę – trafi do dziennika jako przychód do PIT-38. Wymiana na inną kryptowalutę (np. do rdzenia) nie jest przychodem – zostaw pole puste.',
     set: 'Ustaw ręcznie: nadpisuje ilość i średnią, bez zapisu w dzienniku. Bez średniej PLN koszt w PLN będzie liczony po bieżącym kursie.'
   }[mode];
 }
+
+function payPrefs() { try { localStorage.setItem('ccPayCur', document.getElementById('editPayCur').value); localStorage.setItem('ccPayKind', document.getElementById('editPayKind').value); } catch (e) {} }
+// zakup: z kwoty (zł lub USD, łącznie lub za sztukę) liczy cenę za sztukę w USD i PLN
+function payCalc() {
+  const qty = parseFloat(document.getElementById('editQty').value), pay = parseFloat(document.getElementById('editPay').value);
+  const cur = document.getElementById('editPayCur').value, kind = document.getElementById('editPayKind').value;
+  if (!(qty > 0) || !(pay > 0) || !(usdPlnRate > 0)) return null;
+  const unit = kind === 'total' ? pay / qty : pay;
+  return cur === 'PLN' ? {pPln: unit, pUsd: unit / usdPlnRate, totPln: unit * qty} : {pUsd: unit, pPln: unit * usdPlnRate, totPln: unit * usdPlnRate * qty};
+}
+function payPreview() {
+  const el = document.getElementById('payInfo');
+  if (!el) return;
+  if (document.getElementById('editMode')?.value !== 'buy') { el.textContent = ''; return; }
+  const c = payCalc(), sym = document.getElementById('editSymbol').value;
+  el.textContent = c ? `Cena za 1 ${sym}: ${pln(c.pPln)} ≈ ${usd(c.pUsd)} · łącznie ${zl2(c.totPln)} (kurs USD/PLN ${fixed(usdPlnRate, 4)}).` : '';
+}
+document.addEventListener('input', e => { if (e.target?.id === 'editQty') payPreview(); });
 
 function editMsg(text, ok = true) {
   const el = document.getElementById('editMessage');
@@ -3505,7 +3533,7 @@ function applyEdit() {
   const sym = document.getElementById('editSymbol').value;
   const mode = document.getElementById('editMode').value;
   const qty = parseFloat(document.getElementById('editQty').value);
-  const pUsd = parseFloat(document.getElementById('editAvg').value);
+  const pUsdIn = parseFloat(document.getElementById('editAvg').value);
   const pPlnIn = parseFloat(document.getElementById('editPln').value);
   const sellPln = parseFloat(document.getElementById('editSellPln').value);
   const toJournal = document.getElementById('editJournal').checked;
@@ -3528,8 +3556,15 @@ function applyEdit() {
     }
     if (sellPln > 0) entry = {date: todayStr(), type:'sell', pln: round2(sellPln), exch:'Binance', note:`Sprzedaż ${fmtQty(qty)} ${sym}`};
   } else {
-    if (!(pUsd > 0)) return editMsg('Podaj poprawną cenę w USD.', false);
-    const pPln = pPlnIn > 0 ? pPlnIn : null;
+    let pUsdX = pUsdIn, pPlnX = pPlnIn;
+    if (mode === 'buy') {
+      const c = payCalc();
+      if (!c) return editMsg('Podaj, ile zapłaciłeś (w złotówkach albo w dolarach).', false);
+      pUsdX = c.pUsd; pPlnX = c.pPln;
+    }
+    if (!(pUsdX > 0)) return editMsg('Podaj poprawną cenę w USD.', false);
+    const pPln = pPlnX > 0 ? pPlnX : null;
+    const pUsd = pUsdX;
     if (mode === 'set') {
       holdings[sym] = {qty, avg: pUsd};
       if (pPln) holdings[sym].avgPln = pPln;
@@ -3561,7 +3596,7 @@ function applyEdit() {
     const el = document.getElementById('editMessage');
     el.textContent += ` Zapisano w dzienniku: ${entry.type === 'buy' ? 'koszt' : 'przychód'} ${zl2(entry.pln)}.`;
   }
-  ['editQty','editAvg','editPln','editSellPln'].forEach(id => document.getElementById(id).value = '');
+  ['editQty','editAvg','editPln','editSellPln','editPay'].forEach(id => document.getElementById(id).value = '');
   updateEditForm();
   renderAll();
   if (isNew && holdings[sym]) fullRefresh();
@@ -7681,6 +7716,9 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '26', date: '2026-10-25', title: 'Zakup za złotówki', items: [
+    'Kupno / Sprzedaż: przy dokupie wpisujesz, ile zapłaciłeś – w złotówkach albo w dolarach, łącznie albo za sztukę. Aplikacja sama przeliczy cenę i średnią w USD i PLN po kursie NBP.',
+    'Pod polem widać od razu wyliczoną cenę za sztukę i kwotę łączną.']},
   {v: '25', date: '2026-10-25', title: 'Portfel domyślnie w dolarach', items: [
     'Portfel znowu otwiera się w USD. Na złotówki przełączysz obok wartości portfela albo w Ustawieniach → Aplikacja.']},
   {v: '24', date: '2026-10-25', title: 'Własna kolejność kafelków i logo bez migania', items: [
