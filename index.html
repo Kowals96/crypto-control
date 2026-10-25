@@ -627,6 +627,89 @@
     input,select{max-width:150px}
     .pin-pad{grid-template-columns:repeat(3,64px)}
   }
+
+  /* ---------- v23: Dziś · Portfel · Rynek · Finanse, dolny pasek, okna od dołu ---------- */
+  #tabbar{display:none}
+  .bell-container,#layoutBtn,.fab,.nav-section,#finSubs,section#tasks{display:none !important}
+  #grpSubs:empty{display:none}
+  header p:empty{display:none}
+  #navItems .nav-add{margin-top:.8rem;color:var(--accent)}
+  #navItems .nav-add .nav-ic{color:var(--accent);border-style:dashed}
+  #navItems .nav-count[hidden]{display:none}
+  .ic-coin{width:38px;height:38px;flex:0 0 38px;border-radius:50%;display:inline-grid;place-items:center;font-size:.6rem;font-weight:800;color:#0b1120;overflow:hidden;letter-spacing:-.02em;vertical-align:middle}
+  .ic-coin img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;border-radius:50%}
+  .ic-coin.sm{width:26px;height:26px;flex-basis:26px;font-size:.5rem}
+  .ic-coin.lg{width:46px;height:46px;flex-basis:46px;font-size:.72rem}
+  .pf-sym{display:inline-flex;align-items:center;gap:.6rem}
+  .pf-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+  .pf-big{font-size:2.6rem;font-weight:800;letter-spacing:-.04em;line-height:1.1;margin:.2rem 0 .45rem;font-variant-numeric:tabular-nums}
+  .pf-chips{display:flex;gap:.45rem;flex-wrap:wrap}
+  .chip-s{display:inline-flex;align-items:center;padding:.32rem .72rem;border-radius:999px;font-size:.84rem;font-weight:700;background:var(--hover);color:var(--text-2)}
+  .chip-s.pos{background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)}
+  .chip-s.neg{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}
+  .pf-roles .stack{height:10px;gap:2px;border:none;background:none}
+  .pf-roles{margin:.2rem 0 .8rem}
+  .pf-list{display:none}
+  .coin-row{display:flex;align-items:center;gap:.75rem;padding:.7rem .1rem;border-bottom:1px solid var(--border);cursor:pointer}
+  .coin-row:last-child{border-bottom:none}
+  .coin-row .cr-main{flex:1;min-width:0}
+  .coin-row .cr-sym{font-weight:700;display:flex;align-items:center;gap:.4rem}
+  .coin-row .cr-sym .status{font-size:.62rem;padding:.1rem .45rem}
+  .coin-row .cr-sub{font-size:.8rem;color:var(--muted)}
+  .coin-row .cr-right{text-align:right;font-variant-numeric:tabular-nums}
+  .coin-row .cr-right strong{display:block}
+  .td-hero{border-radius:calc(var(--radius) + 6px);padding:1.3rem 1.4rem;margin-bottom:var(--gap);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 16%,var(--card-solid)),var(--card-solid) 55%,color-mix(in srgb,var(--accent-2) 12%,var(--card-solid)));border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+  .td-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:var(--gap);align-items:start}
+  .td-row{display:flex;gap:.75rem;align-items:center;padding:.7rem 0;border-bottom:1px solid var(--border)}
+  .td-row:last-of-type{border-bottom:none}
+  .td-msg{font-size:.88rem;line-height:1.4}
+  .td-ic{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center}
+  .td-ic svg{width:18px;height:18px}
+  .td-when{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
+  .td-when.soon{color:var(--accent)}
+  .td-day{width:42px;flex:0 0 42px;text-align:center}
+  .td-day strong{display:block;font-size:1.1rem;line-height:1.1}
+  .td-day span{font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+  .tb-count{font-size:.75rem;font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:.1rem .55rem}
+  .td-progress{height:6px;border-radius:999px;background:var(--hover);overflow:hidden;margin-top:1rem}
+  .td-progress div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .fg-bar{height:6px;border-radius:999px;margin-top:.55rem;background:linear-gradient(90deg,var(--red),var(--orange),var(--yellow),var(--green));position:relative}
+  .fg-bar i{position:absolute;top:-4px;width:4px;height:14px;border-radius:2px;background:var(--text);transform:translateX(-2px)}
+  .cm-head{display:flex;align-items:center;gap:.8rem;padding-right:1.6rem}
+  .cm-price{margin-left:auto;text-align:right}
+  .cm-price strong{display:block;font-size:1.15rem}
+  .cm-plan{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:14px;padding:.75rem .9rem;font-size:.88rem;line-height:1.45;margin:.8rem 0}
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  @media (max-width:760px){
+    nav#sidebar,.nav-backdrop,.menu-btn.icon-btn{display:none !important}
+    #tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:300;
+      padding:.3rem .25rem calc(.3rem + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--card-solid) 88%,transparent);
+      backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--border)}
+    #tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;border:none;background:none;color:var(--muted);
+      font:inherit;font-size:.68rem;font-weight:600;min-height:50px;cursor:pointer;position:relative;-webkit-tap-highlight-color:transparent}
+    #tabbar button svg{width:24px;height:24px}
+    #tabbar button.on{color:var(--accent)}
+    #tabbar .tb-plus{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--btn-bg);background-color:var(--accent);color:var(--accent-ink);
+      box-shadow:0 8px 20px -8px color-mix(in srgb,var(--accent) 80%,#000)}
+    #tabbar .tb-plus svg{width:22px;height:22px;stroke-width:2.6}
+    #tabbar .tb-badge{position:absolute;top:3px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--red);color:#fff;font-size:.6rem;font-weight:700;display:grid;place-items:center}
+    #tabbar .tb-badge[hidden]{display:none}
+    body.gate-open #tabbar,body.mk-full-open #tabbar{display:none}
+    footer{padding-bottom:calc(6.5rem + env(safe-area-inset-bottom,0px)) !important}
+    header h1{font-size:1.7rem !important;font-weight:800;letter-spacing:-.03em}
+    .pf-table{display:none !important}
+    .pf-list{display:block}
+    .pf-big{font-size:2.3rem}
+    .pf-tiles{flex-wrap:nowrap !important;overflow-x:auto;margin-right:-1rem;padding-right:1rem;scrollbar-width:none;scroll-snap-type:x mandatory}
+    .pf-tiles::-webkit-scrollbar{display:none}
+    .pf-tiles .summary-item{flex:0 0 46% !important;scroll-snap-align:start}
+    .td-hero{padding:1.15rem 1.1rem}
+    .modal{align-items:flex-end}
+    .modal-content,.modal-content.wide{width:100%;max-width:none;max-height:92vh;border-radius:24px 24px 0 0;border-bottom:none;position:relative;
+      padding:1.7rem 1.15rem calc(1.4rem + env(safe-area-inset-bottom,0px));animation:sheetUp .3s cubic-bezier(.2,.8,.2,1);overscroll-behavior:contain}
+    .modal-content::before{content:'';position:absolute;top:8px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:var(--border-strong)}
+  }
 </style>
 <style>
   /* iPhone: treść nie wchodzi pod zegar, wycięcie ekranu ani pasek gestów */
@@ -653,6 +736,7 @@
   <div class="brand"><span class="brand-logo">CC</span><div><strong>Crypto Control</strong><span>portfel · plan · PIT</span></div></div>
   <div class="nav-section">Menu</div>
   <div id="navItems">
+    <button data-tab="today">Dziś</button>
     <button data-tab="portfolio" class="active">Portfel</button>
     <button data-tab="market">Rynek</button>
     <button data-tab="goal">Cel</button>
@@ -668,6 +752,7 @@
   <div class="nav-foot">Ceny na żywo · Binance<div id="cloudFoot"></div></div>
 </nav>
 <div class="nav-backdrop" onclick="toggleNav(false)"></div>
+<nav id="tabbar" aria-label="Główne sekcje"></nav>
 <button class="fab" id="fab" onclick="quickAdd()" aria-label="Dodaj zakup"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
 
 <div class="main">
@@ -675,10 +760,11 @@
   <button class="menu-btn icon-btn" onclick="toggleNav()" aria-label="Menu"><svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
   <div class="head-title">
     <h1 id="pageTitle">Portfel</h1>
-    <p>Crypto Control · horyzont 2–4 lata · 60% ryzyko / 40% bezpieczeństwo</p>
+    <p id="pageSub"></p>
   </div>
   <div class="head-actions">
     <button class="icon-btn" id="privBtn" onclick="togglePrivacy()" title="Ukryj / pokaż kwoty"></button>
+    <button class="icon-btn" id="setBtn" onclick="openTab('settings')" title="Ustawienia" aria-label="Ustawienia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <div class="bell-container icon-btn" onclick="toggleNotif(event)" title="Zadania">
       <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <div class="bell-badge" id="bellBadge" style="display:none">0</div>
@@ -689,33 +775,34 @@
 </header>
 
 <div class="container">
+  <nav class="subtabs" id="grpSubs" role="tablist"></nav>
   <div class="card edit-banner">
-    <span><strong>Tryb edycji układu.</strong> Przesuń zakładki w menu strzałkami ▲ ▼ albo przeciągnij je myszką. Pierwsza zakładka otwiera się przy starcie. Kolumny tabeli wybierzesz w zakładce Portfel.</span>
+    <span><strong>Kolumny tabeli.</strong> Zaznacz poniżej, które kolumny pokazywać w tabeli monet na komputerze.</span>
     <span style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="action secondary" onclick="resetLayout()">Przywróć domyślny</button>
       <button class="action" onclick="toggleEditMode(false)">Gotowe</button>
     </span>
   </div>
 
+  <!-- ===================== DZIŚ ===================== -->
+  <section id="today"><div id="todayBody"></div></section>
+
   <!-- ===================== PORTFEL ===================== -->
   <section id="portfolio" class="active">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
-        <h2 style="margin:0">Aktualny portfel</h2>
-        <div>
-          <span class="seg"><button id="btnUSD" onclick="setCurrency('USD')">USD</button><button id="btnPLN" onclick="setCurrency('PLN')">PLN</button></span>
-          <button class="action secondary" onclick="fullRefresh()">↻ Odśwież ceny</button>
-        </div>
-      </div>
-      <div class="summary-bar" id="summaryBar"></div>
+      <div class="pf-hero"><div id="pfHeroVal"></div>
+        <span class="seg"><button id="btnPLN" onclick="setCurrency('PLN')">PLN</button><button id="btnUSD" onclick="setCurrency('USD')">USD</button></span></div>
+      <div class="summary-bar pf-tiles" id="summaryBar"></div>
+      <div class="pf-roles" id="pfRoles"></div>
       <div class="edit-only" id="colSettings"></div>
-      <div class="table-wrap">
+      <div class="pf-list" id="pfList"></div>
+      <div class="table-wrap pf-table">
         <table id="portfolioTable">
           <thead id="portfolioHead"></thead>
           <tbody></tbody>
         </table>
       </div>
-      <p class="small muted" style="margin:.5rem 0 0">Kliknij wiersz, żeby zobaczyć pełne dane. Kliknij nagłówek kolumny, żeby sortować.</p>
+      <p class="small muted pf-table" style="margin:.5rem 0 0">Kliknij wiersz, żeby zobaczyć pełne dane. Kliknij nagłówek kolumny, żeby sortować. <a href="#" onclick="toggleEditMode();return false">Wybierz kolumny</a></p>
       <div id="summaryNotes" class="small muted"></div>
       <div class="refresh-info" id="refreshInfo">Ładowanie cen...</div>
     </div>
@@ -1011,7 +1098,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v22 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v23 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1515,7 +1602,7 @@ const COLUMNS = {
   plPct:  {label:'P/L %',   title:'P/L tylko %',              val: r => r.hasPrice ? r.plPct : NA,     fmt: r => r.hasPrice ? colored(r.plPct, signed(r.plPct, pct)) : '—'},
   status: {label:'Status',  title:'Status w planie',          val: r => STATUS_ORDER[statusOf(r.sym)] ?? 9, fmt: r => { const st = statusOf(r.sym); return `<span class="status status-${st}">${STATUS_LABEL[st]}</span>`; }}
 };
-const DEFAULT_COLS = ['value', 'alloc', 'pl', 'status'];
+const DEFAULT_COLS = ['price', 'ch24', 'value', 'alloc', 'pl', 'status'];
 const DUST_PLN = 10;
 const ASC_FIRST = ['sym', 'status', 'target'];
 
@@ -1548,12 +1635,13 @@ function renderTable(rows) {
     const tr = document.createElement('tr');
     tr.className = 'clickable';
     tr.onclick = () => openModal(r.sym);
-    tr.innerHTML = `<td><strong>${r.sym}</strong></td>` + cols.map(c => `<td>${COLUMNS[c].fmt(r)}</td>`).join('');
+    tr.innerHTML = `<td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<strong>${r.sym}</strong></span></td>` + cols.map(c => `<td>${COLUMNS[c].fmt(r)}</td>`).join('');
     tbody.appendChild(tr);
   });
   if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="${cols.length + 1}" class="muted">${rows.length ? 'Brak pozycji do pokazania.' : 'Portfel jest pusty – dodaj pozycję w zakładce „Kupno / Sprzedaż”.'}</td></tr>`;
   }
+  renderTable.list = list;
   return hidden;
 }
 
@@ -1603,12 +1691,10 @@ function render() {
   const act = activeGoal(totalPln());
   const spent = spentThisMonth(), monthly = goal.monthly || 0;
   document.getElementById('summaryBar').innerHTML = `
-    <div class="summary-item link" onclick="openTile('value')" title="Szczegóły wartości"><span>Wartość</span><strong>${money(totVal)}</strong></div>
     ${rows.filter(r => statusOf(r.sym) === 'stable').map(r => `<div class="summary-item link" onclick="${r.sym === 'USDC' ? "openTile('usdc')" : `editPosition('${r.sym}')`}" title="${r.sym === 'USDC' ? 'W co zainwestować USDC według strategii' : 'Kliknij, żeby zmienić ilość'}">
       <span>${r.sym} na giełdzie</span><strong>${fixed(r.pos.qty, 2)} ${r.sym}</strong>
       <span>${r.hasPrice ? '≈ ' + zl2(valuePln(r.sym)) : ''}</span></div>`).join('')}
     <div class="summary-item link" onclick="openTile('cost')" title="Koszty rok po roku"><span>Koszt (ze średnich)</span><strong>${approx ? '≈ ' : ''}${money(totCost)}</strong></div>
-    <div class="summary-item link" onclick="openTile('pl')" title="Wynik według monet"><span>P/L</span><strong class="${pl >= 0 ? 'positive' : 'negative'}">${signed(pl, money)} (${signed(plPct, pct)})</strong></div>
     ${act ? `<div class="summary-item link" onclick="openTab('goal')"><span>Do celu ${zl(act.g)}</span><strong>${pct(act.pct)}</strong></div>` : ''}
     ${monthly > 0 ? `<div class="summary-item link" onclick="openTab('budget')"><span>Budżet: ${monthName()}</span><strong class="${spent > monthly ? 'negative' : ''}">${zl(spent)} / ${zl(monthly)}</strong></div>` : ''}`;
 
@@ -1635,6 +1721,10 @@ function render() {
   document.getElementById('summaryNotes').innerHTML = notes.map(n => `<div>${n}</div>`).join('');
 
   renderAllocation(rows, total);
+  renderPfHero(rows, totVal, totCost);
+  renderPfList(renderTable.list || []);
+  loadCoinIcons();
+  if (activeTab === 'today' && Date.now() - (render.todayAt || 0) > 1500) { render.todayAt = Date.now(); renderToday(); }
 }
 
 function renderAllocation(rows, total) {
@@ -2224,26 +2314,34 @@ function openModal(sym) {
   const {rows} = computeRows();
   const r = rows.find(x => x.sym === sym);
   if (!r) return;
+  const wasOpen = modalSym === sym && !!document.querySelector('#modalBody details')?.open;
   modalSym = sym;
   const c = STRATEGY[sym] || {};
   const st = statusOf(sym);
   const p = prices[sym];
   const row = (k, v, cls = '') => `<div class="modal-row"><span>${k}</span><strong class="${cls}">${v}</strong></div>`;
-  document.getElementById('modalTitle').textContent = sym;
-  document.getElementById('modalBody').innerHTML =
-    row('Ilość', fmtQty(r.pos.qty)) +
-    row('Średnia USD', usd(r.pos.avg)) +
-    row('Średnia PLN', (plnApprox(r.pos) ? '≈ ' : '') + pln(avgPlnOf(r.pos)) + (plnApprox(r.pos) ? ' <span class="muted small">(bieżący kurs)</span>' : '')) +
-    row('Cena', r.hasPrice ? moneyPrice(r.price) : '—') +
-    row('Zmiana 24h', Number.isFinite(p?.ch24) ? signed(p.ch24, pct) : '—', Number.isFinite(p?.ch24) ? (p.ch24 >= 0 ? 'positive' : 'negative') : '') +
-    row('Źródło ceny', p ?`${p.src}${p.ts ? ', ' + hhmm(p.ts) : ''}` : '—') +
-    row('Wartość', r.hasPrice ? money(r.value) : '—') +
-    row('Koszt', money(r.cost)) +
-    row('P/L', r.hasPrice ? `${signed(r.pl, money)} (${signed(r.plPct, pct)})` : '—', r.hasPrice ? (r.pl >= 0 ? 'positive' : 'negative') : '') +
-    row('Alokacja', r.hasPrice ? pct(r.alloc) : '—') +
-    row('Cel', c.target ? c.target + '%' : '—') +
-    row('Status', STATUS_LABEL[st]) +
-    row('Reguła planu', describeRule(sym));
+  const ch = p?.ch24, mkName = (typeof MK !== 'undefined' && MK.cgm?.[sym]?.name) || '';
+  document.getElementById('modalTitle').innerHTML = `<span class="cm-head">${coinIcon(sym, 'lg')}<span><span style="display:block">${sym}${mkName && mkName.toUpperCase() !== sym ? ` <span class="muted" style="font-weight:500">${esc(mkName)}</span>` : ''}</span>
+    <span class="small muted" style="font-weight:500">${STATUS_LABEL[st]}${r.hasPrice ? ' · ' + pct(r.alloc) + ' portfela' : ''}</span></span>
+    <span class="cm-price"><strong>${r.hasPrice ? moneyPrice(r.price) : '—'}</strong>${Number.isFinite(ch) ? `<span class="small">${colored(ch, signed(ch, pct) + ' (24 h)')}</span>` : ''}</span></span>`;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="kv">
+      <div><span>Ilość</span><strong class="sens">${fmtQty(r.pos.qty)}</strong></div>
+      <div><span>Średnia cena zakupu</span><strong class="sens">${moneyPrice(avgIn(r.pos))}</strong></div>
+      <div><span>Wartość</span><strong class="sens">${r.hasPrice ? money(r.value) : '—'}</strong></div>
+      <div><span>Wynik</span><strong class="sens ${r.hasPrice ? (r.pl >= 0 ? 'positive' : 'negative') : ''}">${r.hasPrice ? `${signed(r.pl, money)} (${signed(r.plPct, pct)})` : '—'}</strong></div>
+    </div>
+    <div class="cm-plan"><strong>Według planu:</strong> ${c.target ? `cel ${c.target}% portfela, teraz ${r.hasPrice ? pct(r.alloc) : '—'}. ` : ''}${cap(describeRule(sym)).replace(/\.?$/, '.')}</div>
+    <div class="form-row" style="margin:.2rem 0 .6rem">
+      <button class="action" style="flex:1" onclick="closeModal();quickAdd('${sym}')">Kup / Sprzedaj</button>
+      <button class="action secondary" style="flex:1" onclick="closeModal();openTab('market');setSub('market','quotes');setTimeout(()=>{try{mkSelect('${sym}',true)}catch(e){}},300)">Wykres w Rynku</button>
+    </div>
+    <details${wasOpen ? ' open' : ''}><summary><strong>Więcej szczegółów</strong></summary><div style="padding:.3rem .2rem">${
+      row('Średnia USD', usd(r.pos.avg)) +
+      row('Średnia PLN', (plnApprox(r.pos) ? '≈ ' : '') + pln(avgPlnOf(r.pos)) + (plnApprox(r.pos) ? ' <span class="muted small">(bieżący kurs)</span>' : '')) +
+      row('Koszt', money(r.cost)) +
+      row('Cel alokacji', c.target ? c.target + '%' : '—') +
+      row('Źródło ceny', p ? `${p.src}${p.ts ? ', ' + hhmm(p.ts) : ''}` : '—')}</div></details>`;
   document.getElementById('detailModal').classList.add('open');
 }
 function closeModal() { modalSym = null; document.getElementById('detailModal').classList.remove('open'); }
@@ -3560,6 +3658,7 @@ function updateNotifications() {
 }
 
 function renderTasks() {
+  if (typeof renderToday === 'function' && activeTab === 'today') renderToday();
   const noPrices = !Object.keys(prices).length;
   document.getElementById('tasksList').innerHTML = tasks.length
     ? tasks.map(taskHtml).join('')
@@ -3606,7 +3705,9 @@ function loadLayout(src) {
     if (Array.isArray(l.cols)) layout.cols = l.cols.filter(c => COLUMNS[c]);
     if (l.sort && (l.sort.key === null || l.sort.key === 'sym' || COLUMNS[l.sort.key])) layout.sort = {key: l.sort.key, dir: l.sort.dir === 'asc' ? 'asc' : 'desc'};
     layout.hideDust = !!l.hideDust;
+    if (!l.colsV2) ['ch24', 'price'].forEach(c => { if (!layout.cols.includes(c)) layout.cols.unshift(c); });
   }
+  layout.colsV2 = true;
 }
 const saveLayout = () => lsSet(LS.layout, layout);
 const tabOrder = () => {
@@ -3619,44 +3720,6 @@ const tabOrder = () => {
   });
   return out;
 };
-
-function renderNav() {
-  const nav = document.getElementById('navItems');
-  const order = tabOrder();
-  nav.innerHTML = order.map((id, i) => `<button data-tab="${id}" class="${id === activeTab ? 'active' : ''}" draggable="${editing}">
-      <span class="nav-ic">${TAB_ICONS[id] || ''}</span><span class="nav-label">${TAB_DEFS[id]}</span>
-      <span class="mv-group"><span class="mv" title="W górę" onclick="moveTab(event,'${id}',-1)" style="${i === 0 ? 'visibility:hidden' : ''}">▲</span><span class="mv" title="W dół" onclick="moveTab(event,'${id}',1)" style="${i === order.length - 1 ? 'visibility:hidden' : ''}">▼</span></span>
-    </button>`).join('');
-  updateNavCount();
-  nav.querySelectorAll('button').forEach(btn => {
-    const id = btn.dataset.tab;
-    btn.addEventListener('click', () => openTab(id));
-    btn.addEventListener('dragstart', e => {
-      if (!editing) return e.preventDefault();
-      dragTab = id; btn.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', id);
-    });
-    btn.addEventListener('dragend', () => {
-      dragTab = null; btn.classList.remove('dragging');
-      nav.querySelectorAll('.drop-target').forEach(x => x.classList.remove('drop-target'));
-    });
-    btn.addEventListener('dragover', e => { if (editing && dragTab && dragTab !== id) { e.preventDefault(); btn.classList.add('drop-target'); } });
-    btn.addEventListener('dragleave', () => btn.classList.remove('drop-target'));
-    btn.addEventListener('drop', e => {
-      e.preventDefault();
-      if (dragTab && dragTab !== id) {
-        const o = tabOrder();
-        const to = o.indexOf(id);
-        o.splice(o.indexOf(dragTab), 1);
-        o.splice(to, 0, dragTab);
-        layout.tabs = o; saveLayout();
-      }
-      dragTab = null;
-      renderNav();
-    });
-  });
-}
 
 function moveTab(e, id, d) {
   e.stopPropagation();
@@ -3671,10 +3734,9 @@ function moveTab(e, id, d) {
 function toggleEditMode(force) {
   editing = typeof force === 'boolean' ? force : !editing;
   document.body.classList.toggle('editing', editing);
-  document.getElementById('layoutBtn').classList.toggle('on', editing);
+  document.getElementById('layoutBtn')?.classList.toggle('on', editing);
   renderNav();
   renderColSettings();
-  if (window.innerWidth <= 760) toggleNav(editing);      // na telefonie pokaż menu do przesuwania
 }
 
 function resetLayout() {
@@ -3682,6 +3744,245 @@ function resetLayout() {
   layout = defaultLayout(); saveLayout();
   renderNav(); renderColSettings(); render();
 }
+
+/* =========================================================
+   NAWIGACJA v23: Dziś · Portfel · Rynek · Finanse (+ dodanie transakcji), Ustawienia pod zębatką
+   ========================================================= */
+const ICON_SUN = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
+const ICON_TREND = svg('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>');
+const ICON_PLUS = svg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>');
+const GROUPS = [
+  {id: 'today', label: 'Dziś', icon: ICON_SUN, items: [['today', 'Dziś']]},
+  {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż']]},
+  {id: 'mk', label: 'Rynek', icon: ICON_TREND, items: [['market', 'Rynek']]},
+  {id: 'fin', label: 'Finanse', icon: TAB_ICONS.savings, items: [['savings:sav', 'Oszczędności'], ['savings:subs', 'Subskrypcje i opłaty'], ['savings:dates', 'Ważne daty'], ['journal', 'Dziennik / PIT']]}
+];
+const SET_GROUP = {id: 'set', label: 'Ustawienia', items: [['settings', 'Ustawienia']]};
+const itemKey = id => id === 'savings' ? 'savings:' + subGet('fin') : id;
+const groupOf = id => GROUPS.find(g => g.items.some(([k]) => k.split(':')[0] === id)) || SET_GROUP;
+function navTo(key) {
+  const [sec, sub] = key.split(':');
+  if (sub) setSub('fin', sub, true);
+  openTab(sec);
+}
+function goGroup(gid) {
+  const g = GROUPS.find(x => x.id === gid);
+  if (!g) return;
+  let last = null;
+  try { last = localStorage.getItem('ccGrpLast_' + gid); } catch (e) {}
+  if (groupOf(activeTab) === g && g.items.length > 1) last = g.items[0][0];    // drugie stuknięcie: pierwsza podkategoria
+  navTo(last && g.items.some(([k]) => k === last) ? last : g.items[0][0]);
+}
+function renderNav() {
+  const nav = document.getElementById('navItems');
+  if (!nav) return;
+  const cur = groupOf(activeTab).id;
+  nav.innerHTML = GROUPS.map(g => `<button data-grp="${g.id}" class="${cur === g.id ? 'active' : ''}" onclick="goGroup('${g.id}')">
+      <span class="nav-ic">${g.icon}</span><span class="nav-label">${g.label}</span>${g.id === 'today' ? '<span class="nav-count" hidden></span>' : ''}</button>`).join('')
+    + `<button class="nav-add" onclick="quickAdd()"><span class="nav-ic">${ICON_PLUS}</span><span class="nav-label">Dodaj transakcję</span></button>`;
+  const tb = document.getElementById('tabbar');
+  if (tb) tb.innerHTML = GROUPS.map(g => `<button data-grp="${g.id}" class="${cur === g.id ? 'on' : ''}" onclick="goGroup('${g.id}')" aria-label="${g.label}">${g.icon}<span>${g.label}</span>${g.id === 'today' ? '<b class="tb-badge" hidden></b>' : ''}</button>`).join('')
+    + `<button class="tb-add" onclick="quickAdd()" aria-label="Dodaj transakcję"><span class="tb-plus">${ICON_PLUS}</span></button>`;
+  updateNavCount();
+}
+function updateNavState() {
+  const g = groupOf(activeTab);
+  document.querySelectorAll('#navItems button[data-grp]').forEach(b => b.classList.toggle('active', b.dataset.grp === g.id));
+  document.querySelectorAll('#tabbar button[data-grp]').forEach(b => b.classList.toggle('on', b.dataset.grp === g.id));
+  document.getElementById('setBtn')?.classList.toggle('on', activeTab === 'settings');
+  const sub = document.getElementById('grpSubs'), key = itemKey(activeTab);
+  if (sub) sub.innerHTML = g.items.length > 1 ? g.items.map(([k, l]) => `<button role="tab" aria-selected="${k === key}" class="${k === key ? 'on' : ''}" onclick="navTo('${k}')">${l}</button>`).join('') : '';
+  try { if (g.items.length > 1) localStorage.setItem('ccGrpLast_' + g.id, key); } catch (e) {}
+  const pt = document.getElementById('pageTitle'), ps = document.getElementById('pageSub');
+  if (pt) pt.textContent = g.label;
+  if (ps) ps.textContent = activeTab === 'today' ? cap(new Date().toLocaleDateString('pl-PL', {weekday: 'long', day: 'numeric', month: 'long'})) : '';
+  setTimeout(() => sub?.querySelector('.on')?.scrollIntoView({block: 'nearest', inline: 'center'}), 0);
+}
+function updateNavCount() {
+  const n = (typeof tasks !== 'undefined' ? tasks : []).filter(t => t.label !== 'BUDŻET').length;
+  document.querySelectorAll('#navItems .nav-count, #tabbar .tb-badge').forEach(b => { b.hidden = !n; b.textContent = n; });
+}
+
+/* ---------- ikony kryptowalut (prawdziwe logo z CoinGecko, zapasowo kolorowe kółko) ---------- */
+LS.icons = 'ccIcons';
+let coinIcons = (() => { const v = lsGet(LS.icons); return v && typeof v === 'object' ? v : {}; })();
+function coinColor(sym) { let h = 0; for (const ch of sym) h = (h * 31 + ch.charCodeAt(0)) % 360; return `hsl(${h} 70% 62%)`; }
+function coinIcon(sym, cls = '') {
+  const u = coinIcons[sym];
+  return u ? `<span class="ic-coin ${cls}"><img src="${esc(u)}" alt="" loading="lazy" onerror="iconFail(this,'${sym}')"></span>`
+    : `<span class="ic-coin ${cls}" style="background:${coinColor(sym)}">${esc(sym.slice(0, 4))}</span>`;
+}
+function iconFail(img, sym) { const s = img.parentNode; if (!s) return; s.style.background = coinColor(sym); s.textContent = sym.slice(0, 4); }
+async function loadCoinIcons() {
+  const idOf = s => { try { return cgId(s); } catch (e) { return STRATEGY[s]?.id || null; } };
+  const need = [...new Set([...Object.keys(holdings), 'BTC', 'ETH'])].filter(s => !coinIcons[s] && idOf(s));
+  if (!need.length || loadCoinIcons.busy || Date.now() - (loadCoinIcons.at || 0) < 10 * 60000) return;
+  loadCoinIcons.busy = true; loadCoinIcons.at = Date.now();
+  try {
+    const byId = {}; need.forEach(s => { byId[idOf(s)] = s; });
+    const d = await fetchJson(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=250&ids=${Object.keys(byId).join(',')}`);
+    let n = 0;
+    (Array.isArray(d) ? d : []).forEach(x => { const s = byId[x.id]; if (s && /^https:\/\//.test(x.image || '')) { coinIcons[s] = x.image.replace('/large/', '/small/'); n++; } });
+    if (n) { lsSet(LS.icons, coinIcons); scheduleRender(); }
+  } catch (e) {}
+  loadCoinIcons.busy = false;
+}
+
+/* ---------- Portfel: duża wartość, kafelki, role, lista monet ---------- */
+const ROLE_COLORS = {core: 'var(--accent)', hold: 'var(--accent-2)', reduce: 'var(--orange)', lottery: 'var(--yellow)', new: 'var(--purple)', stable: 'var(--muted)'};
+function renderPfHero(rows, totVal, totCost) {
+  const el = document.getElementById('pfHeroVal');
+  if (!el) return;
+  let chg = 0;
+  rows.forEach(r => { const c = prices[r.sym]?.ch24; if (r.hasPrice && Number.isFinite(c)) chg += r.value * c / (100 + c); });
+  const base = totVal - chg, chgPct = base > 0 ? chg / base * 100 : 0;
+  const pl = totVal - totCost, plPct = totCost > 0 ? pl / totCost * 100 : 0;
+  const live = Object.values(prices).some(p => /na żywo/.test(p.src || ''));
+  el.innerHTML = `<span class="muted small" style="font-weight:600"><span class="dot-live${live ? '' : ' off'}"></span>Wartość · ${live ? 'ceny na żywo' : 'ostatnie ceny'}</span>
+    <div class="pf-big link sens" onclick="openTile('value')">${money(totVal)}</div>
+    <div class="pf-chips"><span class="chip-s ${chg >= 0 ? 'pos' : 'neg'} sens">${signed(chg, money)} dziś (${signed(chgPct, pct)})</span>
+      <span class="chip-s ${pl >= 0 ? 'pos' : 'neg'} link sens" onclick="openTile('pl')">wynik ${signed(pl, money)} (${signed(plPct, pct)})</span></div>`;
+  const by = {}, total = rows.filter(r => r.hasPrice).reduce((t, r) => t + r.value, 0);
+  rows.filter(r => r.hasPrice).forEach(r => { const k = statusOf(r.sym); by[k] = (by[k] || 0) + r.value; });
+  const order = ['core', 'hold', 'reduce', 'lottery', 'new', 'stable'].filter(k => by[k] > 0);
+  document.getElementById('pfRoles').innerHTML = total > 0 ? `<div class="stack">${order.map(k => `<div style="width:${by[k] / total * 100}%;background:${ROLE_COLORS[k]}" title="${STATUS_LABEL[k]}"></div>`).join('')}</div>
+    <div class="legend">${order.map(k => `<span><i style="background:${ROLE_COLORS[k]}"></i>${STATUS_LABEL[k]} ${pct(by[k] / total * 100)}</span>`).join('')}</div>` : '';
+}
+function renderPfList(list) {
+  const el = document.getElementById('pfList');
+  if (!el) return;
+  el.innerHTML = list.map(r => {
+    const c = prices[r.sym]?.ch24, st = statusOf(r.sym);
+    return `<div class="coin-row" onclick="openModal('${r.sym}')">${coinIcon(r.sym)}
+      <div class="cr-main"><div class="cr-sym">${r.sym}<span class="status status-${st}">${STATUS_LABEL[st]}</span></div>
+        <div class="cr-sub">${r.hasPrice ? moneyPrice(r.price) : '—'} ${Number.isFinite(c) ? colored(c, signed(c, pct)) : ''}</div></div>
+      <div class="cr-right sens"><strong>${r.hasPrice ? money(r.value) : '—'}</strong>${r.hasPrice ? `<span class="small">${colored(r.plPct, signed(r.plPct, pct))}</span>` : ''}</div></div>`;
+  }).join('') || '<p class="muted">Portfel jest pusty – dodaj pozycję przyciskiem „+”.</p>';
+}
+
+/* ---------- Dziś ---------- */
+const TODAY_IC = {
+  buy: ['var(--green)', '<polyline points="7 13 12 18 17 13"/><line x1="12" y1="6" x2="12" y2="18"/>'],
+  sell: ['var(--orange)', '<polyline points="7 11 12 6 17 11"/><line x1="12" y1="18" x2="12" y2="6"/>'],
+  info: ['var(--accent-2)', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>'],
+  pay: ['var(--orange)', '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>'],
+  date: ['var(--accent)', '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
+  cal: ['var(--accent-2)', '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>']
+};
+const tdIc = k => { const [c, d] = TODAY_IC[k] || TODAY_IC.info; return `<span class="td-ic" style="color:${c};background:color-mix(in srgb,${c} 15%,transparent)">${svg(d)}</span>`; };
+let todayAll = false;
+function loadFngToday() {
+  if (typeof mkt === 'undefined' || Date.now() - mkt.fngAt < 30 * 60000 || loadFngToday.busy) return;
+  loadFngToday.busy = true;
+  fetchJson('https://api.alternative.me/fng/?limit=1').then(d => {
+    const x = d?.data?.[0];
+    if (x) { mkt.fng = {v: +x.value, cls: x.value_classification}; mkt.fngAt = Date.now(); renderToday(); }
+  }).catch(() => {}).finally(() => { loadFngToday.busy = false; });
+}
+function todayUpcoming() {
+  const out = [], today = todayStr(), f = finGet();
+  calEvents(30).filter(e => e.type !== 'unlock' || holdings[e.sym]).forEach(e => {
+    const hm = ((e.text || '').match(/(\d{1,2}:\d\d) czasu polskiego/) || [])[1];
+    out.push({d: e.date, k: 'cal', t: e.title.replace(/\s*\(.*?\)\s*$/, ''), s: e.type === 'unlock' ? 'masz tę monetę' : (hm ? hm + ' · ' : '') + (CAL_TYPES[e.type]?.[0] || '')});
+  });
+  f.subs.filter(s => s.active !== false).forEach(s => {
+    let d = BRIEF.next(s.d, s.e, today);
+    for (let i = 0; d && i < 5 && BRIEF.diffDays(today, d) <= 30; i++) { out.push({d, k: 'pay', t: s.name, s: finMoney(s.amount, s.cur) + ' · płatność', sens: true}); if (!s.e) break; d = BRIEF.next(s.d, s.e, BRIEF.addDays(d, 1)); }
+  });
+  f.dates.filter(x => !x.done).forEach(x => { const d = dateNext(x); if (d && BRIEF.diffDays(today, d) <= 60) out.push({d, k: 'date', t: x.title, s: (DATE_CATS[x.cat] || DATE_CATS.other)[0]}); });
+  return out.sort((a, b) => a.d.localeCompare(b.d));
+}
+function renderToday() {
+  const el = document.getElementById('todayBody');
+  if (!el || activeTab !== 'today') return;
+  if (el.contains(document.activeElement) && /INPUT|SELECT/.test(document.activeElement.tagName)) return;
+  loadFngToday();
+  const {rows} = computeRows(), tot = totalPln();
+  let chg = 0;
+  rows.forEach(r => { const c = prices[r.sym]?.ch24; if (r.hasPrice && Number.isFinite(c)) chg += valuePln(r.sym) * c / (100 + c); });
+  const chgPct = tot - chg > 0 ? chg / (tot - chg) * 100 : 0;
+  const act = activeGoal(tot), monthly = goal.monthly || 0, spent = spentThisMonth();
+  const h = new Date().getHours(), greet = h >= 5 && h < 18 ? 'Dzień dobry' : 'Dobry wieczór';
+  const tk = tasks.filter(t => t.label !== 'BUDŻET'), shown = todayAll ? tk : tk.slice(0, 5);
+  const up = todayUpcoming().slice(0, 7), today = todayStr();
+  const fg = typeof mkt !== 'undefined' ? mkt.fng : null;
+  const fgPl = fg ? (BRIEF.FG_PL[String(fg.cls || '').toLowerCase()] || fg.cls) : '';
+  const fgCol = !fg ? 'var(--muted)' : fg.v < 25 ? 'var(--red)' : fg.v < 45 ? 'var(--orange)' : fg.v <= 55 ? 'var(--yellow)' : 'var(--green)';
+  const movers = rows.filter(r => r.hasPrice && !isStable(r.sym) && Number.isFinite(prices[r.sym]?.ch24)).sort((a, b) => b.value - a.value).slice(0, 5);
+  const mon = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
+  el.innerHTML = `
+    <div class="td-hero link" onclick="goGroup('pf')">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><span style="font-weight:700">${greet}</span>
+        <span class="small muted"><span class="dot-live"></span>na żywo</span></div>
+      <div class="pf-big sens" style="margin-top:.5rem">${zl(tot)}</div>
+      <div class="pf-chips"><span class="chip-s ${chg >= 0 ? 'pos' : 'neg'} sens">${signed(chg, zl)} · ${signed(chgPct, pct)} dziś</span>
+        ${act ? `<span class="chip-s">Do celu ${zl(act.g)}: ${pct(act.pct)}</span>` : ''}
+        ${monthly > 0 ? `<span class="chip-s sens">Dopłata: ${zl(spent)} / ${zl(monthly)}</span>` : ''}</div>
+      ${act ? `<div class="td-progress"><div style="width:${act.pct}%"></div></div>` : ''}
+    </div>
+    <div class="td-grid">
+      <div class="card" style="margin:0">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Do zrobienia</h2>${tk.length ? `<span class="tb-count">${tk.length}</span>` : ''}</div>
+        ${shown.length ? shown.map(t => `<div class="td-row">${tdIc(t.label === 'PŁATNOŚĆ' ? 'pay' : /TERMIN/.test(t.label) ? 'date' : t.type)}<div style="flex:1;min-width:0"><strong class="small" style="letter-spacing:.04em;color:var(--muted)">${t.label}</strong><div class="td-msg">${t.msg}</div></div></div>`).join('')
+          : '<p class="muted" style="margin:.6rem 0 0">Nic pilnego – portfel trzyma się planu.</p>'}
+        ${tk.length > 5 ? `<button class="action secondary" style="margin-top:.6rem" onclick="todayAll=!todayAll;renderToday()">${todayAll ? 'Pokaż mniej' : `Pokaż wszystkie (${tk.length})`}</button>` : ''}
+      </div>
+      <div class="card" style="margin:0">
+        <h2 style="margin:0 0 .2rem">Nadchodzi</h2>
+        ${up.length ? up.map(u => { const n = BRIEF.diffDays(today, u.d); return `<div class="td-row"><div class="td-day"><strong>${+u.d.slice(8)}</strong><span>${mon[+u.d.slice(5, 7) - 1]}</span></div>
+          <div style="flex:1;min-width:0"><div style="font-weight:600">${esc(u.t)}</div><div class="small muted ${u.sens ? 'sens' : ''}">${esc(u.s)}</div></div><span class="td-when${n <= 3 ? ' soon' : ''}">${BRIEF.when(n)}</span></div>`; }).join('')
+          : '<p class="muted" style="margin:.6rem 0 0">Brak wydarzeń w najbliższych tygodniach.</p>'}
+        <div class="form-row" style="margin:.7rem 0 0"><button class="action secondary" onclick="navTo('savings:subs')">Opłaty</button><button class="action secondary" onclick="navTo('savings:dates')">Ważne daty</button><button class="action secondary" onclick="openTab('market');setSub('market','cal')">Kalendarz rynku</button></div>
+      </div>
+      <div class="card" style="margin:0">
+        <h2 style="margin:0 0 .5rem">Rynek dziś</h2>
+        <div class="kv" style="margin:0">
+          <div><span>Nastroje rynku</span><strong style="color:${fgCol}">${fg ? fg.v : '—'}</strong><span>${esc(fgPl || 'wczytuję…')}</span>${fg ? `<div class="fg-bar"><i style="left:${fg.v}%"></i></div>` : ''}</div>
+          <div><span>Bitcoin</span><strong>${prices.BTC?.usd ? usdP(prices.BTC.usd) : '—'}</strong><span>${Number.isFinite(prices.BTC?.ch24) ? colored(prices.BTC.ch24, signed(prices.BTC.ch24, pct) + ' (24 h)') : ''}</span></div>
+        </div>
+        ${movers.map(r => `<div class="td-row link" onclick="openModal('${r.sym}')">${coinIcon(r.sym, 'sm')}<div style="flex:1;font-weight:600">${r.sym} <span class="muted small" style="font-weight:500">${moneyPrice(r.price)}</span></div>${colored(prices[r.sym].ch24, signed(prices[r.sym].ch24, pct))}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ---------- okna jak w iOS: na telefonie wysuwają się od dołu, zamykasz przeciągnięciem w dół ---------- */
+function closeSheet(m) { const x = m?.querySelector('.modal-close'); if (x) x.click(); else m?.classList.remove('open'); }
+(function sheetDrag() {
+  // ruchy palca słuchamy na elemencie, którego dotknięto – okno odświeża się co chwilę (ceny na żywo),
+  // a zdarzenia z elementu podmienionego w trakcie nie docierają już do dokumentu
+  const mq = window.matchMedia('(max-width:760px)');
+  document.addEventListener('touchstart', e => {
+    if (!mq.matches || e.touches.length !== 1) return;
+    const c = e.target.closest('.modal.open .modal-content');
+    if (!c || c.scrollTop > 2 || e.target.closest('input,select,textarea,canvas')) return;
+    const tg = e.target, s = {c, x0: e.touches[0].clientX, y0: e.touches[0].clientY, t0: e.timeStamp, dy: 0, drag: false, dead: false};
+    const move = ev => {
+      if (s.dead) return;
+      const t = ev.touches[0], dy = t.clientY - s.y0, dx = t.clientX - s.x0;
+      if (!s.drag) {
+        if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+        if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || c.scrollTop > 2) { s.dead = true; return; }
+        s.drag = true; c.style.animation = 'none'; c.style.transition = 'none';
+      }
+      s.dy = Math.max(0, dy);
+      c.style.transform = `translateY(${s.dy}px)`;
+      ev.preventDefault();
+    };
+    const end = ev => {
+      tg.removeEventListener('touchmove', move); tg.removeEventListener('touchend', end); tg.removeEventListener('touchcancel', end);
+      if (!s.drag) return;
+      const fast = s.dy / Math.max(1, ev.timeStamp - s.t0) > 0.6;
+      c.style.transition = 'transform .22s ease';
+      if (s.dy > 120 || (fast && s.dy > 40)) {
+        c.style.transform = 'translateY(100%)';
+        setTimeout(() => { closeSheet(c.closest('.modal')); c.style.transform = ''; c.style.transition = ''; c.style.animation = ''; }, 210);
+      } else { c.style.transform = ''; setTimeout(() => { c.style.transition = ''; }, 230); }
+    };
+    tg.addEventListener('touchmove', move, {passive: false});
+    tg.addEventListener('touchend', end);
+    tg.addEventListener('touchcancel', end);
+  }, {passive: true});
+})();
 
 /* ---------- podkategorie (zakładki wewnątrz zakładki) ---------- */
 const SUBS = {
@@ -3692,7 +3993,7 @@ const SUBS = {
 const subGet = id => { try { return localStorage.getItem('ccSub_' + id) || SUBS[id].def; } catch (e) { return SUBS[id].def; } };
 function setSub(id, k, silent) {
   try { localStorage.setItem('ccSub_' + id, k); } catch (e) {}
-  if (!silent) { applySub(id); window.scrollTo({top: 0}); }
+  if (!silent) { applySub(id); window.scrollTo({top: 0}); if (id === 'fin') updateNavState(); }
 }
 function applySub(id) {
   const S = SUBS[id], cur = subGet(id), root = document.getElementById(S.root), nav = document.getElementById(S.nav);
@@ -3703,10 +4004,12 @@ function applySub(id) {
   if (id === 'fin') { if (cur === 'sav') renderSavings(); if (cur === 'subs') renderSubs(); if (cur === 'dates') renderDates(); }
   if (id === 'settings' && cur === 'wersja') renderVersion();
 }
-function quickAdd() {
+function quickAdd(sym) {
   openTab('edit');
   const m = document.getElementById('editMode');
   if (m && m.value === 'set') { m.value = 'buy'; updateEditForm(); }
+  const es = document.getElementById('editSymbol');
+  if (sym && es && [...es.options].some(o => o.value === sym)) { es.value = sym; updateEditForm(); }
   setTimeout(() => {
     document.querySelector('#edit .card')?.scrollIntoView({behavior: 'smooth', block: 'start'});
     document.getElementById('editQty')?.focus({preventScroll: true});
@@ -3717,7 +4020,7 @@ function toggleNav(force) {
 }
 /* Telefon: menu wysuwa się przeciągnięciem palcem od lewej krawędzi, chowa przeciągnięciem w lewo albo stuknięciem obok */
 (function navGestures() {
-  const mq = window.matchMedia('(max-width:760px)');
+  const mq = window.matchMedia('(max-width:0px)');      // v23: na telefonie jest dolny pasek zamiast menu z boku
   const nav = document.getElementById('sidebar'), bd = document.querySelector('.nav-backdrop');
   const EDGE = 30;
   let g = null;
@@ -3758,25 +4061,16 @@ function toggleNav(force) {
   document.addEventListener('touchcancel', end);
   bd.addEventListener('touchend', e => { if (isOpen() && !document.body.classList.contains('nav-dragging')) { e.preventDefault(); toggleNav(false); } });
 })();
-function updateNavCount() {
-  const btn = document.querySelector('#navItems button[data-tab="tasks"]');
-  if (!btn) return;
-  const n = (typeof tasks !== 'undefined' ? tasks : []).filter(t => t.label !== 'BUDŻET').length;
-  let b = btn.querySelector('.nav-count');
-  if (!n) { if (b) b.remove(); return; }
-  if (!b) { b = document.createElement('span'); b.className = 'nav-count'; btn.insertBefore(b, btn.querySelector('.mv-group')); }
-  b.textContent = n;
-}
 
 function openTab(id) {
+  if (id === 'tasks') id = 'today';
   const prevTab = activeTab;
   activeTab = id;
   if (prevTab === 'savings' && id !== 'savings' && ui.autoLock === 'leave' && isUnlocked()) lockSav();
   if (!editing) document.body.classList.remove('nav-open');
-  const pt = document.getElementById('pageTitle');
-  if (pt && TAB_DEFS[id]) pt.textContent = TAB_DEFS[id];
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
   document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === id));
+  updateNavState();
+  if (id === 'today') renderToday();
   document.body.classList.toggle('tab-edit', id === 'edit');
   window.scrollTo({top: 0});
   if (id === 'risk') { renderLadder(); renderRisk(); loadRiskData(); }
@@ -4278,7 +4572,7 @@ const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
    USTAWIENIA: wygląd, prywatność, aplikacja
    ========================================================= */
 LS.ui = 'ccSettings';
-const UI_DEFAULTS = {theme:'granat', mode:'dark', density:'comfortable', privacy:false, defaultCur:'USD', sound:true, autoLock:'leave'};
+const UI_DEFAULTS = {theme:'granat', mode:'dark', density:'comfortable', privacy:false, defaultCur:'PLN', sound:true, autoLock:'leave'};
 let ui = {...UI_DEFAULTS};
 const THEMES = [
   {id:'granat',   name:'Granat',   desc:'Szkło, błękit i indygo – klasyczny',          r:10, font:"'Inter',sans-serif",
@@ -4297,6 +4591,7 @@ const mqLight = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') 
 function loadUi() {
   const u = lsGet(LS.ui);
   if (u && typeof u === 'object') ui = {...UI_DEFAULTS, ...u};
+  if (!ui.curV2) { ui.defaultCur = 'PLN'; ui.curV2 = true; lsSet(LS.ui, ui); }
   ui.theme = ({grafit: 'obsydian', terminal: 'cupertino'})[ui.theme] || ui.theme;
   if (!THEMES.some(t => t.id === ui.theme)) ui.theme = 'granat';
   applyUi();
@@ -6312,7 +6607,7 @@ function mkRenderMovers() {
 var FIREBASE_CONFIG = {apiKey: "AIzaSyDVegYij8cRCOG4Y2bzA7mEvpzEpHL1VvU", projectId: "crypto-control-69e0f"};   // projekt Firebase (dane publiczne – dostęp chronią reguły i hasło)
 LS.auth = 'ccAuth'; LS.cloudKey = 'ccCloudKey'; LS.cloudMeta = 'ccCloudMeta';
 var CL = {applying: false, pushing: false, again: false, timer: null, pullAt: 0, view: 'signup', busy: false, msg: '', msgOk: false, choice: null, pending: null};
-const CLOUD_LOCAL_ONLY = new Set(['ccPushSub', 'ccMonthSeen', 'ccBnApi', 'cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock']);
+const CLOUD_LOCAL_ONLY = new Set(['ccPushSub', 'ccMonthSeen', 'ccBnApi', 'cryptoSnapshots', 'cryptoPortfolioVersion', 'cryptoPortfolioPatches', 'ccAuth', 'ccCloudKey', 'ccCloudMeta', 'ccAiKey', 'ccAiModel', 'cryptoPrices', 'cryptoUsdPln', 'cryptoLastBackup', 'ccPinLock', 'ccIcons']);
 const cloudOn = () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
 const cloudAuth = () => { try { return JSON.parse(localStorage.getItem(LS.auth)) || null; } catch (e) { return null; } };
 const cloudMeta = () => { try { return JSON.parse(localStorage.getItem(LS.cloudMeta)) || {}; } catch (e) { return {}; } };
@@ -7250,7 +7545,7 @@ function briefSet(k, v) { const f = finGet(); f.brief[k] = v; finSet(f); renderB
 async function briefTest() {
   const f = finGet(); f.brief.testAt = Date.now(); lsSet(LS.fin, f);
   lastRulesJson = ''; await alertsSync(true);
-  briefMsg = pushMsgOk ? 'Wysłane – próbny skrót przyjdzie przy najbliższym sprawdzeniu serwera (do ok. 10–15 minut).' : pushMsg;
+  briefMsg = pushMsgOk ? 'Wysłane – próbny skrót przyjdzie przy najbliższym sprawdzeniu serwera (zwykle do pół godziny; szybciej, jeśli uruchomisz „Run workflow” na GitHubie).' : pushMsg;
   renderBriefCard();
 }
 let briefMsg = '';
@@ -7264,7 +7559,7 @@ function renderBriefCard() {
     <p class="muted" style="font-size:.88rem;margin-top:0">Jedno powiadomienie rano: jak zmienił się portfel, nastroje rynku, dzisiejsze wydarzenia oraz płatności i terminy, o których chcesz pamiętać.</p>
     ${on ? '' : '<p class="warning" style="margin:.2rem 0 .6rem">Najpierw włącz powiadomienia w tle (karta wyżej) – skrót przychodzi tą samą drogą.</p>'}
     ${sw('on', 'Poranny skrót', 'Codziennie o wybranej godzinie.')}
-    <div class="set-row"><div><strong>Godzina</strong><span class="small">Serwer sprawdza co ok. 10 minut, więc skrót może przyjść kilka minut później.</span></div>
+    <div class="set-row"><div><strong>Godzina</strong><span class="small">GitHub uruchamia sprawdzanie co kilkanaście–kilkadziesiąt minut, więc skrót może przyjść do ok. pół godziny później.</span></div>
       <input type="time" value="${esc(b.time || '08:00')}" step="900" style="max-width:150px" onchange="briefSet('time', this.value || '08:00')"></div>
     ${b.on ? `${sw('pf', 'Zmiana portfela', 'Procentowa zmiana z 24 h, BTC, najmocniejsza i najsłabsza moneta.')}${sw('fg', 'Nastroje rynku', 'Indeks Fear &amp; Greed.')}${sw('cal', 'Wydarzenia z kalendarza', 'Fed, RPP, inflacja i odblokowania Twoich monet – dziś i jutro.')}` : ''}
     ${sw('rem', 'Przypomnienia o płatnościach i terminach', b.on ? 'Dołączane do skrótu.' : 'Przyjdą osobno o tej godzinie – tylko w dni, gdy jest o czym przypomnieć.')}
@@ -7280,6 +7575,17 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '23', date: '2026-10-25', title: 'Nowy układ: Dziś, dolny pasek i okna jak w iOS', items: [
+    'Nowy ekran startowy „Dziś”: wartość portfela i zmiana z dnia, postęp do celu, co jest do zrobienia, co nadchodzi (rynek, płatności, terminy) i nastroje rynku.',
+    'Cztery sekcje zamiast jedenastu zakładek: Dziś · Portfel · Rynek · Finanse. Na telefonie dolny pasek z przyciskiem „+” do dodania transakcji.',
+    'Portfel ma podkategorie: Monety, Zyski i ryzyko, Plan, Cel, Dopłata, Kupno / Sprzedaż.',
+    'Finanse mają podkategorie: Oszczędności, Subskrypcje i opłaty, Ważne daty, Dziennik / PIT.',
+    'Ustawienia pod ikoną zębatki w nagłówku. Zadania i dzwonek przeniesione do ekranu Dziś.',
+    'Nowy wygląd Portfela: duża wartość z wynikiem, przewijane kafelki, pasek ról i lista monet z prawdziwymi logo, ceną i zmianą z 24 h.',
+    'Usunięty przycisk „Odśwież ceny” – ceny i tak aktualizują się na żywo.',
+    'Okna na telefonie wysuwają się od dołu jak w iOS i zamykasz je przeciągnięciem w dół. Nowe okno szczegółów monety z przyciskami „Kup / Sprzedaj” i „Wykres w Rynku”.',
+    'Kwoty domyślnie w złotówkach.',
+    'Powiadomienia: poprawiony opis częstotliwości sprawdzania i nowsze akcje GitHuba.']},
   {v: '22', date: '2026-10-25', title: 'Zarządzanie finansami i poranny skrót', items: [
     'Zakładka Oszczędności nazywa się teraz „Zarządzanie finansami” i ma podkategorie: Oszczędności (przegląd i cele), Subskrypcje i opłaty, Ważne daty.',
     'Subskrypcje i stałe opłaty: koszt miesięczny i roczny, podział na kategorie, płatności w najbliższych 30 dniach, przypomnienie przed płatnością.',
@@ -7469,7 +7775,7 @@ async function pushTest() {
   testRule = {id: 't:' + Date.now(), at: local, until: new Date(Date.now() + 3600000).toLocaleDateString('sv-SE') + 'T23:59', title: 'Test powiadomień', body: 'Działa! Powiadomienia z Crypto Control docierają na to urządzenie.'};
   lastRulesJson = '';
   await alertsSync(true);
-  pushMsg = 'Wysłane do sprawdzenia – powiadomienie testowe przyjdzie w ciągu ok. 10 minut (tak często serwer sprawdza progi).'; pushMsgOk = true;
+  pushMsg = 'Wysłane do sprawdzenia – powiadomienie testowe przyjdzie przy najbliższym sprawdzeniu przez serwer – zwykle do pół godziny, od razu po „Run workflow” na GitHubie.'; pushMsgOk = true;
   renderPushCard();
 }
 
@@ -7491,9 +7797,9 @@ async function renderPushCard() {
   const priceRules = rules.filter(r => r.pair), dateRules = rules.filter(r => r.at);
   el.innerHTML = `
     <p class="muted" style="font-size:.88rem;margin-top:0">Powiadomienia przyjdą nawet przy zamkniętej aplikacji: gdy cena dojdzie do Twoich progów, w dniu dopłaty i dzień przed odblokowaniem tokenów, które masz.
-      Serwer sprawdza ceny co ok. 10 minut i zna tylko progi – nie Twoje kwoty.</p>
+      Serwer sprawdza ceny co kilkanaście–kilkadziesiąt minut (tak często uruchamia go GitHub) i zna tylko progi – nie Twoje kwoty.</p>
     <div class="set-row"><div><strong>${on ? 'Włączone na tym urządzeniu ✓' : 'Wyłączone na tym urządzeniu'}</strong>
-      <span class="small">${checked ? `Serwer ostatnio sprawdzał ceny: ${new Date(checked).toLocaleString('pl-PL', {dateStyle: 'short', timeStyle: 'short'})}${Date.now() - checked > 40 * 60000 ? ' – <span style="color:var(--orange)">dawno; sprawdź konfigurację na GitHubie</span>' : ''}` : on ? 'Czekam na pierwsze sprawdzenie przez serwer (do ~10 minut).' : 'Na iPhonie działa w aplikacji z ikony na ekranie początkowym (iOS 16.4+).'}</span></div>
+      <span class="small">${checked ? `Serwer ostatnio sprawdzał ceny: ${new Date(checked).toLocaleString('pl-PL', {dateStyle: 'short', timeStyle: 'short'})}${Date.now() - checked > 90 * 60000 ? ' – <span style="color:var(--orange)">dawno; sprawdź konfigurację na GitHubie</span>' : ''}` : on ? 'Czekam na pierwsze sprawdzenie przez serwer (zwykle do pół godziny).' : 'Na iPhonie działa w aplikacji z ikony na ekranie początkowym (iOS 16.4+).'}</span></div>
       ${on ? '<button class="action secondary" onclick="pushDisable()">Wyłącz</button>' : '<button class="action" onclick="pushEnable()">Włącz powiadomienia</button>'}</div>
     ${on ? '<div class="form-row" style="margin:.2rem 0 .4rem"><button class="action secondary" onclick="pushTest()">Wyślij powiadomienie testowe</button></div>' : ''}
     <p class="small" style="color:${pushMsgOk ? 'var(--green)' : 'var(--red)'};min-height:1em;margin:.3rem 0">${esc(pushMsg)}</p>
@@ -7629,7 +7935,7 @@ try { localStorage.removeItem('cryptoTrading'); localStorage.removeItem('ccOffer
 loadUi();
 mkLoadState();
 loadLayout();
-activeTab = tabOrder()[0];
+activeTab = 'today';
 renderNav();
 openTab(activeTab);
 renderColSettings();
