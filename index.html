@@ -1115,7 +1115,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v26 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v27 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1943,9 +1943,44 @@ function eligibleForSplit() {
   }).map(([s]) => s);
 }
 
+/* ---------- rezerwa USDC z dopłat: część każdej dopłaty zostaje w USDC, dopóki rezerwa jest poniżej celu z planu ---------- */
+const reserveSym = () => Object.keys(STRATEGY).find(s => isStable(s) && STRATEGY[s].target > 0) || null;
+const reservePctSet = () => goal.reservePct == null ? 20 : goal.reservePct;
+function reserveState(extra = 0) {
+  const sym = reserveSym();
+  if (!sym) return null;
+  const tg = STRATEGY[sym].target, after = totalPln() + extra, have = valuePln(sym), want = tg / 100 * after;
+  return {sym, tg, have, want, gap: Math.max(0, want - have), pctNow: after > 0 ? have / after * 100 : 0};
+}
+function reservePart(amount) {
+  const r = reserveState(amount), p = reservePctSet();
+  if (!r || !(p > 0) || r.gap < MIN_ORDER_PLN) return 0;
+  const part = Math.min(amount * p / 100, r.gap);
+  return part >= MIN_ORDER_PLN && amount - part >= 0 ? part : 0;
+}
+// pełny podział dopłaty: najpierw część na rezerwę, resztę według planu albo do celów alokacji
+function contributionPlan(amount) {
+  const total = totalPln(), after = total + amount, res = reservePart(amount), rest = amount - res;
+  const hasPlan = (goal.split || []).some(x => x.pct > 0), mode = hasPlan && goal.splitMode !== 'target' ? 'plan' : 'target';
+  let rows;
+  if (mode === 'plan') {
+    // monety już ponad celem alokacji pomijamy – ich część trafia do pozostałych z podziału
+    const over = x => STRATEGY[x.sym]?.target > 0 && total > 0 && valuePln(x.sym) / total * 100 >= STRATEGY[x.sym].target;
+    let sp = goal.split.filter(x => x.pct > 0 && !isStable(x.sym));
+    if (sp.some(x => !over(x))) sp = sp.filter(x => !over(x));
+    const ssum = sp.reduce((t, x) => t + x.pct, 0) || 1;
+    rows = sp.map(x => { const a = rest * x.pct / ssum, pp = pricePln(x.sym); return {sym: x.sym, amount: a, qty: pp > 0 ? a / pp : 0, before: total > 0 ? valuePln(x.sym) / total * 100 : 0, afterPct: after > 0 ? (valuePln(x.sym) + a) / after * 100 : 0, target: STRATEGY[x.sym]?.target ?? '—', note: x.note}; });
+  } else rows = rest >= MIN_ORDER_PLN ? splitContribution(rest, {extra: res}).rows : [];
+  if (res > 0) {
+    const s = reserveSym(), pp = pricePln(s);
+    rows.unshift({sym: s, amount: res, qty: pp > 0 ? res / pp : 0, before: total > 0 ? valuePln(s) / total * 100 : 0, afterPct: after > 0 ? (valuePln(s) + res) / after * 100 : 0, target: STRATEGY[s].target, reserve: true, note: 'rezerwa na dokupy przy spadkach – zostaw w ' + s});
+  }
+  return {mode, hasPlan, rows, reserve: res};
+}
+
 function splitContribution(amount, opts = {}) {
   const total = totalPln();
-  const after = opts.inside ? total : total + amount;     // inside: przesunięcie w portfelu (np. z USDC)
+  const after = (opts.inside ? total : total + amount) + (opts.extra || 0);     // inside: przesunięcie w portfelu (np. z USDC)
   let elig = eligibleForSplit().filter(s => !isStable(s) && (!opts.only || opts.only.includes(s)));
   let alloc = {};
   for (let iter = 0; iter < 6 && elig.length; iter++) {
@@ -1982,26 +2017,26 @@ function renderSplit() {
     el.innerHTML = `<p class="muted">${amount > 0 ? `Kwota poniżej ${MIN_ORDER_PLN} zł – za mało na sensowne zlecenie.` : 'Wpisz kwotę do podziału.'}</p>`;
     return;
   }
-  const hasPlan = (goal.split || []).some(x => x.pct > 0), mode = hasPlan && goal.splitMode !== 'target' ? 'plan' : 'target';
-  const modeSeg = hasPlan ? `<div class="form-row" style="margin:0 0 .6rem"><span class="seg"><button class="${mode === 'plan' ? 'on' : ''}" onclick="goal.splitMode='plan';lsSet(LS.goal,goal);renderSplit()">Podział z planu</button><button class="${mode === 'target' ? 'on' : ''}" onclick="goal.splitMode='target';lsSet(LS.goal,goal);renderSplit()">Wyrównanie do celów</button></span></div>` : '';
-  let rows;
-  if (mode === 'plan') {
-    const total = totalPln(), after = total + amount, sp = goal.split.filter(x => x.pct > 0), ssum = sp.reduce((t, x) => t + x.pct, 0);
-    rows = sp.map(x => { const a = amount * x.pct / ssum, pp = pricePln(x.sym); return {sym: x.sym, amount: a, qty: pp > 0 ? a / pp : 0, before: total > 0 ? valuePln(x.sym) / total * 100 : 0, afterPct: after > 0 ? (valuePln(x.sym) + a) / after * 100 : 0, target: STRATEGY[x.sym]?.target ?? '—', note: x.note}; });
-  } else rows = splitContribution(amount).rows;
+  const cp = contributionPlan(amount), hasPlan = cp.hasPlan, mode = cp.mode;
+  const rs = reserveState(amount), rp = reservePctSet();
+  const resBox = rs ? `<div class="set-row" style="padding:.2rem 0 .7rem;border-bottom:none"><div><strong>Część na rezerwę ${rs.sym}</strong>
+      <span class="small">${rs.gap >= MIN_ORDER_PLN ? `Rezerwa: ${zl(rs.have)} z ${zl(rs.want)} (cel ${rs.tg}% portfela) – brakuje ${zl(rs.gap)}. Dopóki brakuje, ta część dopłaty zostaje w ${rs.sym} na dokupy przy spadkach.` : `Rezerwa jest pełna (${pct(rs.pctNow)} przy celu ${rs.tg}%) – cała dopłata idzie w monety.`}</span></div>
+      <span class="seg">${[0, 10, 20, 30, 50].map(v => `<button class="${rp === v ? 'on' : ''}" onclick="goal.reservePct=${v};lsSet(LS.goal,goal);renderSplit();generateTasks?.()">${v}%</button>`).join('')}</span></div>` : '';
+  const modeSeg = resBox + (hasPlan ? `<div class="form-row" style="margin:0 0 .6rem"><span class="seg"><button class="${mode === 'plan' ? 'on' : ''}" onclick="goal.splitMode='plan';lsSet(LS.goal,goal);renderSplit()">Podział z planu</button><button class="${mode === 'target' ? 'on' : ''}" onclick="goal.splitMode='target';lsSet(LS.goal,goal);renderSplit()">Wyrównanie do celów</button></span></div>` : '');
+  const rows = cp.rows;
   if (!rows.length) { el.innerHTML = modeSeg + '<p class="muted">Brak monet, które plan pozwala teraz dokupić.</p>'; return; }
   const usdc = holdings.USDC;
   el.innerHTML = modeSeg + (usdc ? `<p class="small" style="margin-top:0">Na giełdzie masz też <strong>${fixed(usdc.qty, 2)} USDC</strong> (≈ ${zl(valuePln('USDC'))}). Zakup za USDC to wymiana krypto→krypto – nie liczy się do budżetu ani do PIT.</p>` : '') + `
     <table>
       <thead><tr><th>Moneta</th><th class="num">Kwota</th><th class="num">≈ Ilość</th><th class="num">Udział teraz → po (cel)</th></tr></thead>
-      <tbody>${rows.map(r => `<tr>
-        <td><strong>${r.sym}</strong>${r.note ? `<br><span class="small muted">${esc(r.note)}</span>` : ''}</td>
+      <tbody>${rows.map(r => `<tr${r.reserve ? ' class="bench-mine"' : ''}>
+        <td><strong>${r.sym}${r.reserve ? ' · rezerwa' : ''}</strong>${r.note ? `<br><span class="small muted">${esc(r.note)}</span>` : ''}</td>
         <td class="num">${zl(r.amount)}</td>
         <td class="num">${fmtQty(r.qty)}</td>
         <td class="num">${pct(r.before)} → ${pct(r.afterPct)} <span class="muted">(${r.target}%)</span></td>
       </tr>`).join('')}</tbody>
     </table>
-    <p class="small muted" style="margin:.5rem 0 0">Ilości liczone po bieżącej cenie; na giełdzie wyjdą trochę inne. Po zakupie zapisz go w „Kupno / Sprzedaż” → Dokup.</p>`;
+    <p class="small muted" style="margin:.5rem 0 0">Ilości liczone po bieżącej cenie; na giełdzie wyjdą trochę inne. Kolejność na giełdzie: złotówki → ${reserveSym() || 'USDC'}, potem ${reserveSym() || 'USDC'} → monety z tabeli${cp.reserve ? `, a część „rezerwa” zostaw w ${reserveSym()}` : ''}. Zakupy zapisz w „Kupno / Sprzedaż” → Dokup.</p>`;
 }
 
 /* =========================================================
@@ -3674,8 +3709,8 @@ function generateTasks() {
   }
   // comiesięczna dopłata według planu
   if (goal.monthly > 0 && new Date().getDate() >= (goal.dcaDay || 10) && left >= MIN_ORDER_PLN) {
-    const split = (goal.split || []).filter(x => x.pct > 0), ssum = split.reduce((t, x) => t + x.pct, 0) || 100;
-    tasks.push({type:'buy', label:'DOPŁATA', msg:`Miesięczna dopłata: zostało ${zl(left)} z ${zl(goal.monthly)} na ${mName}. ${split.length ? 'Według planu: ' + split.map(x => `${x.sym} ${zl(left * x.pct / ssum)}`).join(', ') + '.' : 'Podział znajdziesz w zakładce „Dopłata”.'}`});
+    const cpl = contributionPlan(left).rows.filter(r => r.amount >= 1);
+    tasks.push({type:'buy', label:'DOPŁATA', msg:`Miesięczna dopłata: zostało ${zl(left)} z ${zl(goal.monthly)} na ${mName}. ${cpl.length ? 'Podział: ' + cpl.map(r => `${r.sym}${r.reserve ? ' (rezerwa)' : ''} ${zl(r.amount)}`).join(', ') + '.' : 'Podział znajdziesz w zakładce „Dopłata”.'}`});
   }
   // odchylenia od celów alokacji
   const tot = totalPln();
@@ -7716,6 +7751,11 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '27', date: '2026-10-26', title: 'Rezerwa USDC odbudowuje się z dopłat', items: [
+    'Dopłata: część każdej dopłaty (domyślnie 20%, do wyboru 0–50%) zostaje w USDC jako rezerwa na dokupy przy spadkach – ale tylko dopóki rezerwa jest poniżej celu z planu i nigdy więcej, niż do celu brakuje.',
+    'Reszta dopłaty dzieli się jak dotąd: według Twojego podziału albo tam, gdzie do celu alokacji brakuje najwięcej.',
+    'W „Podziale z planu” moneta, która już jest ponad swoim celem alokacji, jest pomijana, a jej część trafia do pozostałych.',
+    'Ten sam podział pokazuje zadanie „Dopłata” na ekranie Dziś i powiadomienie w dniu dopłaty.']},
   {v: '26', date: '2026-10-25', title: 'Zakup za złotówki', items: [
     'Kupno / Sprzedaż: przy dokupie wpisujesz, ile zapłaciłeś – w złotówkach albo w dolarach, łącznie albo za sztukę. Aplikacja sama przeliczy cenę i średnią w USD i PLN po kursie NBP.',
     'Pod polem widać od razu wyliczoną cenę za sztukę i kwotę łączną.']},
@@ -7848,9 +7888,9 @@ function alertRules() {
     let y = d.getFullYear(), m = d.getMonth();
     if (d.getDate() > day) { m++; if (m > 11) { m = 0; y++; } }
     const date = new Date(y, m, day, 12).toLocaleDateString('sv-SE');
-    const split = (goal.split || []).filter(x => x.pct > 0), ssum = split.reduce((t, x) => t + x.pct, 0) || 100;
+    const cpl = contributionPlan(goal.monthly).rows.filter(x => x.amount >= 1);
     r.push({id: 'dca:' + date.slice(0, 7), at: date + 'T09:00', until: new Date(y, m, day + 3, 12).toLocaleDateString('sv-SE') + 'T23:59', title: 'Dzień dopłaty',
-      body: `Jeśli jeszcze nie dopłaciłeś w tym miesiącu: ${zl(goal.monthly)}${split.length ? ' – ' + split.map(x => `${x.sym} ${zl(goal.monthly * x.pct / ssum)}`).join(', ') : ''}.`});
+      body: `Jeśli jeszcze nie dopłaciłeś w tym miesiącu: ${zl(goal.monthly)}${cpl.length ? ' – ' + cpl.map(x => `${x.sym}${x.reserve ? ' (rezerwa)' : ''} ${zl(x.amount)}`).join(', ') : ''}.`});
   }
   if (typeof calEvents === 'function') calEvents(45).filter(e => e.type === 'unlock' && holdings[e.sym]).forEach(e => {
     const before = new Date(Date.parse(e.date + 'T12:00:00') - 86400000).toLocaleDateString('sv-SE');
