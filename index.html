@@ -957,7 +957,7 @@
         <div id="fldPay" style="display:none"><label for="editPay" id="lblPay">Zapłacono</label><br>
           <span style="display:inline-flex;gap:.35rem;flex-wrap:wrap;align-items:center">
             <input type="number" id="editPay" step="any" min="0" placeholder="np. 150" style="max-width:120px" oninput="payPreview()">
-            <select id="editPayCur" onchange="payPrefs();payPreview()"><option value="PLN">zł</option><option value="USD">USD</option></select>
+            <select id="editPayCur" onchange="payPrefs();payPreview();payJournalVis()"><option value="PLN">zł</option><option value="USD">USD</option></select>
             <select id="editPayKind" onchange="payPrefs();payPreview()"><option value="total">łącznie</option><option value="unit">za 1 szt.</option></select>
           </span></div>
         <div id="fldUsd"><label for="editAvg" id="lblUsd">Cena zakupu USD</label><br><input type="number" id="editAvg" step="any" min="0" placeholder="np. 65000"></div>
@@ -1115,7 +1115,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v27 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v28 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -3526,7 +3526,15 @@ function updateEditForm() {
   document.getElementById('fldUsd').style.display = isSell || isBuy ? 'none' : '';
   document.getElementById('fldPln').style.display = isSell || isBuy ? 'none' : '';
   document.getElementById('fldPay').style.display = isBuy ? '' : 'none';
-  if (isBuy) { try { const c = localStorage.getItem('ccPayCur'), k = localStorage.getItem('ccPayKind'); if (c) document.getElementById('editPayCur').value = c; if (k) document.getElementById('editPayKind').value = k; } catch (e) {} }
+  if (isBuy) {
+    const pc = document.getElementById('editPayCur'), prev = pc.value;
+    const coins = Object.keys(holdings).filter(c => c !== sym && holdings[c]?.qty > 0).sort((a, b) => (isStable(b) - isStable(a)) || valuePln(b) - valuePln(a));
+    pc.innerHTML = '<option value="PLN">zł</option><option value="USD">USD</option>' + coins.map(c => `<option value="c:${c}">${c} z portfela</option>`).join('');
+    let want = prev;
+    try { want = localStorage.getItem('ccPayCur') || prev; const k = localStorage.getItem('ccPayKind'); if (k) document.getElementById('editPayKind').value = k; } catch (e) {}
+    pc.value = [...pc.options].some(o => o.value === want) ? want : 'PLN';
+  }
+  payJournalVis();
   payPreview();
   document.getElementById('fldSellPln').style.display = isSell ? '' : 'none';
   document.getElementById('lblJournal').style.display = mode === 'buy' ? '' : 'none';
@@ -3534,12 +3542,17 @@ function updateEditForm() {
   document.getElementById('lblUsd').textContent = mode === 'buy' ? 'Cena zakupu USD' : 'Średnia cena USD';
   document.getElementById('lblPln').textContent = mode === 'buy' ? 'Cena zakupu PLN (opcjonalnie)' : 'Średnia cena PLN (opcjonalnie)';
   document.getElementById('modeHelp').textContent = {
-    buy: 'Dokup: wpisz, ile kupiłeś i ile zapłaciłeś – w złotówkach albo dolarach, łącznie albo za sztukę. Aplikacja przeliczy średnią ważoną w USD i w PLN (kurs NBP).',
+    buy: 'Dokup: wpisz, ile kupiłeś i ile zapłaciłeś – w złotówkach, dolarach albo kryptowalutą, którą masz w portfelu (np. „USDC z portfela”), łącznie albo za sztukę. Przy zapłacie kryptowalutą jej ilość zmniejszy się automatycznie.',
     sell: 'Sprzedaj część: zmniejsza ilość, średnia zostaje bez zmian. Jeśli sprzedałeś za złotówki, wpisz otrzymaną kwotę – trafi do dziennika jako przychód do PIT-38. Wymiana na inną kryptowalutę (np. do rdzenia) nie jest przychodem – zostaw pole puste.',
     set: 'Ustaw ręcznie: nadpisuje ilość i średnią, bez zapisu w dzienniku. Bez średniej PLN koszt w PLN będzie liczony po bieżącym kursie.'
   }[mode];
 }
 
+// płacisz kryptowalutą z portfela (np. USDC): to wymiana krypto→krypto – bez dziennika PIT i budżetu
+function payJournalVis() {
+  const buy = document.getElementById('editMode')?.value === 'buy', coin = buy && document.getElementById('editPayCur').value.startsWith('c:');
+  document.getElementById('lblJournal').style.display = buy && !coin ? '' : 'none';
+}
 function payPrefs() { try { localStorage.setItem('ccPayCur', document.getElementById('editPayCur').value); localStorage.setItem('ccPayKind', document.getElementById('editPayKind').value); } catch (e) {} }
 // zakup: z kwoty (zł lub USD, łącznie lub za sztukę) liczy cenę za sztukę w USD i PLN
 function payCalc() {
@@ -3547,6 +3560,13 @@ function payCalc() {
   const cur = document.getElementById('editPayCur').value, kind = document.getElementById('editPayKind').value;
   if (!(qty > 0) || !(pay > 0) || !(usdPlnRate > 0)) return null;
   const unit = kind === 'total' ? pay / qty : pay;
+  if (cur.startsWith('c:')) {
+    const c = cur.slice(2), h = holdings[c];
+    const pxUsd = prices[c]?.usd > 0 ? prices[c].usd : isStable(c) ? 1 : 0;
+    if (!h || !(pxUsd > 0)) return null;
+    // koszt w PLN przechodzi z oddanej monety (ważne dla PIT: wymiana krypto→krypto nie zmienia kosztu)
+    return {payCoin: c, payAmt: unit * qty, pUsd: unit * pxUsd, pPln: unit * avgPlnOf(h), totPln: unit * qty * avgPlnOf(h), totUsd: unit * qty * pxUsd};
+  }
   return cur === 'PLN' ? {pPln: unit, pUsd: unit / usdPlnRate, totPln: unit * qty} : {pUsd: unit, pPln: unit * usdPlnRate, totPln: unit * usdPlnRate * qty};
 }
 function payPreview() {
@@ -3554,6 +3574,11 @@ function payPreview() {
   if (!el) return;
   if (document.getElementById('editMode')?.value !== 'buy') { el.textContent = ''; return; }
   const c = payCalc(), sym = document.getElementById('editSymbol').value;
+  if (c?.payCoin) {
+    const h = holdings[c.payCoin], short = c.payAmt > h.qty * (1 + 1e-9);
+    el.innerHTML = `Płacisz ${fmtQty(c.payAmt)} ${c.payCoin} (masz ${fmtQty(h.qty)}${short ? ' – <span class="negative">za mało</span>' : ''}) · cena za 1 ${sym} ≈ ${usd(c.pUsd)}. Wymiana krypto→krypto: ${c.payCoin} ubędzie z portfela, nic nie trafi do dziennika PIT ani budżetu, a koszt ${zl2(c.totPln)} przejdzie na ${sym}.`;
+    return;
+  }
   el.textContent = c ? `Cena za 1 ${sym}: ${pln(c.pPln)} ≈ ${usd(c.pUsd)} · łącznie ${zl2(c.totPln)} (kurs USD/PLN ${fixed(usdPlnRate, 4)}).` : '';
 }
 document.addEventListener('input', e => { if (e.target?.id === 'editQty') payPreview(); });
@@ -3591,10 +3616,15 @@ function applyEdit() {
     }
     if (sellPln > 0) entry = {date: todayStr(), type:'sell', pln: round2(sellPln), exch:'Binance', note:`Sprzedaż ${fmtQty(qty)} ${sym}`};
   } else {
-    let pUsdX = pUsdIn, pPlnX = pPlnIn;
+    let pUsdX = pUsdIn, pPlnX = pPlnIn, paid = null;
     if (mode === 'buy') {
       const c = payCalc();
-      if (!c) return editMsg('Podaj, ile zapłaciłeś (w złotówkach albo w dolarach).', false);
+      if (!c) return editMsg('Podaj, ile zapłaciłeś (w złotówkach, dolarach albo kryptowalutą z portfela).', false);
+      if (c.payCoin) {
+        if (c.payCoin === sym) return editMsg('Wybierz inną monetę do zapłaty niż kupowana.', false);
+        if (c.payAmt > holdings[c.payCoin].qty * (1 + 1e-9)) return editMsg(`Masz tylko ${fmtQty(holdings[c.payCoin].qty)} ${c.payCoin}.`, false);
+        paid = c;
+      }
       pUsdX = c.pUsd; pPlnX = c.pPln;
     }
     if (!(pUsdX > 0)) return editMsg('Podaj poprawną cenę w USD.', false);
@@ -3620,7 +3650,12 @@ function applyEdit() {
       }
       const h = holdings[sym];
       editMsg(`Dokupiono ${fmtQty(qty)} ${sym}. Teraz ${fmtQty(h.qty)} @ średnia ${usd(h.avg)}.`);
-      if (toJournal) entry = {date: todayStr(), type:'buy', pln: round2(qty * buyPln), exch:'Binance', note:`Dokup ${fmtQty(qty)} ${sym}`};
+      if (paid) {
+        const ph = holdings[paid.payCoin], left = ph.qty - paid.payAmt;
+        if (left <= ph.qty * 1e-9) delete holdings[paid.payCoin]; else ph.qty = +left.toPrecision(12);
+        document.getElementById('editMessage').textContent += ` Z portfela ubyło ${fmtQty(paid.payAmt)} ${paid.payCoin}${holdings[paid.payCoin] ? ` (zostało ${fmtQty(holdings[paid.payCoin].qty)})` : ''}.`;
+      }
+      if (toJournal && !paid) entry = {date: todayStr(), type:'buy', pln: round2(qty * buyPln), exch:'Binance', note:`Dokup ${fmtQty(qty)} ${sym}`};
     }
   }
   saveHoldings();
@@ -7751,6 +7786,10 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '28', date: '2026-10-26', title: 'Zakup za USDC z portfela', items: [
+    'Kupno / Sprzedaż: przy dokupie w polu „Zapłacono” wybierzesz też kryptowalutę, którą masz w portfelu, np. „USDC z portfela”.',
+    'Wtedy USDC automatycznie ubywa z portfela, a kupiona moneta przejmuje jego koszt w złotówkach – to wymiana krypto→krypto, więc nic nie trafia do dziennika PIT ani do budżetu miesiąca.',
+    'Pod polem widać, ile zapłacisz, ile masz i jaka wychodzi cena za sztukę.']},
   {v: '27', date: '2026-10-26', title: 'Rezerwa USDC odbudowuje się z dopłat', items: [
     'Dopłata: część każdej dopłaty (domyślnie 20%, do wyboru 0–50%) zostaje w USDC jako rezerwa na dokupy przy spadkach – ale tylko dopóki rezerwa jest poniżej celu z planu i nigdy więcej, niż do celu brakuje.',
     'Reszta dopłaty dzieli się jak dotąd: według Twojego podziału albo tam, gdzie do celu alokacji brakuje najwięcej.',
