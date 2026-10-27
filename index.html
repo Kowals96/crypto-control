@@ -363,6 +363,8 @@
   body.privacy :is(.summary-item strong,.summary-item span:not(:first-child),.kv strong,#portfolioTable td:not(:first-child),.highlight .big,#goalNow,.sens,#allocBody td,#ladderBody td,#riskBody .kv strong,#journalList td.num,#budgetBody strong)
     {filter:blur(7px);transition:filter .15s}
   body.privacy :is(.summary-item,.kv > div,tr,.highlight,.sens):hover :is(strong,td,.big,span){filter:none}
+  /* dane rynkowe (ceny, wskaźniki) nie są prywatne – rozmywamy tylko Twoje kwoty (.sens) */
+  body.privacy :is(#market,.pub) :is(.summary-item strong,.summary-item span:not(:first-child),.kv strong,td,.big):not(.sens):not(.sens *){filter:none}
 
   /* ---------- akcenty motywów ---------- */
   [data-theme=obsydian] .card{border:1px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box,
@@ -1164,7 +1166,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v30 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v31 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -4286,7 +4288,7 @@ function renderToday() {
       </div>
       <div class="card" style="margin:0">
         <h2 style="margin:0 0 .5rem">Rynek dziś</h2>
-        <div class="kv" style="margin:0">
+        <div class="kv pub" style="margin:0">
           <div><span>Nastroje rynku</span><strong style="color:${fgCol}">${fg ? fg.v : '—'}</strong><span>${esc(fgPl || 'wczytuję…')}</span>${fg ? `<div class="fg-bar"><i style="left:${fg.v}%"></i></div>` : ''}</div>
           <div><span>Bitcoin</span><strong>${prices.BTC?.usd ? usdP(prices.BTC.usd) : '—'}</strong><span>${Number.isFinite(prices.BTC?.ch24) ? colored(prices.BTC.ch24, signed(prices.BTC.ch24, pct) + ' (24 h)') : ''}</span></div>
         </div>
@@ -4716,7 +4718,7 @@ let riskSheetSym = null;
 function openRiskSheet(s) { riskSheetSym = s; tileModal = 'risk'; document.getElementById('infoModal').classList.add('open'); renderTileModal(); }
 function tileRisk(t, b) {
   const s = riskSheetSym, c = STRATEGY[s] || {}, m = riskMetrics(s), prop = ladderProposal(s) || [], mine = ladder[s] || [];
-  setHtmlKeepIcons(t, `<span class="cm-head">${coinIcon(s, 'lg')}<span><span style="display:block">${s}</span><span class="small muted" style="font-weight:500">${STATUS_LABEL[statusOf(s)] || ''}${holdings[s] ? ' · ' + zl(valuePln(s)) : ''}</span></span>
+  setHtmlKeepIcons(t, `<span class="cm-head">${coinIcon(s, 'lg')}<span><span style="display:block">${s}</span><span class="small muted" style="font-weight:500">${STATUS_LABEL[statusOf(s)] || ''}${holdings[s] ? ` · <span class="sens">${zl(valuePln(s))}</span>` : ''}</span></span>
     <span class="cm-price"><strong>${m ? usdP(m.price) : prices[s]?.usd ? usdP(prices[s].usd) : '—'}</strong>${Number.isFinite(prices[s]?.ch24) ? `<span class="small">${colored(prices[s].ch24, signed(prices[s].ch24, pct) + ' (24 h)')}</span>` : ''}</span></span>`);
   if (!m && !prop.length) { b.innerHTML = `<p class="muted">${c.status === 'lottery' && !c.sellAt ? 'Mikro-pozycja – plan: nie dokupuj, trzymaj jako darmową opcję. Brak propozycji sprzedaży.' : 'Za mało danych historycznych do analizy.'}</p>`; return; }
   const a = m ? riskAssess(s, m) : null, posPln = valuePln(s), pos = holdings[s];
@@ -4724,7 +4726,7 @@ function tileRisk(t, b) {
   b.innerHTML = `
     ${a ? `<div class="cm-plan" style="border-color:color-mix(in srgb,${a.level[1]} 40%,transparent);background:color-mix(in srgb,${a.level[1]} 9%,transparent)">
       <strong style="color:${a.level[1]}">Ryzyko: ${a.level[0]}</strong><ul style="margin:.35rem 0 0;padding-left:1.1rem">${a.lines.map(l => `<li>${l}</li>`).join('')}</ul></div>` : ''}
-    ${m ? `<div class="kv">
+    ${m ? `<div class="kv pub">
       <div><span>Od szczytu</span><strong>${signed(m.fromAth, pct)}</strong><span>ATH ${usdP(m.ath)}</span></div>
       <div><span>Mayer</span><strong>${m.mayer ? fixed(m.mayer, 2) + '×' : '—'}</strong><span>cena / średnia 200 dni</span></div>
       <div><span>RSI tygodniowy</span><strong>${m.rsiW === null ? '—' : Math.round(m.rsiW)}</strong></div>
@@ -7956,6 +7958,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '31', date: '2026-10-27', title: 'Ukrywanie kwot tylko tam, gdzie trzeba', items: [
+    'Tryb „ukryj kwoty” nie rozmywa już cen i wskaźników w zakładce Rynek, w karcie „Rynek dziś” ani we wskaźnikach ryzyka – rozmyte zostają tylko Twoje kwoty (np. „Twoja pozycja”).']},
   {v: '30', date: '2026-10-27', title: 'Czytelniejsze Zyski i ryzyko', items: [
     'Zamiast długich analiz – zwarta lista monet: cena, wynik od średniej, poziom ryzyka i pasek, jak blisko jest najbliższy próg sprzedaży.',
     'Pełna analiza (ryzyko, wskaźniki, Twoje progi i propozycja automatyczna) otwiera się po stuknięciu monety w oknie od dołu – z przyciskiem „Ustaw progi”.',
