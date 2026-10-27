@@ -1166,7 +1166,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v32 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v33 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1767,7 +1767,7 @@ function render() {
       <span>${r.sym} na giełdzie</span><strong>${fixed(r.pos.qty, 2)} ${r.sym}</strong>
       <span>${r.hasPrice ? '≈ ' + zl2(valuePln(r.sym)) : ''}</span></div>`).join('')}
     <div class="summary-item link" onclick="openTile('cost')" title="Koszty rok po roku"><span>Koszt (ze średnich)</span><strong>${approx ? '≈ ' : ''}${money(totCost)}</strong></div>
-    ${act ? `<div class="summary-item link" onclick="openTab('goal')"><span>Do celu ${zl(act.g)}</span><strong>${pct(act.pct)}</strong></div>` : ''}
+    ${act ? `<div class="summary-item link" onclick="openTab('goal')"><span>Cel ${zl(act.g)}</span><strong>${pct(act.pct)} celu</strong><span class="sens">${act.pct >= 100 ? 'osiągnięty' : 'brakuje ' + zl(Math.max(0, act.g - totalPln()))}</span></div>` : ''}
     ${monthly > 0 ? `<div class="summary-item link" onclick="openTab('budget')"><span>Budżet: ${monthName()}</span><strong class="${spent > monthly ? 'negative' : ''}">${zl(spent)} / ${zl(monthly)}</strong></div>` : ''}`;
 
   const notes = [];
@@ -4292,7 +4292,7 @@ function renderToday() {
         <span class="small muted"><span class="dot-live"></span>na żywo</span></div>
       <div class="pf-big sens" style="margin-top:.5rem"><span data-anim="tdv" data-v="${tot}" data-f="zl">${zl(tot)}</span></div>
       <div class="pf-chips"><span class="chip-s ${chg >= 0 ? 'pos' : 'neg'} sens">${signed(chg, zl)} · ${signed(chgPct, pct)} dziś</span>
-        ${act ? `<span class="chip-s">Do celu ${zl(act.g)}: ${pct(act.pct)}</span>` : ''}
+        ${act ? `<span class="chip-s sens">${pct(act.pct)} celu ${zl(act.g)} · brakuje ${zl(Math.max(0, act.g - tot))}</span>` : ''}
         ${monthly > 0 ? `<span class="chip-s sens">Dopłata: ${zl(spent)} / ${zl(monthly)}</span>` : ''}</div>
       ${act ? `<div class="td-progress"><div style="width:${act.pct}%"></div></div>` : ''}
     </div>
@@ -7982,6 +7982,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '33', date: '2026-10-27', title: 'Jaśniejszy postęp do celu', items: [
+    'Zamiast „Do celu 50 000 zł: 31,4%” jest teraz „31,4% celu” i obok, ile brakuje w złotówkach (np. „brakuje 34 300 zł”) – w Portfelu i na ekranie Dziś.']},
   {v: '32', date: '2026-10-27', title: 'Koniec migania tabel', items: [
     'Tabela „Alokacja vs cel”, podział dopłaty i tabele w oknach kafelków nie migają już przy zmianach cen – przebudowują się tylko wtedy, gdy coś się faktycznie zmieni, i od razu w układzie kart na telefonie.']},
   {v: '31', date: '2026-10-27', title: 'Ukrywanie kwot tylko tam, gdzie trzeba', items: [
