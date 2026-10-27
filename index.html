@@ -681,6 +681,34 @@
   .cm-price strong{display:block;font-size:1.15rem}
   .cm-plan{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:14px;padding:.75rem .9rem;font-size:.88rem;line-height:1.45;margin:.8rem 0}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  /* v29: karty zamiast tabel na telefonie, nagłówek iOS, przesuwanie podkategorii */
+  @keyframes swipeInL{from{opacity:.3;transform:translateX(36px)}to{opacity:1;transform:none}}
+  @keyframes swipeInR{from{opacity:.3;transform:translateX(-36px)}to{opacity:1;transform:none}}
+  .container.swipe-l > section.active{animation:swipeInL .28s cubic-bezier(.2,.8,.2,1)}
+  .container.swipe-r > section.active{animation:swipeInR .28s cubic-bezier(.2,.8,.2,1)}
+  @media (max-width:760px){
+    table.cardable thead{display:none}
+    table.cardable,table.cardable tbody{display:block;width:100%}
+    table.cardable tr{display:flex;flex-wrap:wrap;align-items:center;gap:.15rem .9rem;padding:.75rem .15rem;border-bottom:1px solid var(--border)}
+    table.cardable tbody tr:last-child{border-bottom:none}
+    table.cardable td{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;border:none !important;padding:.12rem 0 !important;
+      flex:1 1 100%;text-align:right !important;font-size:.86rem !important}
+    table.cardable td::before{content:attr(data-label);color:var(--muted);font-size:.74rem;font-weight:600;text-align:left;flex:0 0 auto;max-width:55%}
+    table.cardable td[data-label=""]::before{display:none}
+    table.cardable td:first-child{flex-basis:100%;justify-content:flex-start;text-align:left !important;font-size:.95rem !important;padding-bottom:.25rem !important}
+    table.cardable td:first-child::before{display:none}
+    table.cardable td.c-full{text-align:left !important;justify-content:flex-start}
+    table.cardable td.c-full::before{display:none}
+    table.cardable td input,table.cardable td select{max-width:60% !important}
+    .table-wrap:has(> table.cardable){overflow:visible}
+    header{transition:padding .2s ease}
+    header h1{transition:font-size .2s ease,letter-spacing .2s ease}
+    body.scrolled header{padding-top:calc(.45rem + env(safe-area-inset-top,0px)) !important;padding-bottom:.45rem !important;
+      background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border)}
+    body.scrolled header h1{font-size:1.08rem !important;letter-spacing:-.01em}
+    body.scrolled header .icon-btn{width:36px;height:36px}
+  }
+
   /* przestawianie kafelków: przytrzymaj 3 s */
   [data-order] > [data-k]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   [data-order] > [data-k].hold-pre{transform:scale(.92);opacity:.85;transition:transform 2.6s ease,opacity 2.6s ease}
@@ -1115,7 +1143,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v28 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v29 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1757,7 +1785,7 @@ function renderAllocation(rows, total) {
     const cur = r ? r.alloc : 0;
     inTargets += cur;
     const diff = cur - c.target;
-    return `<tr><td><strong>${sym}</strong></td><td>${pct(cur)}</td><td>${c.target}%</td><td>${diff >= 0 ? '+' : '-'}${fixed(Math.abs(diff), 1)} pp</td></tr>`;
+    return `<tr><td><span class="pf-sym">${coinIcon(sym, 'sm')}<strong>${sym}</strong></span></td><td>${pct(cur)}</td><td>${c.target}%</td><td>${diff >= 0 ? '+' : '-'}${fixed(Math.abs(diff), 1)} pp</td></tr>`;
   }).join('');
   el.innerHTML = `
     <table><thead><tr><th>Projekt</th><th>Obecnie</th><th>Cel</th><th>Różnica</th></tr></thead><tbody>${body}</tbody></table>
@@ -2030,7 +2058,7 @@ function renderSplit() {
     <table>
       <thead><tr><th>Moneta</th><th class="num">Kwota</th><th class="num">≈ Ilość</th><th class="num">Udział teraz → po (cel)</th></tr></thead>
       <tbody>${rows.map(r => `<tr${r.reserve ? ' class="bench-mine"' : ''}>
-        <td><strong>${r.sym}${r.reserve ? ' · rezerwa' : ''}</strong>${r.note ? `<br><span class="small muted">${esc(r.note)}</span>` : ''}</td>
+        <td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<strong>${r.sym}${r.reserve ? ' · rezerwa' : ''}</strong></span>${r.note ? `<br><span class="small muted">${esc(r.note)}</span>` : ''}</td>
         <td class="num">${zl(r.amount)}</td>
         <td class="num">${fmtQty(r.qty)}</td>
         <td class="num">${pct(r.before)} → ${pct(r.afterPct)} <span class="muted">(${r.target}%)</span></td>
@@ -3870,6 +3898,95 @@ function resetLayout() {
 const ICON_SUN = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
 const ICON_TREND = svg('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>');
 const ICON_PLUS = svg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>');
+/* ---------- płynne liczby: wartość „przelicza się” do nowej zamiast przeskakiwać ---------- */
+const ANIM = {};
+const ANIM_FMT = {money: v => money(v), zl: v => zl(v)};
+function animNums(root) {
+  if (!root || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { root?.querySelectorAll('[data-anim]').forEach(el => { ANIM[el.dataset.anim] = {v: +el.dataset.v}; }); return; }
+  root.querySelectorAll('[data-anim]').forEach(el => {
+    const k = el.dataset.anim, to = +el.dataset.v, f = ANIM_FMT[el.dataset.f] || (v => fixed(v, 2)), st = ANIM[k] || {};
+    const from = st.raf ? st.cur : st.v;
+    if (st.raf) cancelAnimationFrame(st.raf);
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from === to || Math.abs(to - from) > Math.abs(to) * 0.5) { ANIM[k] = {v: to}; return; }
+    const t0 = performance.now(), D = 650, rec = {v: to, cur: from};
+    ANIM[k] = rec;
+    el.textContent = f(from);
+    const step = t => {
+      const p = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - p, 3);
+      rec.cur = from + (to - from) * e;
+      if (el.isConnected) el.textContent = f(p < 1 ? rec.cur : to);
+      if (p < 1 && el.isConnected) rec.raf = requestAnimationFrame(step); else rec.raf = 0;
+    };
+    rec.raf = requestAnimationFrame(step);
+  });
+}
+
+/* ---------- tabele jako karty na telefonie: każda komórka dostaje etykietę z nagłówka kolumny ---------- */
+const CARD_SKIP = '#market table, table.mk-table, #portfolioTable, table.no-cards, .modal .pin-pad table';
+function cardifyTables(root = document) {
+  root.querySelectorAll('table').forEach(t => {
+    if (t.matches(CARD_SKIP) || t.closest('#market')) return;
+    const heads = [...t.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    t.classList.add('cardable');
+    if (!heads.length) return;
+    t.querySelectorAll('tbody tr').forEach(tr => {
+      if (tr.dataset.cardified === String(tr.cells.length)) return;
+      [...tr.cells].forEach((td, i) => { if (td.colSpan > 1) td.classList.add('c-full'); else td.dataset.label = heads[i] || ''; });
+      tr.dataset.cardified = String(tr.cells.length);
+    });
+  });
+}
+(function cardObserver() {
+  let tm = null;
+  const run = () => { tm = null; cardifyTables(); };
+  new MutationObserver(() => { if (!tm) tm = setTimeout(run, 60); }).observe(document.body, {childList: true, subtree: true});
+  setTimeout(run, 0);
+})();
+
+/* ---------- nagłówek jak w iOS: duży tytuł zmniejsza się przy przewijaniu ---------- */
+(function iosHeader() {
+  let on = false;
+  const upd = () => { const v = window.scrollY > 28; if (v !== on) { on = v; document.body.classList.toggle('scrolled', v); } };
+  window.addEventListener('scroll', upd, {passive: true});
+  upd();
+})();
+
+/* ---------- przesuwanie palcem między podkategoriami ---------- */
+function subSiblings() {
+  const g = groupOf(activeTab);
+  if (g.items.length > 1) { const list = ordered('grp_' + g.id, g.items).map(([k]) => k); return {list, cur: itemKey(activeTab), go: k => navTo(k)}; }
+  const sid = activeTab === 'market' ? 'market' : activeTab === 'settings' ? 'settings' : null;
+  if (sid) { const list = ordered('sub_' + sid, SUBS[sid].items).map(([k]) => k); return {list, cur: subGet(sid), go: k => setSub(sid, k)}; }
+  return null;
+}
+(function swipeSubs() {
+  const mq = window.matchMedia('(max-width:760px)');
+  const NO = 'input,select,textarea,canvas,.subtabs,.pf-tiles,.seg,.mk-chart,.modal,[data-order],.mk-fan';
+  const hScroll = el => { for (let n = el; n && !n.classList?.contains('container'); n = n.parentElement) { const o = getComputedStyle(n).overflowX; if ((o === 'auto' || o === 'scroll') && n.scrollWidth > n.clientWidth + 2) return true; } return false; };
+  let st = null;
+  document.addEventListener('touchstart', e => {
+    st = null;
+    if (!mq.matches || e.touches.length !== 1 || !e.target.closest('.container') || e.target.closest(NO) || document.querySelector('.modal.open')) return;
+    if (hScroll(e.target)) return;
+    st = {x: e.touches[0].clientX, y: e.touches[0].clientY, t: e.timeStamp};
+  }, {passive: true});
+  document.addEventListener('touchend', e => {
+    if (!st) return;
+    const t = e.changedTouches[0], dx = t.clientX - st.x, dy = t.clientY - st.y, dt = e.timeStamp - st.t;
+    st = null;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2 || dt > 700) return;
+    const s = subSiblings();
+    if (!s) return;
+    const i = s.list.indexOf(s.cur), j = i + (dx < 0 ? 1 : -1);
+    if (i < 0 || j < 0 || j >= s.list.length) return;
+    const c = document.querySelector('.container');
+    c.classList.remove('swipe-l', 'swipe-r'); void c.offsetWidth;
+    c.classList.add(dx < 0 ? 'swipe-l' : 'swipe-r');
+    s.go(s.list[j]);
+    setTimeout(() => c.classList.remove('swipe-l', 'swipe-r'), 320);
+  }, {passive: true});
+})();
+
 /* ---------- własna kolejność kafelków (przytrzymaj 3 s i przeciągnij) ---------- */
 const orderGet = id => { const v = lsGet('ccOrder_' + id); return Array.isArray(v) ? v : null; };
 function ordered(id, items, keyOf = x => x[0]) {
@@ -4025,7 +4142,8 @@ function coinIcon(sym, cls = '') {
 function iconFail(img, sym) { const s = img.parentNode; if (!s) return; s.style.background = coinColor(sym); s.textContent = sym.slice(0, 4); s.dataset.ik = 'x'; }
 async function loadCoinIcons() {
   const idOf = s => { try { return cgId(s); } catch (e) { return STRATEGY[s]?.id || null; } };
-  const need = [...new Set([...Object.keys(holdings), 'BTC', 'ETH'])].filter(s => !coinIcons[s] && idOf(s));
+  let watch = []; try { watch = mkWatch(); } catch (e) {}
+  const need = [...new Set([...Object.keys(holdings), ...watch, 'BTC', 'ETH'])].filter(s => !coinIcons[s] && idOf(s));
   if (!need.length || loadCoinIcons.busy || Date.now() - (loadCoinIcons.at || 0) < 10 * 60000) return;
   loadCoinIcons.busy = true; loadCoinIcons.at = Date.now();
   try {
@@ -4049,9 +4167,10 @@ function renderPfHero(rows, totVal, totCost) {
   const pl = totVal - totCost, plPct = totCost > 0 ? pl / totCost * 100 : 0;
   const live = Object.values(prices).some(p => /na żywo/.test(p.src || ''));
   el.innerHTML = `<span class="muted small" style="font-weight:600"><span class="dot-live${live ? '' : ' off'}"></span>Wartość · ${live ? 'ceny na żywo' : 'ostatnie ceny'}</span>
-    <div class="pf-big link sens" onclick="openTile('value')">${money(totVal)}</div>
+    <div class="pf-big link sens" onclick="openTile('value')"><span data-anim="pfv" data-v="${totVal}" data-f="money">${money(totVal)}</span></div>
     <div class="pf-chips"><span class="chip-s ${chg >= 0 ? 'pos' : 'neg'} sens">${signed(chg, money)} dziś (${signed(chgPct, pct)})</span>
       <span class="chip-s ${pl >= 0 ? 'pos' : 'neg'} link sens" onclick="openTile('pl')">wynik ${signed(pl, money)} (${signed(plPct, pct)})</span></div>`;
+  animNums(el);
   const by = {}, total = rows.filter(r => r.hasPrice).reduce((t, r) => t + r.value, 0);
   rows.filter(r => r.hasPrice).forEach(r => { const k = statusOf(r.sym); by[k] = (by[k] || 0) + r.value; });
   const order = ['core', 'hold', 'reduce', 'lottery', 'new', 'stable'].filter(k => by[k] > 0);
@@ -4124,7 +4243,7 @@ function renderToday() {
     <div class="td-hero link" onclick="goGroup('pf')">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><span style="font-weight:700">${greet}</span>
         <span class="small muted"><span class="dot-live"></span>na żywo</span></div>
-      <div class="pf-big sens" style="margin-top:.5rem">${zl(tot)}</div>
+      <div class="pf-big sens" style="margin-top:.5rem"><span data-anim="tdv" data-v="${tot}" data-f="zl">${zl(tot)}</span></div>
       <div class="pf-chips"><span class="chip-s ${chg >= 0 ? 'pos' : 'neg'} sens">${signed(chg, zl)} · ${signed(chgPct, pct)} dziś</span>
         ${act ? `<span class="chip-s">Do celu ${zl(act.g)}: ${pct(act.pct)}</span>` : ''}
         ${monthly > 0 ? `<span class="chip-s sens">Dopłata: ${zl(spent)} / ${zl(monthly)}</span>` : ''}</div>
@@ -4153,6 +4272,7 @@ function renderToday() {
         ${movers.map(r => `<div class="td-row link" onclick="openModal('${r.sym}')">${coinIcon(r.sym, 'sm')}<div style="flex:1;font-weight:600">${r.sym} <span class="muted small" style="font-weight:500">${moneyPrice(r.price)}</span></div>${colored(prices[r.sym].ch24, signed(prices[r.sym].ch24, pct))}</div>`).join('')}
       </div>
     </div>`);
+  animNums(el);
 }
 
 /* ---------- okna jak w iOS: na telefonie wysuwają się od dołu, zamykasz przeciągnięciem w dół ---------- */
@@ -4540,7 +4660,7 @@ function renderRisk() {
     const m = riskMetrics(s);
     const prop = ladderProposal(s) || [];
     const mine = (ladder[s] || []).filter(l => !l.done);
-    const head = m ? `<strong>${s} · ${usdP(m.price)}</strong>` : `<strong>${s}</strong>`;
+    const head = `<span class="pf-sym">${coinIcon(s, 'sm')}` + (m ? `<strong>${s} · ${usdP(m.price)}</strong>` : `<strong>${s}</strong>`) + '</span>';
     const planNote = c.status === 'lottery' ? 'Loteria w Twoim planie' : c.status === 'reduce' ? 'Do redukcji w Twoim planie' : '';
     if (!m && !prop.length) {
       return `<details ${riskOpen.has(s) ? 'open' : ''} ontoggle="riskToggle('${s}',this.open)"><summary>${head}<span class="small muted">${STRATEGY[s]?.bn ? (riskLoading ? 'ładowanie…' : 'brak danych') : 'brak historii na Binance'}${planNote ? ' · ' + planNote : ''}</span></summary>
@@ -4578,7 +4698,7 @@ function renderLadder() {
   el.innerHTML = coins.map(s => {
     const price = prices[s]?.usd || 0;
     return `<div style="margin:.75rem 0 1.25rem">
-      <div class="goal-head"><strong>${s} · teraz ${price ? usdP(price) : '—'}</strong>
+      <div class="goal-head"><span class="pf-sym">${coinIcon(s, 'sm')}<strong>${s} · teraz ${price ? usdP(price) : '—'}</strong></span>
         <span class="small muted">pozycja ${fmtQty(holdings[s].qty)} ${s} ≈ ${zl(valuePln(s))} · średnia ${usdP(holdings[s].avg)}</span></div>
       ${levelsTable(s, ladder[s], {status: true})}
     </div>`;
@@ -6170,13 +6290,13 @@ function mkRenderWatch() {
   const cs = document.getElementById('mkCurSeg');
   if (cs) cs.innerHTML = `<button class="${currency === 'USD' ? 'on' : ''}" onclick="setCurrency('USD')">USD</button><button class="${currency === 'PLN' ? 'on' : ''}" onclick="setCurrency('PLN')">PLN</button>`;
   const list = mkWatch();
-  el.innerHTML = `<table class="mk-table">
+  setHtmlKeepIcons(el, `<table class="mk-table">
       <thead><tr><th>Moneta</th><th class="num">Cena</th><th class="num">24 h</th><th class="num mk-hide-side mk-hide-sm">Wolumen 24 h</th><th class="mk-hide-side mk-hide-sm">Zakres 24 h</th><th class="num">7 dni</th><th class="mk-hide-side"></th></tr></thead>
       <tbody>${list.map(s => {
         const t = MK.tick[s], ch = t ? (t.c / t.o - 1) * 100 : null, sp = MK.spark[s];
         const held = holdings[s]?.qty > 0;
         return `<tr class="mk-row ${s === MK.sel ? 'sel' : ''}" onclick="mkSelect('${s}', true)">
-          <td><strong>${s}</strong>${held ? ' <span class="tag tag-acc" title="Masz tę monetę w portfelu">portfel</span>' : STRATEGY[s]?.status === 'new' ? ` <span class="tag tag-neu" title="${esc(STRATEGY[s].note || 'Nowy projekt do rozważenia')}">do rozważenia</span>` : ''}<span class="small muted mk-coin">${esc(coinName(s))}</span></td>
+          <td><span class="pf-sym">${coinIcon(s, 'sm')}<span><strong>${s}</strong>${held ? ' <span class="tag tag-acc" title="Masz tę monetę w portfelu">portfel</span>' : STRATEGY[s]?.status === 'new' ? ` <span class="tag tag-neu" title="${esc(STRATEGY[s].note || 'Nowy projekt do rozważenia')}">do rozważenia</span>` : ''}<span class="small muted mk-coin">${esc(coinName(s))}</span></span></span></td>
           <td class="num"><span class="mk-price" id="mkp-${s}">${t ? mP(t.c) : onBinance(s) ? '…' : 'brak na Binance'}</span></td>
           <td class="num" id="mkc-${s}">${chg(ch)}</td>
           <td class="num mk-hide-side mk-hide-sm" id="mkv-${s}">${t ? bigMoney(t.q) : '—'}</td>
@@ -6184,7 +6304,7 @@ function mkRenderWatch() {
           <td class="num">${sparkSvg(sp, sp ? (t?.c ?? sp[sp.length - 1]) >= sp[0] : true)}</td>
           <td class="mk-hide-side"><button class="icon-x" title="Usuń z obserwowanych" aria-label="Usuń ${s} z obserwowanych" onclick="event.stopPropagation();mkToggleWatch('${s}')">×</button></td>
         </tr>`;
-      }).join('')}</tbody></table>`;
+      }).join('')}</tbody></table>`);
 }
 function mkRangeBar(t) {
   if (!t || !(t.h > t.l)) return '<span class="muted small">—</span>';
@@ -7786,6 +7906,12 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '29', date: '2026-10-27', title: 'Przesuwanie, karty, logo i płynne liczby', items: [
+    'Na telefonie przesuń palcem w lewo lub w prawo, żeby przejść do sąsiedniej podkategorii (Portfel, Finanse, Rynek, Ustawienia).',
+    'Tabele na telefonie zamienione na karty: Zyski i ryzyko, Dziennik / PIT, Dopłata, Cel, Opłaty i okna szczegółów – bez przewijania w bok.',
+    'Logo monet także w Rynku, Zyskach i ryzyku, Dopłacie, alokacji i oknach kafelków.',
+    'Nagłówek jak w iOS: duży tytuł zmniejsza się przy przewijaniu i zostaje przyklejony u góry.',
+    'Wartość portfela przy zmianie ceny płynnie „przelicza się” do nowej kwoty.']},
   {v: '28', date: '2026-10-26', title: 'Zakup za USDC z portfela', items: [
     'Kupno / Sprzedaż: przy dokupie w polu „Zapłacono” wybierzesz też kryptowalutę, którą masz w portfelu, np. „USDC z portfela”.',
     'Wtedy USDC automatycznie ubywa z portfela, a kupiona moneta przejmuje jego koszt w złotówkach – to wymiana krypto→krypto, więc nic nie trafia do dziennika PIT ani do budżetu miesiąca.',
@@ -8073,7 +8199,7 @@ function tileValue(t, b) {
       ${roleOrder.filter(k => by[k]).map(k => `<div><span>${roleName(k)}</span><strong class="sens">${money(by[k])}</strong><span>${pct(by[k] / total * 100)} portfela</span></div>`).join('')}</div>
     <div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">Wartość</th><th class="num">Udział</th><th class="num">24 h</th></tr></thead>
       <tbody>${rows.filter(r => r.hasPrice).sort((a, c) => c.value - a.value).map(r => `<tr class="clickable" onclick="closeInfoModal();openModal('${r.sym}')">
-        <td><strong>${r.sym}</strong><br><span class="small muted">${roleName(statusOf(r.sym))}</span></td><td class="num sens">${money(r.value)}</td><td class="num">${pct(r.alloc)}</td>
+        <td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<span><strong>${r.sym}</strong><br><span class="small muted">${roleName(statusOf(r.sym))}</span></span></span></td><td class="num sens">${money(r.value)}</td><td class="num">${pct(r.alloc)}</td>
         <td class="num">${prices[r.sym]?.ch24 != null ? colored(prices[r.sym].ch24, signed(prices[r.sym].ch24, pct)) : '—'}</td></tr>`).join('')}</tbody></table></div>${tileLive()}`;
 }
 
@@ -8101,7 +8227,7 @@ function tileCost(t, b) {
     <h3 style="margin:1rem 0 .4rem;font-size:.95rem">Koszt według monet</h3>
     <div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">Koszt</th><th class="num">Wartość</th><th class="num">Wynik</th></tr></thead>
       <tbody>${rows.map(r => ({...r, cPln: r.pos.qty * avgPlnOf(r.pos), vPln: valuePln(r.sym)})).sort((a, c) => c.cPln - a.cPln).map(r => `<tr>
-        <td><strong>${r.sym}</strong><br><span class="small muted">średnia ${usd(r.pos.avg)}</span></td><td class="num sens">${zl(r.cPln)}</td><td class="num sens">${r.hasPrice ? zl(r.vPln) : '—'}</td>
+        <td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<span><strong>${r.sym}</strong><br><span class="small muted">średnia ${usd(r.pos.avg)}</span></span></span></td><td class="num sens">${zl(r.cPln)}</td><td class="num sens">${r.hasPrice ? zl(r.vPln) : '—'}</td>
         <td class="num sens">${r.hasPrice ? colored(r.vPln - r.cPln, signed(r.vPln - r.cPln, zl)) : '—'}</td></tr>`).join('')}</tbody></table></div>
     <p class="small muted" style="margin:.6rem 0 0">Zakupy i sprzedaże w tabeli rocznej to transakcje za złotówki z dziennika (to one liczą się do PIT-38). Koszt monet w portfelu liczę z ilości i średnich cen zakupu.${approx ? ' ≈ część średnich w PLN liczona po bieżącym kursie.' : ''}</p>
     <div class="form-row" style="margin-top:.6rem"><button class="action secondary" onclick="closeInfoModal();openTab('journal')">Dziennik / PIT</button></div>${tileLive()}`;
@@ -8117,7 +8243,7 @@ function tilePl(t, b) {
       ${list.length ? `<div><span>Najlepiej</span><strong>${list[0].sym}</strong><span class="sens">${colored(list[0].pl, signed(list[0].pl, money))}</span></div>
       <div><span>Najsłabiej</span><strong>${list[list.length - 1].sym}</strong><span class="sens">${colored(list[list.length - 1].pl, signed(list[list.length - 1].pl, money))}</span></div>` : ''}</div>
     <div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">Wynik</th><th class="num">%</th><th class="num">Cena / średnia</th></tr></thead>
-      <tbody>${list.map(r => `<tr class="clickable" onclick="closeInfoModal();openModal('${r.sym}')"><td><strong>${r.sym}</strong></td>
+      <tbody>${list.map(r => `<tr class="clickable" onclick="closeInfoModal();openModal('${r.sym}')"><td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<strong>${r.sym}</strong></span></td>
         <td class="num sens">${colored(r.pl, signed(r.pl, money))}</td><td class="num">${colored(r.plPct, signed(r.plPct, pct))}</td>
         <td class="num small">${usd(prices[r.sym]?.usd || 0)}<br><span class="muted">śr. ${usd(r.pos.avg)}</span></td></tr>`).join('')}</tbody></table></div>
     <p class="small muted" style="margin:.6rem 0 0">Wynik niezrealizowany: obecna wartość minus koszt ze średniej ceny zakupu. Zrealizowane sprzedaże za złotówki znajdziesz w Dzienniku.</p>${tileLive()}`;
@@ -8150,7 +8276,7 @@ function tileUsdc(t, b) {
       : usdcMode === 'surplus' ? (surplus >= MIN_ORDER_PLN ? 'Inwestujesz tylko to, co przekracza rezerwę – rezerwa zostaje na okazje przy spadkach.' : 'Masz nie więcej USDC niż rezerwa z planu – według strategii zostaw je na dokupy przy spadkach.')
       : usdcMode === 'all' && tg ? '<span style="color:var(--orange)">Uwaga: plan zakłada trzymanie rezerwy USDC – wydanie całości zostawi Cię bez gotówki na spadki.</span>' : 'Podział kieruje pieniądze tam, gdzie do celu alokacji brakuje najwięcej.'}</p>
     ${res.rows.length ? `<div class="table-wrap"><table><thead><tr><th>Moneta</th><th class="num">USDC</th><th class="num">≈ Ilość</th><th class="num">Udział teraz → po (cel)</th></tr></thead>
-      <tbody>${res.rows.map(r => `<tr><td><strong>${r.sym}</strong>${signals.includes(r.sym) ? ' <span class="tag tag-buy">sygnał dokupu</span>' : ''}</td><td class="num"><strong class="sens">${fixed(toU(r.amount), 2)}</strong></td>
+      <tbody>${res.rows.map(r => `<tr><td><span class="pf-sym">${coinIcon(r.sym, 'sm')}<strong>${r.sym}</strong></span>${signals.includes(r.sym) ? ' <span class="tag tag-buy">sygnał dokupu</span>' : ''}</td><td class="num"><strong class="sens">${fixed(toU(r.amount), 2)}</strong></td>
         <td class="num">${fmtQty(r.qty)}</td><td class="num">${pct(r.before)} → ${pct(r.afterPct)} <span class="muted">(${r.target}%)</span></td></tr>`).join('')}</tbody></table></div>`
       : `<p class="muted">${amountPln < MIN_ORDER_PLN ? 'Kwota jest za mała na sensowne zlecenie.' : 'Brak monet, które strategia pozwala teraz dokupić.'}</p>`}
     <p class="small muted" style="margin:.6rem 0 0">Kupno za USDC to wymiana krypto→krypto – nie liczy się do PIT-38 ani do budżetu miesiąca. Po zakupie dodaj go w „Kupno / Sprzedaż” (odznacz „Kupione za złotówki”) albo pobierz automatycznie z Binance.</p>
