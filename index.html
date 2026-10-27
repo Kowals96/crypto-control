@@ -681,6 +681,29 @@
   .cm-price strong{display:block;font-size:1.15rem}
   .cm-plan{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:14px;padding:.75rem .9rem;font-size:.88rem;line-height:1.45;margin:.8rem 0}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  /* v30: Zyski i ryzyko */
+  .rk-list{display:grid}
+  .rk-row,.rk-lad > summary{display:flex;align-items:center;gap:.75rem;padding:.75rem .15rem;border-bottom:1px solid var(--border);cursor:pointer}
+  .rk-list .rk-row:last-child{border-bottom:none}
+  .rk-row:hover{background:var(--hover)}
+  .rk-main{flex:1;min-width:0}
+  .rk-top{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+  .rk-top strong{font-size:1rem}
+  .rk-pill{font-size:.68rem;font-weight:700;padding:.12rem .5rem;border-radius:999px}
+  .rk-top .status{font-size:.62rem;padding:.1rem .45rem}
+  .rk-sub{font-size:.8rem;color:var(--muted);margin-top:.1rem}
+  .rk-bar{height:5px;border-radius:999px;background:var(--hover);overflow:hidden;margin:.45rem 0 .25rem}
+  .rk-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .rk-hit .rk-bar i{background:var(--orange)}
+  .rk-next{font-size:.8rem;color:var(--text-2)}
+  .rk-chev{color:var(--muted);font-size:1.4rem;line-height:1}
+  .rk-lad > summary{list-style:none}
+  .rk-lad > summary::-webkit-details-marker{display:none}
+  .rk-lad{border-bottom:1px solid var(--border)}
+  .rk-lad:last-child{border-bottom:none}
+  .rk-lad > summary{border-bottom:none}
+  .rk-lad.rk-hit > summary{background:color-mix(in srgb,var(--orange) 8%,transparent);border-radius:12px}
+
   /* v29: karty zamiast tabel na telefonie, nagłówek iOS, przesuwanie podkategorii */
   @keyframes swipeInL{from{opacity:.3;transform:translateX(36px)}to{opacity:1;transform:none}}
   @keyframes swipeInR{from{opacity:.3;transform:translateX(-36px)}to{opacity:1;transform:none}}
@@ -1009,19 +1032,17 @@
   <!-- ===================== ZYSKI I RYZYKO ===================== -->
   <section id="risk">
     <div class="card">
-      <h2>Propozycje realizacji zysków</h2>
-      <p class="muted" style="font-size:.9rem;margin-top:0">
-        Wyliczane automatycznie z danych: Twojej średniej ceny zakupu, historycznego szczytu, średniej z 200 dni, RSI tygodniowego, zmienności, historii spadków i nastrojów rynku.
-        Aktualizują się razem z cenami. To propozycje oparte na regułach, nie prognoza – zadania pojawiają się tylko dla progów, które sam ustawisz niżej.
-      </p>
-      <div id="riskMarket" class="small muted"></div>
+      <h2>Twoje monety: ryzyko i progi</h2>
+      <p class="muted small" style="margin-top:0">Pasek pokazuje, jak blisko jest najbliższy próg sprzedaży. Stuknij monetę, żeby zobaczyć pełną analizę i ustawić progi.</p>
+      <div id="riskMarket" class="small muted" style="margin-bottom:.4rem"></div>
       <div id="riskBody"></div>
-      <div class="info" style="margin-top:.75rem">
+      <details style="margin-top:.75rem"><summary><strong>Jak czytać</strong></summary><div class="info" style="margin:.5rem 0 0">
         <strong>Jak czytać.</strong> Dane pochodzą z dziennych świec Binance (cała dostępna historia), historycznych szczytów z CoinGecko i indeksu „strachu i chciwości” (alternative.me).
         <em>Mayer</em> to cena podzielona przez średnią z 200 dni – im wyżej ponad 1, tym bardziej rynek odjechał od swojego średniego poziomu; okolice 2,0–2,4 to w historii strefy mocnego rozgrzania.
         <em>RSI tygodniowy</em> powyżej 70–80 oznacza silne wykupienie. Żaden z tych wskaźników nie wyznacza szczytu – pokazują, jak bardzo rynek jest rozgrzany na tle własnej historii.
         Gdy kilka ostrzeżeń nakłada się naraz, propozycja dodaje wcześniejszy szczebel i zwiększa udziały do sprzedaży.
-      </div>
+        To propozycje oparte na regułach, nie prognoza – zadania pojawiają się tylko dla progów, które sam ustawisz.
+      </div></details>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
@@ -1031,7 +1052,7 @@
           <button class="action secondary" onclick="enableNotifications()">🔔 Powiadomienia</button>
         </div>
       </div>
-      <p class="muted" style="font-size:.9rem">Gdy cena dojdzie do Twojego progu, pojawia się zadanie „REALIZUJ ZYSK” (dzwonek, zakładka Zadania, powiadomienie). Po sprzedaży oznacz próg jako zrobiony.</p>
+      <p class="muted small">Gdy cena dojdzie do progu, pojawi się zadanie na ekranie Dziś i powiadomienie. Po sprzedaży oznacz próg jako zrobiony.</p>
       <p class="small" id="ladderMsg"></p>
       <div id="ladderBody"></div>
     </div>
@@ -1143,7 +1164,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v29 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v30 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -4647,62 +4668,91 @@ function levelsTable(sym, levels, opts = {}) {
 
 function riskToggle(s, open) { if (open) riskOpen.add(s); else riskOpen.delete(s); }
 
+/* =========================================================
+   ZYSKI I RYZYKO (v30): zwarta lista monet z najbliższym progiem; pełna analiza w oknie od dołu
+   ========================================================= */
+function nextLevel(s) {
+  const price = prices[s]?.usd || 0;
+  const mine = (ladder[s] || []).filter(l => !l.done).sort((x, y) => x.price - y.price);
+  const hit = price > 0 ? mine.filter(l => price >= l.price) : [];
+  if (hit.length) return {...hit[hit.length - 1], hit: true, mine: true, n: hit.length};
+  const up = mine.find(l => l.price > price);
+  if (up) return {...up, mine: true};
+  const prop = (ladderProposal(s) || []).find(l => l.price > price);
+  return prop ? {...prop, mine: false} : null;
+}
+function riskRowHtml(s) {
+  const c = STRATEGY[s] || {}, m = riskMetrics(s), a = m ? riskAssess(s, m) : null;
+  const price = m?.price || prices[s]?.usd || 0, pos = holdings[s], nl = nextLevel(s);
+  const pl = pos?.avg > 0 && price > 0 ? (price / pos.avg - 1) * 100 : null;
+  const role = c.status === 'lottery' ? 'Loteria' : c.status === 'reduce' ? 'Redukcja' : '';
+  const prog = nl ? (nl.hit ? 100 : Math.max(2, Math.min(100, price / nl.price * 100))) : 0;
+  const lvl = a ? a.level : null;
+  return `<div class="rk-row${nl?.hit ? ' rk-hit' : ''}" onclick="openRiskSheet('${s}')" role="button" tabindex="0">
+    ${coinIcon(s)}
+    <div class="rk-main">
+      <div class="rk-top"><strong>${s}</strong>${lvl ? `<span class="rk-pill" style="color:${lvl[1]};background:color-mix(in srgb,${lvl[1]} 14%,transparent)">${lvl[0]}</span>` : ''}${role ? `<span class="status status-${c.status}">${role}</span>` : ''}</div>
+      <div class="rk-sub">${price ? usdP(price) : '—'}${pl != null ? ` · ${colored(pl, signed(pl, pct))} od średniej` : ''}</div>
+      ${nl ? `<div class="rk-bar"><i style="width:${prog}%"></i></div>
+        <div class="rk-next">${nl.hit ? `<strong style="color:var(--orange)">Próg ${usdP(nl.price)} osiągnięty – sprzedaj ${nl.pct}%</strong>`
+          : `${nl.mine ? 'Twój próg' : 'Propozycja'} ${usdP(nl.price)} · <strong>${signed((nl.price / price - 1) * 100, pct)}</strong> · sprzedaj ${nl.pct}%`}</div>`
+        : `<div class="rk-next muted">${c.status === 'lottery' && !c.sellAt ? 'Mikro-pozycja – trzymaj, bez progów' : riskLoading ? 'ładowanie…' : 'Brak progów powyżej obecnej ceny'}</div>`}
+    </div>
+    <span class="rk-chev" aria-hidden="true">›</span>
+  </div>`;
+}
 function renderRisk() {
   if (activeTab !== 'risk') return;
   const f = mkt.fng;
   const fngPl = {'Extreme Fear':'skrajny strach', 'Fear':'strach', 'Neutral':'neutralnie', 'Greed':'chciwość', 'Extreme Greed':'skrajna chciwość'};
+  const coins = riskCoins().slice().sort((x, y) => valuePln(y) - valuePln(x));
+  const hits = coins.filter(s => nextLevel(s)?.hit);
   document.getElementById('riskMarket').innerHTML = riskLoading ? 'Pobieram i analizuję dane historyczne…'
-    : f ? `Nastroje na całym rynku (indeks strachu i chciwości): <strong>${f.v}/100 – ${fngPl[f.cls] || f.cls}</strong>` : '';
-  const coins = riskCoins();
-  if (!riskOpenInit && coins.length) { coins.slice(0, 3).forEach(s => riskOpen.add(s)); riskOpenInit = true; }
-  document.getElementById('riskBody').innerHTML = coins.map(s => {
-    const c = STRATEGY[s] || {};
-    const m = riskMetrics(s);
-    const prop = ladderProposal(s) || [];
-    const mine = (ladder[s] || []).filter(l => !l.done);
-    const head = `<span class="pf-sym">${coinIcon(s, 'sm')}` + (m ? `<strong>${s} · ${usdP(m.price)}</strong>` : `<strong>${s}</strong>`) + '</span>';
-    const planNote = c.status === 'lottery' ? 'Loteria w Twoim planie' : c.status === 'reduce' ? 'Do redukcji w Twoim planie' : '';
-    if (!m && !prop.length) {
-      return `<details ${riskOpen.has(s) ? 'open' : ''} ontoggle="riskToggle('${s}',this.open)"><summary>${head}<span class="small muted">${STRATEGY[s]?.bn ? (riskLoading ? 'ładowanie…' : 'brak danych') : 'brak historii na Binance'}${planNote ? ' · ' + planNote : ''}</span></summary>
-        <div style="padding:.6rem .8rem" class="small muted">${c.status === 'lottery' && !c.sellAt ? 'Mikro-pozycja – plan: nie dokupuj, trzymaj jako darmową opcję. Brak propozycji sprzedaży.' : 'Za mało danych do propozycji.'}</div></details>`;
-    }
-    const a = m ? riskAssess(s, m) : null;
-    const posPln = valuePln(s);
-    const pos = holdings[s];
-    return `<details ${riskOpen.has(s) ? 'open' : ''} ontoggle="riskToggle('${s}',this.open)">
-      <summary>${head}<span>${a ? `<span style="color:${a.level[1]};font-weight:600">Ryzyko: ${a.level[0]}</span>` : ''}${planNote ? ` <span class="small muted">· ${planNote}</span>` : ''}</span></summary>
-      <div style="padding:.6rem .8rem">
-        ${m ? `<div class="kv">
-          <div><span>Od historycznego szczytu</span><strong>${signed(m.fromAth, pct)}</strong><span>ATH ${usdP(m.ath)} (${dmy(m.athT)})</span></div>
-          <div><span>Mayer (cena / średnia 200 dni)</span><strong>${m.mayer ? fixed(m.mayer, 2) + '×' : '—'}</strong></div>
-          <div><span>RSI tygodniowy</span><strong>${m.rsiW === null ? '—' : Math.round(m.rsiW)}</strong></div>
-          <div><span>Zmienność (30 dni, rocznie)</span><strong>${Math.round(m.vol30)}%</strong></div>
-          <div><span>Największy spadek w historii</span><strong class="negative">−${Math.round(m.maxDD.pct)}%</strong><span>${dmy(m.maxDD.peakT)} → ${dmy(m.maxDD.troughT)}</span></div>
-          <div><span>Największy spadek w ostatnim roku</span><strong class="negative">−${Math.round(m.dd1y.pct)}%</strong></div>
-        </div>
-        <ul style="margin:.5rem 0;padding-left:1.1rem;font-size:.85rem">${a.lines.map(l => `<li>${l}</li>`).join('')}</ul>
-        <p style="font-size:.85rem;margin:.25rem 0 .75rem"><strong>Ryzyko trzymania dalej:</strong> pozycja jest warta ok. ${zl(posPln)}${pos ? ` (${signed((m.price / pos.avg - 1) * 100, pct)} od Twojej średniej)` : ''}.
-          Gdyby od dziś powtórzył się największy spadek z historii tej monety (−${Math.round(m.maxDD.pct)}%), stracił(a)byś na niej ok. ${zl(posPln * m.maxDD.pct / 100)}.</p>` : ''}
-        <div class="goal-head"><strong>Proponowane progi sprzedaży</strong></div>
-        ${prop.length ? levelsTable(s, prop) : `<p class="small muted">${c.status === 'reduce' || c.status === 'lottery' ? 'Cena jest już ponad progiem z planu – zobacz zadania.' : 'Brak sensownych progów powyżej obecnej ceny.'}</p>`}
-        <p class="small" style="margin:.5rem 0 0">${mine.length ? `Twoje progi dla ${s}: ${mine.length} aktywne – najbliższy ${usdP(Math.min(...mine.map(l => l.price)))}.` : `Nie masz własnych progów dla ${s}. Możesz wczytać tę propozycję w <a href="#" onclick="openLadderModal('${s}');return false" style="color:var(--accent)">Ustawieniach progów</a>.`}</p>
-      </div>
-    </details>`;
-  }).join('') || '<p class="muted">Brak monet do analizy.</p>';
+    : `${f ? `Nastroje rynku: <strong>${f.v}/100 – ${fngPl[f.cls] || f.cls}</strong>` : ''}${hits.length ? ` · <strong style="color:var(--orange)">Osiągnięte progi: ${hits.join(', ')}</strong>` : ''}`;
+  setHtmlKeepIcons(document.getElementById('riskBody'), `<div class="rk-list">${coins.map(riskRowHtml).join('') || '<p class="muted">Brak monet do analizy.</p>'}</div>`);
+  if (tileModal === 'risk') renderTileModal();
+}
+let riskSheetSym = null;
+function openRiskSheet(s) { riskSheetSym = s; tileModal = 'risk'; document.getElementById('infoModal').classList.add('open'); renderTileModal(); }
+function tileRisk(t, b) {
+  const s = riskSheetSym, c = STRATEGY[s] || {}, m = riskMetrics(s), prop = ladderProposal(s) || [], mine = ladder[s] || [];
+  setHtmlKeepIcons(t, `<span class="cm-head">${coinIcon(s, 'lg')}<span><span style="display:block">${s}</span><span class="small muted" style="font-weight:500">${STATUS_LABEL[statusOf(s)] || ''}${holdings[s] ? ' · ' + zl(valuePln(s)) : ''}</span></span>
+    <span class="cm-price"><strong>${m ? usdP(m.price) : prices[s]?.usd ? usdP(prices[s].usd) : '—'}</strong>${Number.isFinite(prices[s]?.ch24) ? `<span class="small">${colored(prices[s].ch24, signed(prices[s].ch24, pct) + ' (24 h)')}</span>` : ''}</span></span>`);
+  if (!m && !prop.length) { b.innerHTML = `<p class="muted">${c.status === 'lottery' && !c.sellAt ? 'Mikro-pozycja – plan: nie dokupuj, trzymaj jako darmową opcję. Brak propozycji sprzedaży.' : 'Za mało danych historycznych do analizy.'}</p>`; return; }
+  const a = m ? riskAssess(s, m) : null, posPln = valuePln(s), pos = holdings[s];
+  const open = b.querySelector('details.rk-more')?.open;
+  b.innerHTML = `
+    ${a ? `<div class="cm-plan" style="border-color:color-mix(in srgb,${a.level[1]} 40%,transparent);background:color-mix(in srgb,${a.level[1]} 9%,transparent)">
+      <strong style="color:${a.level[1]}">Ryzyko: ${a.level[0]}</strong><ul style="margin:.35rem 0 0;padding-left:1.1rem">${a.lines.map(l => `<li>${l}</li>`).join('')}</ul></div>` : ''}
+    ${m ? `<div class="kv">
+      <div><span>Od szczytu</span><strong>${signed(m.fromAth, pct)}</strong><span>ATH ${usdP(m.ath)}</span></div>
+      <div><span>Mayer</span><strong>${m.mayer ? fixed(m.mayer, 2) + '×' : '—'}</strong><span>cena / średnia 200 dni</span></div>
+      <div><span>RSI tygodniowy</span><strong>${m.rsiW === null ? '—' : Math.round(m.rsiW)}</strong></div>
+      <div><span>Najgorszy spadek</span><strong class="negative">−${Math.round(m.maxDD.pct)}%</strong><span>w ostatnim roku −${Math.round(m.dd1y.pct)}%</span></div>
+    </div>
+    <p class="small" style="margin:.2rem 0 .8rem">Gdyby powtórzył się najgorszy spadek z historii, pozycja (${zl(posPln)}${pos ? `, ${signed((m.price / pos.avg - 1) * 100, pct)} od średniej` : ''}) straciłaby ok. <strong class="negative">${zl(posPln * m.maxDD.pct / 100)}</strong>.</p>` : ''}
+    <h3 style="margin:.4rem 0 .3rem;font-size:.95rem">Twoje progi sprzedaży</h3>
+    ${mine.length ? levelsTable(s, mine, {status: true}) : '<p class="small muted" style="margin:0 0 .4rem">Nie masz jeszcze własnych progów dla tej monety.</p>'}
+    <details class="rk-more"${open || !mine.length ? ' open' : ''}><summary><strong>Propozycja automatyczna</strong><span class="small muted">${prop.length} progi</span></summary><div style="padding:.4rem .1rem">
+      ${prop.length ? levelsTable(s, prop) : `<p class="small muted">${c.status === 'reduce' || c.status === 'lottery' ? 'Cena jest już ponad progiem z planu – zobacz zadania.' : 'Brak sensownych progów powyżej obecnej ceny.'}</p>`}</div></details>
+    <div class="form-row" style="margin:.8rem 0 0"><button class="action" style="flex:1" onclick="closeInfoModal();openLadderModal('${s}')">${mine.length ? 'Zmień progi' : 'Ustaw progi'}</button>
+      <button class="action secondary" style="flex:1" onclick="closeInfoModal();openModal('${s}')">Pozycja</button></div>`;
 }
 
-/* --- moje progi: widok w zakładce (bez edycji) --- */
+/* --- moje progi: zwarte wiersze z najbliższym progiem; szczegóły po rozwinięciu --- */
 function renderLadder() {
   const el = document.getElementById('ladderBody');
-  const coins = Object.keys(ladder).filter(s => holdings[s] && ladder[s].length);
-  el.innerHTML = coins.map(s => {
-    const price = prices[s]?.usd || 0;
-    return `<div style="margin:.75rem 0 1.25rem">
-      <div class="goal-head"><span class="pf-sym">${coinIcon(s, 'sm')}<strong>${s} · teraz ${price ? usdP(price) : '—'}</strong></span>
-        <span class="small muted">pozycja ${fmtQty(holdings[s].qty)} ${s} ≈ ${zl(valuePln(s))} · średnia ${usdP(holdings[s].avg)}</span></div>
-      ${levelsTable(s, ladder[s], {status: true})}
-    </div>`;
-  }).join('') || '<p class="muted">Nie masz jeszcze własnych progów. Kliknij „⚙ Ustawienia progów” – możesz wczytać propozycję automatyczną i ją dopasować.</p>';
+  const coins = Object.keys(ladder).filter(s => holdings[s] && ladder[s].length).sort((x, y) => valuePln(y) - valuePln(x));
+  setHtmlKeepIcons(el, coins.map(s => {
+    const price = prices[s]?.usd || 0, nl = nextLevel(s), act = ladder[s].filter(l => !l.done).length;
+    const prog = nl ? (nl.hit ? 100 : Math.max(2, Math.min(100, price / nl.price * 100))) : 100;
+    return `<details class="rk-lad${nl?.hit ? ' rk-hit' : ''}"${nl?.hit ? ' open' : ''}><summary>
+        ${coinIcon(s)}<div class="rk-main"><div class="rk-top"><strong>${s}</strong><span class="small muted">${act} z ${ladder[s].length} aktywne</span></div>
+        <div class="rk-bar"><i style="width:${prog}%"></i></div>
+        <div class="rk-next">${nl?.hit ? `<strong style="color:var(--orange)">Sprzedaj ${nl.pct}% – cena ${usdP(price)} ≥ ${usdP(nl.price)}</strong>` : nl?.mine ? `Następny ${usdP(nl.price)} · <strong>${signed((nl.price / price - 1) * 100, pct)}</strong> · sprzedaj ${nl.pct}%` : 'Wszystkie progi zrobione'}</div></div></summary>
+      <div style="padding:.3rem 0 .6rem"><p class="small muted" style="margin:.2rem 0 .4rem">Pozycja ${fmtQty(holdings[s].qty)} ${s} ≈ ${zl(valuePln(s))} · średnia ${usdP(holdings[s].avg)} · teraz ${price ? usdP(price) : '—'}</p>${levelsTable(s, ladder[s], {status: true})}</div>
+    </details>`;
+  }).join('') || '<p class="muted">Nie masz jeszcze własnych progów. Stuknij monetę wyżej albo „⚙ Ustawienia progów” – możesz wczytać propozycję automatyczną i ją dopasować.</p>');
 }
 
 function ladderDone(s, id, val = true) {
@@ -7906,6 +7956,11 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '30', date: '2026-10-27', title: 'Czytelniejsze Zyski i ryzyko', items: [
+    'Zamiast długich analiz – zwarta lista monet: cena, wynik od średniej, poziom ryzyka i pasek, jak blisko jest najbliższy próg sprzedaży.',
+    'Pełna analiza (ryzyko, wskaźniki, Twoje progi i propozycja automatyczna) otwiera się po stuknięciu monety w oknie od dołu – z przyciskiem „Ustaw progi”.',
+    'Moje progi sprzedaży: jeden wiersz na monetę z najbliższym progiem; osiągnięty próg jest wyróżniony i od razu rozwinięty z przyciskiem „Zrobione”.',
+    'Objaśnienia wskaźników schowane pod „Jak czytać”.']},
   {v: '29', date: '2026-10-27', title: 'Przesuwanie, karty, logo i płynne liczby', items: [
     'Na telefonie przesuń palcem w lewo lub w prawo, żeby przejść do sąsiedniej podkategorii (Portfel, Finanse, Rynek, Ustawienia).',
     'Tabele na telefonie zamienione na karty: Zyski i ryzyko, Dziennik / PIT, Dopłata, Cel, Opłaty i okna szczegółów – bez przewijania w bok.',
@@ -8184,7 +8239,7 @@ function renderTileModal() {
   if (!tileModal || !m.classList.contains('open')) { tileModal = null; return; }
   if (m.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;   // nie przerywaj wpisywania
   const t = document.getElementById('infoTitle'), b = document.getElementById('infoBody');
-  ({value: tileValue, cost: tileCost, pl: tilePl, usdc: tileUsdc})[tileModal]?.(t, b);
+  ({value: tileValue, cost: tileCost, pl: tilePl, usdc: tileUsdc, risk: tileRisk})[tileModal]?.(t, b);
 }
 const tileLive = () => `<p class="small muted" style="margin:.8rem 0 0">Aktualizuje się na żywo razem z cenami${Object.values(prices).some(p => /na żywo/.test(p.src || '')) ? ' (Binance, na żywo)' : ''}.</p>`;
 

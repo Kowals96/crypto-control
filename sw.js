@@ -1,5 +1,5 @@
 // Service worker: aplikacja działa offline (z ostatnimi zapisanymi cenami) i może pokazywać powiadomienia.
-const CACHE = 'crypto-control-v' + '29';
+const CACHE = 'crypto-control-v' + '30';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
