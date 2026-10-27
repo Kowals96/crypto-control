@@ -1166,7 +1166,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v31 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v32 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1810,9 +1810,9 @@ function renderAllocation(rows, total) {
     const diff = cur - c.target;
     return `<tr><td><span class="pf-sym">${coinIcon(sym, 'sm')}<strong>${sym}</strong></span></td><td>${pct(cur)}</td><td>${c.target}%</td><td>${diff >= 0 ? '+' : '-'}${fixed(Math.abs(diff), 1)} pp</td></tr>`;
   }).join('');
-  el.innerHTML = `
+  setHtmlKeepIcons(el, `
     <table><thead><tr><th>Projekt</th><th>Obecnie</th><th>Cel</th><th>Różnica</th></tr></thead><tbody>${body}</tbody></table>
-    <p class="muted small" style="margin:.5rem 0 0">Poza celami (redukcja, loterie, nowe): ${pct(Math.max(0, 100 - inTargets))} portfela.</p>`;
+    <p class="muted small" style="margin:.5rem 0 0">Poza celami (redukcja, loterie, nowe): ${pct(Math.max(0, 100 - inTargets))} portfela.</p>`);
 }
 
 /* =========================================================
@@ -2077,7 +2077,7 @@ function renderSplit() {
   const rows = cp.rows;
   if (!rows.length) { el.innerHTML = modeSeg + '<p class="muted">Brak monet, które plan pozwala teraz dokupić.</p>'; return; }
   const usdc = holdings.USDC;
-  el.innerHTML = modeSeg + (usdc ? `<p class="small" style="margin-top:0">Na giełdzie masz też <strong>${fixed(usdc.qty, 2)} USDC</strong> (≈ ${zl(valuePln('USDC'))}). Zakup za USDC to wymiana krypto→krypto – nie liczy się do budżetu ani do PIT.</p>` : '') + `
+  setHtmlKeepIcons(el, modeSeg + (usdc ? `<p class="small" style="margin-top:0">Na giełdzie masz też <strong>${fixed(usdc.qty, 2)} USDC</strong> (≈ ${zl(valuePln('USDC'))}). Zakup za USDC to wymiana krypto→krypto – nie liczy się do budżetu ani do PIT.</p>` : '') + `
     <table>
       <thead><tr><th>Moneta</th><th class="num">Kwota</th><th class="num">≈ Ilość</th><th class="num">Udział teraz → po (cel)</th></tr></thead>
       <tbody>${rows.map(r => `<tr${r.reserve ? ' class="bench-mine"' : ''}>
@@ -2087,7 +2087,7 @@ function renderSplit() {
         <td class="num">${pct(r.before)} → ${pct(r.afterPct)} <span class="muted">(${r.target}%)</span></td>
       </tr>`).join('')}</tbody>
     </table>
-    <p class="small muted" style="margin:.5rem 0 0">Ilości liczone po bieżącej cenie; na giełdzie wyjdą trochę inne. Kolejność na giełdzie: złotówki → ${reserveSym() || 'USDC'}, potem ${reserveSym() || 'USDC'} → monety z tabeli${cp.reserve ? `, a część „rezerwa” zostaw w ${reserveSym()}` : ''}. Zakupy zapisz w „Kupno / Sprzedaż” → Dokup.</p>`;
+    <p class="small muted" style="margin:.5rem 0 0">Ilości liczone po bieżącej cenie; na giełdzie wyjdą trochę inne. Kolejność na giełdzie: złotówki → ${reserveSym() || 'USDC'}, potem ${reserveSym() || 'USDC'} → monety z tabeli${cp.reserve ? `, a część „rezerwa” zostaw w ${reserveSym()}` : ''}. Zakupy zapisz w „Kupno / Sprzedaż” → Dokup.</p>`);
 }
 
 /* =========================================================
@@ -4088,12 +4088,36 @@ function afterReorder(id) {
 })();
 
 /* ---------- logo monet bez migania: przy odświeżaniu przenosimy istniejące obrazki do nowego HTML ---------- */
-function setHtmlKeepIcons(el, html) {
-  if (!el) return;
+function replaceKeepIcons(el, html) {
   const old = {};
   el.querySelectorAll('.ic-coin[data-ik]').forEach(n => { (old[n.dataset.ik] = old[n.dataset.ik] || []).push(n); });
   el.innerHTML = html;
   el.querySelectorAll('.ic-coin[data-ik]').forEach(n => { const o = old[n.dataset.ik]?.shift(); if (o) n.replaceWith(o); });
+}
+// „morfowanie”: gdy układ się nie zmienił, podmieniamy tylko teksty i atrybuty – tabela zostaje ta sama, nic nie miga
+function morphNode(a, b) {
+  if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) return false;
+  if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return true; }
+  if (a.classList.contains('ic-coin') && a.dataset.ik && a.dataset.ik === b.dataset.ik) return true;
+  for (const at of [...a.attributes]) if (at.name !== 'open' && !b.hasAttribute(at.name)) a.removeAttribute(at.name);
+  for (const at of [...b.attributes]) if (at.name !== 'open' && a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
+  if (!morphChildren(a, b)) replaceKeepIcons(a, b.innerHTML);
+  return true;
+}
+function morphChildren(a, b) {
+  const A = a.childNodes, B = b.childNodes;
+  if (A.length !== B.length) return false;
+  for (let i = 0; i < A.length; i++) if (!morphNode(A[i], B[i])) a.replaceChild(B[i].cloneNode(true), A[i]);
+  return true;
+}
+function setHtmlKeepIcons(el, html) {
+  if (!el) return;
+  if (el.__html === html && el.__dom === el.innerHTML) return;      // nic się nie zmieniło
+  const tpl = document.createElement('div');
+  tpl.innerHTML = html;
+  if (typeof cardifyTables === 'function') cardifyTables(tpl);      // karty na telefonie już w nowej treści
+  if (!(el.childNodes.length && morphChildren(el, tpl))) replaceKeepIcons(el, tpl.innerHTML);
+  el.__html = html; el.__dom = el.innerHTML;
 }
 
 const GROUPS = [
@@ -7958,6 +7982,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '32', date: '2026-10-27', title: 'Koniec migania tabel', items: [
+    'Tabela „Alokacja vs cel”, podział dopłaty i tabele w oknach kafelków nie migają już przy zmianach cen – przebudowują się tylko wtedy, gdy coś się faktycznie zmieni, i od razu w układzie kart na telefonie.']},
   {v: '31', date: '2026-10-27', title: 'Ukrywanie kwot tylko tam, gdzie trzeba', items: [
     'Tryb „ukryj kwoty” nie rozmywa już cen i wskaźników w zakładce Rynek, w karcie „Rynek dziś” ani we wskaźnikach ryzyka – rozmyte zostają tylko Twoje kwoty (np. „Twoja pozycja”).']},
   {v: '30', date: '2026-10-27', title: 'Czytelniejsze Zyski i ryzyko', items: [
@@ -8243,7 +8269,13 @@ function renderTileModal() {
   if (!tileModal || !m.classList.contains('open')) { tileModal = null; return; }
   if (m.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;   // nie przerywaj wpisywania
   const t = document.getElementById('infoTitle'), b = document.getElementById('infoBody');
-  ({value: tileValue, cost: tileCost, pl: tilePl, usdc: tileUsdc, risk: tileRisk})[tileModal]?.(t, b);
+  const fn = ({value: tileValue, cost: tileCost, pl: tilePl, usdc: tileUsdc, risk: tileRisk})[tileModal];
+  if (!fn) return;
+  // budujemy w kopii i podmieniamy tylko gdy coś się zmieniło – tabele i logo nie migają
+  const tt = document.createElement('div'), tb = document.createElement('div');
+  tt.innerHTML = t.innerHTML; tb.innerHTML = b.innerHTML;
+  fn(tt, tb);
+  setHtmlKeepIcons(t, tt.innerHTML); setHtmlKeepIcons(b, tb.innerHTML);
 }
 const tileLive = () => `<p class="small muted" style="margin:.8rem 0 0">Aktualizuje się na żywo razem z cenami${Object.values(prices).some(p => /na żywo/.test(p.src || '')) ? ' (Binance, na żywo)' : ''}.</p>`;
 
