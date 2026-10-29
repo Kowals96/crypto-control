@@ -683,6 +683,15 @@
   .cm-price strong{display:block;font-size:1.15rem}
   .cm-plan{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:14px;padding:.75rem .9rem;font-size:.88rem;line-height:1.45;margin:.8rem 0}
   @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  /* v34: ekran dopłaty */
+  .bd-top{display:flex;justify-content:space-between;align-items:flex-end;gap:.6rem;flex-wrap:wrap;margin-top:.5rem}
+  .bd-top .pf-big{margin:0}
+  .bd-of{font-size:1.1rem;font-weight:600;color:var(--muted);letter-spacing:-.01em}
+  .bd-box{margin-top:1rem;padding:.9rem 1rem;border-radius:16px;background:var(--sunken);border:1px solid var(--border)}
+  .bd-step{display:flex;gap:.5rem;align-items:center;margin-top:.35rem}
+  .bd-step input{flex:1 1 0;min-width:0;width:100%;max-width:none !important;font-size:1.4rem !important;font-weight:700;text-align:center;padding:.55rem}
+  .bd-step .action{width:48px;height:48px;font-size:1.4rem;padding:0;flex:0 0 48px}
+
   /* v30: Zyski i ryzyko */
   .rk-list{display:grid}
   .rk-row,.rk-lad > summary{display:flex;align-items:center;gap:.75rem;padding:.75rem .15rem;border-bottom:1px solid var(--border);cursor:pointer}
@@ -896,7 +905,7 @@
     <div class="card">
       <h3>Kiedy? Scenariusze</h3>
       <div class="form-row">
-        <div><label for="goalMonthly">Dopłata miesięcznie (zł)</label><br><input type="number" id="goalMonthly" min="0" step="50" oninput="saveGoalSettings()"></div>
+        <div><label for="goalMonthly">Dopłata miesięcznie (zł)</label><br><input type="number" id="goalMonthly" min="0" step="50" onchange="setMonthly(this.value)"></div>
         <div><label for="goalCustom">Twój wariant: wynik rocznie (%)</label><br><input type="number" id="goalCustom" step="1" oninput="saveGoalSettings()"></div>
         <div><label for="goal1">Cel 1 (zł)</label><br><input type="number" id="goal1" min="0" step="1000" oninput="saveGoalSettings()"></div>
         <div><label for="goal2">Cel 2 (zł)</label><br><input type="number" id="goal2" min="0" step="1000" oninput="saveGoalSettings()"></div>
@@ -919,12 +928,8 @@
   <!-- ===================== DOPŁATA ===================== -->
   <section id="budget">
     <div class="card">
-      <h2 id="budgetTitle">Budżet miesiąca</h2>
+      <h2 id="budgetTitle" style="margin:0">Dopłata miesiąca</h2>
       <div id="budgetBody"></div>
-      <div class="form-row" style="margin-top:.75rem">
-        <div><label for="budgetMonthly">Budżet miesięczny (zł)</label><br><input type="number" id="budgetMonthly" min="0" step="50" oninput="setMonthly(this.value)"></div>
-      </div>
-      <p class="small muted" style="margin:0">Budżet liczy zakupy za złotówki zapisane w dzienniku w bieżącym miesiącu. To ta sama kwota co dopłata w zakładce Cel.</p>
     </div>
     <div class="card">
       <h3>Kalkulator podziału dopłaty</h3>
@@ -1166,7 +1171,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v33 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v34 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1368,6 +1373,8 @@ const todayStr = () => new Date().toLocaleDateString('sv-SE');          // RRRR-
 const monthName = (ym = todayStr().slice(0, 7)) =>
   new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1).toLocaleDateString('pl-PL', {month:'long', year:'numeric'});
 const fmtDate = d => d.split('-').reverse().join('.');
+// „od listopada 2026” – nazwa miesiąca w dopełniaczu
+const monthGen = (ym = todayStr().slice(0, 7), withYear = true) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1); return d.toLocaleDateString('pl-PL', {day: 'numeric', month: 'long'}).replace(/^\d+\s*/, '') + (withYear ? ' ' + d.getFullYear() : ''); };
 const round2 = n => Math.round(n * 100) / 100;
 
 /* ---------- dane ---------- */
@@ -1761,7 +1768,7 @@ function render() {
 
   const pl = totVal - totCost, plPct = totCost > 0 ? pl / totCost * 100 : 0;
   const act = activeGoal(totalPln());
-  const spent = spentThisMonth(), monthly = goal.monthly || 0;
+  const spent = spentThisMonth(), monthly = curMonthly();
   document.getElementById('summaryBar').innerHTML = `
     ${rows.filter(r => statusOf(r.sym) === 'stable').map(r => `<div class="summary-item link" onclick="${r.sym === 'USDC' ? "openTile('usdc')" : `editPosition('${r.sym}')`}" title="${r.sym === 'USDC' ? 'W co zainwestować USDC według strategii' : 'Kliknij, żeby zmienić ilość'}">
       <span>${r.sym} na giełdzie</span><strong>${fixed(r.pos.qty, 2)} ${r.sym}</strong>
@@ -1827,12 +1834,44 @@ function activeGoal(v) {
   const g = list.find(x => v < x) ?? list[list.length - 1];
   return {g, pct: Math.min(100, v / g * 100)};
 }
+/* ---------- harmonogram dopłat: kwota może się zmieniać od wybranego miesiąca ---------- */
+const ymNow = () => todayStr().slice(0, 7);
+const ymAdd = (ym, k) => { const [y, m] = ym.split('-').map(Number), d = new Date(y, m - 1 + k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+function monthlyFor(ym = ymNow()) {
+  const list = (goal.schedule || []).filter(x => x.from <= ym).sort((a, b) => a.from.localeCompare(b.from));
+  return list.length ? list[list.length - 1].amount : (goal.monthly || 0);
+}
+const curMonthly = () => monthlyFor();
+const monthlyAt = k => monthlyFor(ymAdd(ymNow(), k));          // k miesięcy od teraz
+const futureChanges = () => (goal.schedule || []).filter(x => x.from > ymNow()).sort((a, b) => a.from.localeCompare(b.from));
+function setMonthlyFrom(amount, from = ymNow()) {
+  const a = Math.max(0, Math.round(+amount || 0));
+  let sch = Array.isArray(goal.schedule) ? goal.schedule.slice() : [];
+  if (!sch.length) sch.push({from: '2000-01', amount: goal.monthly || 0});   // dotychczasowa kwota zostaje dla minionych miesięcy
+  sch = sch.filter(x => x.from !== from);
+  sch.push({from, amount: a});
+  sch.sort((x, y) => x.from.localeCompare(y.from));
+  goal.schedule = sch.filter((x, i) => i === 0 || x.amount !== sch[i - 1].amount || x.from > ymNow());   // bez zbędnych powtórzeń w przeszłości
+  goal.monthly = curMonthly();
+  lsSet(LS.goal, goal);
+  syncMonthlyInput();
+  renderAll();
+}
+function syncMonthlyInput() { const i = document.getElementById('goalMonthly'); if (i && document.activeElement !== i) i.value = curMonthly(); }
+function removeMonthlyChange(from) {
+  goal.schedule = (goal.schedule || []).filter(x => x.from !== from);
+  goal.monthly = curMonthly();
+  lsSet(LS.goal, goal);
+  syncMonthlyInput();
+  renderAll();
+}
+
 function monthsTo(target, start, monthly, annualPct) {
   if (start >= target) return 0;
   const g = Math.pow(1 + annualPct / 100, 1 / 12) - 1;
   let v = start;
   for (let m = 1; m <= HORIZON_MONTHS; m++) {
-    v = v * (1 + g) + monthly;
+    v = v * (1 + g) + (typeof monthly === 'function' ? monthly(m - 1) : monthly);
     if (v >= target) return m;
   }
   return null;
@@ -1890,7 +1929,8 @@ function renderGoal() {
     </div>`;
   }).join('') || '<p class="muted">Ustaw cel poniżej.</p>';
 
-  const monthly = Math.max(0, goal.monthly || 0);
+  const monthly = Math.max(0, curMonthly()), fc = futureChanges(), sched = fc.length ? (k => Math.max(0, monthlyAt(k))) : monthly;
+  const longRun = Math.max(0, monthlyAt(240));
   const scen = [...SCENARIOS, {name:'Twój wariant', rate: Number(goal.custom) || 0, cls:'scen-own'}];
   const table = document.getElementById('goalTable');
   if (!hasData || !list.length) {
@@ -1903,7 +1943,7 @@ function renderGoal() {
     <tbody>${scen.map(s => `<tr>
       <td class="${s.cls}"><strong>${s.name}</strong></td>
       <td>${s.rate > 0 ? '+' : ''}${s.rate}%</td>
-      ${list.map(g => `<td>${cell(monthsTo(g, v, monthly, s.rate))}</td>`).join('')}
+      ${list.map(g => `<td>${cell(monthsTo(g, v, sched, s.rate))}</td>`).join('')}
     </tr>`).join('')}</tbody>`;
 
   const first = list.find(g => v < g);
@@ -1911,52 +1951,44 @@ function renderGoal() {
   if (!first) {
     lines.push('Oba cele są osiągnięte przy obecnej wartości portfela.');
   } else {
-    const flat = monthsTo(first, v, monthly, 0);
-    if (monthly > 0 && flat !== null) {
-      lines.push(`Same dopłaty po <strong>${zl(monthly)}</strong> miesięcznie, bez wzrostów i spadków, dają <strong>${zl(first)}</strong> za około <strong>${duration(flat)}</strong> (${monthLabel(flat)}).`);
-    } else if (monthly === 0) {
+    const flat = monthsTo(first, v, sched, 0);
+    if ((monthly > 0 || longRun > 0) && flat !== null) {
+      lines.push(`Same dopłaty ${fc.length ? `według harmonogramu (teraz <strong>${zl(monthly)}</strong>, ${fc.map(x => `od ${monthGen(x.from)} ${zl(x.amount)}`).join(', ')})` : `po <strong>${zl(monthly)}</strong> miesięcznie`}, bez wzrostów i spadków, dają <strong>${zl(first)}</strong> za około <strong>${duration(flat)}</strong> (${monthLabel(flat)}).`);
+    } else if (monthly === 0 && longRun === 0) {
       lines.push('Bez dopłat cel zależy wyłącznie od wzrostu cen.');
     }
-    const fast = monthsTo(first, v, monthly, 40);
+    const fast = monthsTo(first, v, sched, 40);
     if (fast !== null && flat !== null && fast < flat) {
       lines.push(`Przy silnej hossie (+40% rocznie) mogłoby to nastąpić już za ${duration(fast)} (${monthLabel(fast)}).`);
     }
     const bad = SCENARIOS[0].rate;
-    const cap = plateau(monthly, bad);
-    if (monthly > 0 && cap < first) {
-      lines.push(`Przy długiej bessie (${bad}% rocznie) dopłaty ${zl(monthly)} nie wystarczą – portfel zatrzymałby się w okolicy ${zl(cap)}, bo spadki zjadałyby tyle, ile dopłacasz.`);
+    const cap = plateau(longRun, bad);
+    if (longRun > 0 && cap < first) {
+      lines.push(`Przy długiej bessie (${bad}% rocznie) dopłaty ${zl(longRun)} nie wystarczą – portfel zatrzymałby się w okolicy ${zl(cap)}, bo spadki zjadałyby tyle, ile dopłacasz.`);
     }
   }
   document.getElementById('goalSummary').innerHTML = lines.join(' ');
 }
 
 function loadGoalInputs() {
-  document.getElementById('goalMonthly').value = goal.monthly;
-  document.getElementById('budgetMonthly').value = goal.monthly;
+  document.getElementById('goalMonthly').value = curMonthly();
   document.getElementById('goalCustom').value = goal.custom;
   document.getElementById('goal1').value = goal.g1;
   document.getElementById('goal2').value = goal.g2;
 }
 function saveGoalSettings() {
   const num = id => parseFloat(document.getElementById(id).value);
-  const m = num('goalMonthly'), c = num('goalCustom'), g1 = num('goal1'), g2 = num('goal2');
-  goal = {
-    monthly: m >= 0 ? m : 0,
+  const c = num('goalCustom'), g1 = num('goal1'), g2 = num('goal2');
+  // zachowujemy pozostałe ustawienia (podział, rezerwa, dzień dopłaty, harmonogram)
+  goal = {...goal,
     custom: Number.isFinite(c) ? Math.max(-90, Math.min(500, c)) : 0,
     g1: g1 > 0 ? g1 : 0,
     g2: g2 > 0 ? g2 : 0
   };
-  document.getElementById('budgetMonthly').value = goal.monthly;
   lsSet(LS.goal, goal);
   renderAll();
 }
-function setMonthly(v) {
-  const m = parseFloat(v);
-  goal.monthly = m >= 0 ? m : 0;
-  document.getElementById('goalMonthly').value = goal.monthly;
-  lsSet(LS.goal, goal);
-  renderAll();
-}
+function setMonthly(v) { setMonthlyFrom(parseFloat(v) || 0, ymNow()); }
 
 /* =========================================================
    BUDŻET MIESIĄCA + KALKULATOR PODZIAŁU
@@ -1965,24 +1997,83 @@ function monthEntries(ym = todayStr().slice(0, 7)) {
   return journal.filter(e => e.type === 'buy' && e.date.startsWith(ym));
 }
 const spentThisMonth = () => monthEntries().reduce((s, e) => s + e.pln, 0);
-const budgetLeft = () => Math.max(0, (goal.monthly || 0) - spentThisMonth());
+const budgetLeft = () => Math.max(0, curMonthly() - spentThisMonth());
 
+let bdFrom = 'now', bdAddOpen = false;
+function bdStep(d) { const i = document.getElementById('budgetMonthly'); i.value = Math.max(0, (parseFloat(i.value) || 0) + d); bdPreview(); }
+function bdPick(v) { document.getElementById('budgetMonthly').value = v; bdPreview(); }
+function bdPreview() {
+  const v = parseFloat(document.getElementById('budgetMonthly')?.value) || 0, cur = curMonthly(), el = document.getElementById('bdHint');
+  if (!el) return;
+  const from = bdFrom === 'now' ? ymNow() : ymAdd(ymNow(), 1);
+  el.innerHTML = v === monthlyFor(from) ? '' : `Od ${monthGen(from)}: <strong>${zl(v)}</strong> zamiast ${zl(monthlyFor(from))} (${signed(v - monthlyFor(from), zl)}).${v > cur * 1.3 && cur > 0 ? ` <a href="#" onclick="bdRamp(${v});return false">Rozłóż wzrost na 3 miesiące</a>` : ''}`;
+}
+function bdApply() {
+  const v = parseFloat(document.getElementById('budgetMonthly').value);
+  if (!(v >= 0)) return;
+  setMonthlyFrom(v, bdFrom === 'now' ? ymNow() : ymAdd(ymNow(), 1));
+}
+// stopniowe zwiększanie: trzy równe kroki od tego (lub następnego) miesiąca
+function bdRamp(target) {
+  const start = bdFrom === 'now' ? ymNow() : ymAdd(ymNow(), 1), cur = curMonthly(), step = (target - cur) / 3;
+  [1, 2, 3].forEach(i => {
+    const amt = i === 3 ? target : Math.round((cur + step * i) / 50) * 50;
+    let sch = Array.isArray(goal.schedule) && goal.schedule.length ? goal.schedule.slice() : [{from: '2000-01', amount: goal.monthly || 0}];
+    const f = ymAdd(start, i - 1);
+    sch = sch.filter(x => x.from !== f); sch.push({from: f, amount: amt}); sch.sort((x, y) => x.from.localeCompare(y.from));
+    goal.schedule = sch;
+  });
+  goal.monthly = curMonthly(); lsSet(LS.goal, goal); syncMonthlyInput(); renderAll();
+}
+function bdAddChange() {
+  const f = document.getElementById('bdAddFrom').value, v = parseFloat(document.getElementById('bdAddAmt').value);
+  if (!/^\d{4}-\d\d$/.test(f) || !(v >= 0)) return;
+  bdAddOpen = false; setMonthlyFrom(v, f);
+}
+function setDcaDay(d) { goal.dcaDay = Math.max(1, Math.min(28, +d || 10)); lsSet(LS.goal, goal); renderAll(); }
 function renderBudget() {
-  const monthly = goal.monthly || 0;
-  const entries = monthEntries();
-  const spent = entries.reduce((s, e) => s + e.pln, 0);
-  const left = monthly - spent;
-  const p = monthly > 0 ? Math.min(100, spent / monthly * 100) : 0;
-  document.getElementById('budgetTitle').textContent = 'Budżet: ' + monthName();
-  document.getElementById('budgetBody').innerHTML = monthly > 0 ? `
-    <div class="goal">
-      <div class="goal-head"><strong>Wydane ${zl2(spent)} z ${zl(monthly)}</strong><span>${pct(spent / monthly * 100)}</span></div>
-      <div class="bar ${spent > monthly ? 'over' : ''}"><div style="width:${p}%"></div></div>
-      <div class="goal-sub">${left >= 0 ? `Zostało <strong>${zl2(left)}</strong> do końca miesiąca.` : `<span style="color:var(--orange)">Budżet przekroczony o ${zl2(-left)}.</span>`}</div>
+  const el = document.getElementById('budgetBody');
+  if (el.contains(document.activeElement) && /INPUT|SELECT/.test(document.activeElement.tagName)) { renderSplit(); return; }   // nie przerywaj wpisywania
+  const monthly = curMonthly(), entries = monthEntries(), spent = entries.reduce((s, e) => s + e.pln, 0), left = monthly - spent;
+  const p = monthly > 0 ? Math.min(100, spent / monthly * 100) : 0, day = goal.dcaDay || 10, fc = futureChanges(), next = ymAdd(ymNow(), 1);
+  document.getElementById('budgetTitle').textContent = 'Dopłata · ' + monthName();
+  setHtmlKeepIcons(el, `
+    <div class="bd-top">
+      <div class="pf-big sens">${zl(spent)} <span class="bd-of">z ${zl(monthly)}</span></div>
+      <span class="chip-s ${left < 0 ? 'neg' : spent >= monthly && monthly > 0 ? 'pos' : ''}">${monthly <= 0 ? 'bez dopłaty' : left > 0 ? `zostało ${zl(left)}` : left === 0 ? '✓ zrobione' : `ponad o ${zl(-left)}`}</span>
     </div>
-    ${entries.length ? `<table><tbody>${entries.map(e => `<tr><td>${fmtDate(e.date)}</td><td class="num">${zl2(e.pln)}</td><td class="muted">${esc(e.note || e.exch || '')}</td></tr>`).join('')}</tbody></table>`
-      : '<p class="muted small">W tym miesiącu nie ma jeszcze zakupów w dzienniku.</p>'}`
-    : '<p class="muted">Ustaw budżet miesięczny poniżej.</p>';
+    <div class="td-progress" style="height:10px;margin-top:.6rem"><div style="width:${p}%${left < 0 ? ';background:var(--orange)' : ''}"></div></div>
+    <p class="small muted" style="margin:.45rem 0 0">Dzień dopłaty: <strong>${day}.</strong> każdego miesiąca · liczą się zakupy za złotówki z dziennika.</p>
+
+    <div class="bd-box">
+      <label for="budgetMonthly" class="small muted" style="font-weight:600">Dopłata miesięcznie</label>
+      <div class="bd-step"><button class="action secondary" onclick="bdStep(-100)" aria-label="Mniej o 100 zł">−</button>
+        <input type="number" id="budgetMonthly" min="0" step="50" value="${monthly}" oninput="bdPreview()" inputmode="numeric">
+        <button class="action secondary" onclick="bdStep(100)" aria-label="Więcej o 100 zł">+</button></div>
+      <div class="fin-presets" style="margin:.55rem 0">${[800, 1000, 1500, 2000, 2400, 3000].map(v => `<button class="chip${v === monthly ? ' on' : ''}" onclick="bdPick(${v})">${zl(v)}</button>`).join('')}</div>
+      <div class="form-row" style="margin:0;align-items:center">
+        <span class="seg"><button class="${bdFrom === 'now' ? 'on' : ''}" onclick="bdFrom='now';renderBudget()">od ${monthGen(ymNow(), false)}</button><button class="${bdFrom === 'next' ? 'on' : ''}" onclick="bdFrom='next';renderBudget()">od ${monthGen(next, false)}</button></span>
+        <button class="action" onclick="bdApply()">Zapisz</button>
+      </div>
+      <p class="small" id="bdHint" style="margin:.5rem 0 0"></p>
+      <div class="set-row" style="border-bottom:none;padding:.6rem 0 0"><div><strong class="small">Dzień dopłaty</strong><span class="small">Wtedy pojawi się zadanie i powiadomienie.</span></div>
+        <select onchange="setDcaDay(this.value)" style="max-width:90px">${Array.from({length: 28}, (_, i) => i + 1).map(d => `<option value="${d}"${d === day ? ' selected' : ''}>${d}.</option>`).join('')}</select></div>
+    </div>
+
+    <h3 style="margin:1rem 0 .3rem;font-size:.95rem">Zaplanowane zmiany</h3>
+    ${fc.length ? fc.map(x => `<div class="set-row" style="padding:.45rem 0"><div><strong>od ${monthGen(x.from)}</strong><span class="small">${zl(x.amount)} miesięcznie (${signed(x.amount - monthlyFor(ymAdd(x.from, -1)), zl)})</span></div>
+      <button class="icon-x" onclick="removeMonthlyChange('${x.from}')" aria-label="Usuń zmianę">×</button></div>`).join('') : '<p class="small muted" style="margin:0">Brak – dopłata zostaje taka sama w kolejnych miesiącach.</p>'}
+    ${bdAddOpen ? `<div class="form-row" style="margin:.5rem 0 0;align-items:flex-end">
+        <div><label for="bdAddFrom" class="small muted">Od miesiąca</label><br><select id="bdAddFrom">${Array.from({length: 12}, (_, i) => ymAdd(ymNow(), i + 1)).map(m => `<option value="${m}">${monthName(m)}</option>`).join('')}</select></div>
+        <div><label for="bdAddAmt" class="small muted">Kwota (zł)</label><br><input type="number" id="bdAddAmt" min="0" step="50" value="${monthly}" style="max-width:110px"></div>
+        <button class="action" onclick="bdAddChange()">Dodaj</button><button class="action secondary" onclick="bdAddOpen=false;renderBudget()">Anuluj</button></div>`
+      : `<button class="action secondary" style="margin-top:.5rem" onclick="bdAddOpen=true;renderBudget()">+ Zaplanuj zmianę</button>`}
+
+    <h3 style="margin:1rem 0 .3rem;font-size:.95rem">Zakupy w tym miesiącu</h3>
+    ${entries.length ? `<div class="cal-list">${entries.slice().sort((a, b) => b.date.localeCompare(a.date)).map(e => `<div class="td-row"><div class="td-day"><strong>${+e.date.slice(8)}</strong><span>${['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'][+e.date.slice(5, 7) - 1]}</span></div>
+      <div style="flex:1;min-width:0">${esc(e.note || e.exch || 'Zakup')}</div><strong class="sens">${zl2(e.pln)}</strong></div>`).join('')}</div>`
+      : '<p class="small muted" style="margin:0">W tym miesiącu nie ma jeszcze zakupów za złotówki.</p>'}`);
+  bdPreview();
   renderSplit();
 }
 
@@ -2671,7 +2762,7 @@ function planContext() {
     data: todayStr(),
     portfel_zl: Math.round(total),
     pozycje: pos,
-    cel: {pierwszy_zl: goal.g1, drugi_zl: goal.g2, doplata_miesieczna_zl: goal.monthly},
+    cel: {pierwszy_zl: goal.g1, drugi_zl: goal.g2, doplata_miesieczna_zl: curMonthly(), planowane_zmiany_doplaty: futureChanges()},
     doplaty_w_tym_miesiacu_zl: Math.round(spentThisMonth()),
     pit_38: tr ? {rok: cy, koszty_z_lat_ubieglych_zl: Math.round(tr.prev), zakupy_w_roku_zl: Math.round(tr.buys), sprzedaz_w_roku_zl: Math.round(tr.sells),
       mozna_sprzedac_bez_podatku_zl: Math.max(0, Math.round(tr.buys + tr.prev - tr.sells))} : null,
@@ -2805,7 +2896,7 @@ function renderPlanResult(A) {
   const sc = Math.max(1, Math.min(10, +r.score?.value || 0));
   const outdated = A.hash !== textHash(planState.text);
   const src = A.source === 'seed' ? 'analiza startowa od Claude' : A.source === 'manual' ? 'odpowiedź Claude wklejona ręcznie' : esc(A.model);
-  const monthly = goal.monthly || 0;
+  const monthly = curMonthly();
   const splitSum = (r.monthly_split || []).reduce((s, x) => s + (+x.pct || 0), 0) || 100;
   return `
     <div class="card" id="planResult">
@@ -3766,7 +3857,7 @@ function generateTasks() {
       const planPln = planQty * pp;
       const head = `${sym}: cena ${usd(p)} ≤ ${usd(c.buyBelow)} (Twoja średnia ${usd(pos.avg)}).`;
       let tail;
-      if (!(goal.monthly > 0)) {
+      if (!(curMonthly() > 0)) {
         tail = `${c.optional ? 'Max' : 'Sugestia:'} ~${fmtQty(planQty)} ${sym} (≈ ${zl(planPln)}, ${c.buyPct}% pozycji).`;
       } else if (left < MIN_ORDER_PLN) {
         tail = `Plan: ~${fmtQty(planQty)} ${sym} (≈ ${zl(planPln)}), ale budżet na ${mName} jest wykorzystany.`;
@@ -3790,13 +3881,13 @@ function generateTasks() {
     }
   }
   const buys = tasks.filter(t => t.type === 'buy').length;
-  if (buys > 1 && goal.monthly > 0 && left >= MIN_ORDER_PLN) {
+  if (buys > 1 && curMonthly() > 0 && left >= MIN_ORDER_PLN) {
     tasks.push({type:'buy', label:'BUDŻET', msg:`Kilka zadań kupna dzieli jeden budżet (${zl(left)}). Podział znajdziesz w zakładce „Dopłata”.`});
   }
   // comiesięczna dopłata według planu
-  if (goal.monthly > 0 && new Date().getDate() >= (goal.dcaDay || 10) && left >= MIN_ORDER_PLN) {
+  if (curMonthly() > 0 && new Date().getDate() >= (goal.dcaDay || 10) && left >= MIN_ORDER_PLN) {
     const cpl = contributionPlan(left).rows.filter(r => r.amount >= 1);
-    tasks.push({type:'buy', label:'DOPŁATA', msg:`Miesięczna dopłata: zostało ${zl(left)} z ${zl(goal.monthly)} na ${mName}. ${cpl.length ? 'Podział: ' + cpl.map(r => `${r.sym}${r.reserve ? ' (rezerwa)' : ''} ${zl(r.amount)}`).join(', ') + '.' : 'Podział znajdziesz w zakładce „Dopłata”.'}`});
+    tasks.push({type:'buy', label:'DOPŁATA', msg:`Miesięczna dopłata: zostało ${zl(left)} z ${zl(curMonthly())} na ${mName}. ${cpl.length ? 'Podział: ' + cpl.map(r => `${r.sym}${r.reserve ? ' (rezerwa)' : ''} ${zl(r.amount)}`).join(', ') + '.' : 'Podział znajdziesz w zakładce „Dopłata”.'}`});
   }
   // odchylenia od celów alokacji
   const tot = totalPln();
@@ -4277,7 +4368,7 @@ function renderToday() {
   let chg = 0;
   rows.forEach(r => { const c = prices[r.sym]?.ch24; if (r.hasPrice && Number.isFinite(c)) chg += valuePln(r.sym) * c / (100 + c); });
   const chgPct = tot - chg > 0 ? chg / (tot - chg) * 100 : 0;
-  const act = activeGoal(tot), monthly = goal.monthly || 0, spent = spentThisMonth();
+  const act = activeGoal(tot), monthly = curMonthly(), spent = spentThisMonth();
   const h = new Date().getHours(), greet = h >= 5 && h < 18 ? 'Dzień dobry' : 'Dobry wieczór';
   const tk = tasks.filter(t => t.label !== 'BUDŻET'), shown = todayAll ? tk : tk.slice(0, 5);
   const up = todayUpcoming().slice(0, 7), today = todayStr();
@@ -4458,7 +4549,7 @@ function openTab(id) {
   if (id === 'market') mkOpen();
   else if (prevTab === 'market') mkLeave();
   if (id === 'settings') { applySub('settings'); renderSettings(); }
-  if (id === 'goal') { renderMonth(); if (!benchState.busy && (!benchState.res || Date.now() - benchState.at > 600000)) runBench(); else renderBench(); }
+  if (id === 'goal') { syncMonthlyInput(); renderMonth(); if (!benchState.busy && (!benchState.res || Date.now() - benchState.at > 600000)) runBench(); else renderBench(); }
 }
 
 /* =========================================================
@@ -4951,7 +5042,7 @@ function renderMonth() {
   const market = endV - s0.v - flows;
   const base = s0.v + Math.max(0, flows);
   const spent = journal.filter(e => e.type === 'buy' && e.date.startsWith(ym)).reduce((a, e) => a + e.pln, 0);
-  const monthly = goal.monthly || 0;
+  const monthly = monthlyFor(ym);
   const ms = Date.parse(ym + '-01T00:00:00'), me = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 1).getTime();
   const lDone = Object.entries(ladder).flatMap(([s, l]) => l.filter(x => x.done && x.doneAt >= ms && x.doneAt < me).map(x => `${s} ${usdP(x.price)}`));
   const endPrices = isCur ? Object.fromEntries(Object.keys(holdings).map(s => [s, prices[s]?.usd])) : s1.p;
@@ -7982,6 +8073,12 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '34', date: '2026-10-29', title: 'Zmiana wysokości dopłaty i nowy ekran dopłaty', items: [
+    'Dopłata: nowy ekran z postępem miesiąca, szybką zmianą kwoty (−/+, gotowe kwoty) i wyborem, czy zmiana działa od tego, czy od następnego miesiąca.',
+    'Harmonogram dopłat: zaplanujesz zmianę od wybranego miesiąca (np. od stycznia 2 400 zł), a przy dużej podwyżce jednym stuknięciem rozłożysz ją na 3 miesiące.',
+    'Wszystko liczy się według aktualnej kwoty miesiąca: budżet, podział z rezerwą, zadanie „Dopłata”, powiadomienie w dniu dopłaty, podsumowanie miesiąca i prognoza dojścia do celów (z uwzględnieniem zaplanowanych zmian).',
+    'Ustawienie dnia dopłaty bezpośrednio na ekranie Dopłaty.',
+    'Poprawka: zapis ustawień w zakładce Cel nie kasuje już podziału dopłaty, rezerwy ani dnia dopłaty.']},
   {v: '33', date: '2026-10-27', title: 'Jaśniejszy postęp do celu', items: [
     'Zamiast „Do celu 50 000 zł: 31,4%” jest teraz „31,4% celu” i obok, ile brakuje w złotówkach (np. „brakuje 34 300 zł”) – w Portfelu i na ekranie Dziś.']},
   {v: '32', date: '2026-10-27', title: 'Koniec migania tabel', items: [
@@ -8135,14 +8232,14 @@ function alertRules() {
     const pair = bn(a.sym) || a.sym + 'USDT';
     r.push({id: 'c:' + a.id, pair, dir: a.dir, price: a.price, title: `${a.sym} ${a.dir === 'below' ? 'poniżej' : 'powyżej'} ${usd(a.price)}`, body: a.note || `Cena ${a.sym} ${a.dir === 'below' ? 'spadła poniżej' : 'przekroczyła'} ${usd(a.price)}.`});
   });
-  if (goal.monthly > 0) {
+  if (curMonthly() > 0 || futureChanges().length) {
     const d = new Date(), day = goal.dcaDay || 10;
     let y = d.getFullYear(), m = d.getMonth();
     if (d.getDate() > day) { m++; if (m > 11) { m = 0; y++; } }
     const date = new Date(y, m, day, 12).toLocaleDateString('sv-SE');
-    const cpl = contributionPlan(goal.monthly).rows.filter(x => x.amount >= 1);
+    const amtM = monthlyFor(date.slice(0, 7)), cpl = amtM > 0 ? contributionPlan(amtM).rows.filter(x => x.amount >= 1) : [];
     r.push({id: 'dca:' + date.slice(0, 7), at: date + 'T09:00', until: new Date(y, m, day + 3, 12).toLocaleDateString('sv-SE') + 'T23:59', title: 'Dzień dopłaty',
-      body: `Jeśli jeszcze nie dopłaciłeś w tym miesiącu: ${zl(goal.monthly)}${cpl.length ? ' – ' + cpl.map(x => `${x.sym}${x.reserve ? ' (rezerwa)' : ''} ${zl(x.amount)}`).join(', ') : ''}.`});
+      body: `Jeśli jeszcze nie dopłaciłeś w tym miesiącu: ${zl(amtM)}${cpl.length ? ' – ' + cpl.map(x => `${x.sym}${x.reserve ? ' (rezerwa)' : ''} ${zl(x.amount)}`).join(', ') : ''}.`});
   }
   if (typeof calEvents === 'function') calEvents(45).filter(e => e.type === 'unlock' && holdings[e.sym]).forEach(e => {
     const before = new Date(Date.parse(e.date + 'T12:00:00') - 86400000).toLocaleDateString('sv-SE');
@@ -8414,10 +8511,10 @@ function monthlyRecap() {
   sel.value = prev; renderMonth();
   const body = document.getElementById('monthBody').innerHTML;
   sel.value = keep; renderMonth();
-  const split = (goal.split || []).filter(x => x.pct > 0), ssum = split.reduce((t, x) => t + x.pct, 0) || 100;
+  const amtC = monthlyFor(cur), cpl = amtC > 0 ? contributionPlan(amtC).rows.filter(x => x.amount >= 1) : [];
   document.getElementById('infoTitle').textContent = 'Podsumowanie: ' + monthName(prev);
-  document.getElementById('infoBody').innerHTML = body + (goal.monthly > 0 ? `<div class="highlight" style="margin-top:1rem"><span class="small muted">Plan na ${monthName(cur)}</span>
-      <strong style="display:block;margin:.2rem 0">Dopłata ${zl(goal.monthly)}${split.length ? ': ' + split.map(x => `${x.sym} ${zl(goal.monthly * x.pct / ssum)}`).join(', ') : ''}</strong>
+  document.getElementById('infoBody').innerHTML = body + (amtC > 0 ? `<div class="highlight" style="margin-top:1rem"><span class="small muted">Plan na ${monthName(cur)}</span>
+      <strong style="display:block;margin:.2rem 0">Dopłata ${zl(amtC)}${cpl.length ? ': ' + cpl.map(x => `${x.sym}${x.reserve ? ' (rezerwa)' : ''} ${zl(x.amount)}`).join(', ') : ''}</strong>
       <span class="small muted">Od ${goal.dcaDay || 10}. dnia miesiąca przypomnienie pojawi się w Zadaniach.</span></div>` : '')
     + `<p class="small muted" style="margin:.8rem 0 0">Szczegóły i wcześniejsze miesiące znajdziesz w zakładce Cel → Podsumowanie miesiąca.</p>`;
   document.getElementById('infoModal').classList.add('open');
