@@ -1,21 +1,12 @@
-// pobiera świece 1h z publicznego API danych Binance (bez klucza) i zapisuje jako CSV
-const fs = require('fs'), zlib = require('zlib');
-const syms = ['DOGEUSDT', 'AVAXUSDT', 'LINKUSDT', 'XRPUSDT', 'ADAUSDT', 'BNBUSDT', 'DOTUSDT', 'NEARUSDT', 'SUIUSDT', 'PEPEUSDT'];
+// sonda: czy Revolut X odpowiada z serwerów GitHuba (publiczne dane, bez klucza)
+const fs = require('fs');
 (async () => {
-  for (const s of syms) {
-    let t = Date.parse('2021-01-01T00:00:00Z'), rows = [];
-    while (t < Date.now()) {
-      let r, tries = 0;
-      for (;;) {
-        try { r = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${s}&interval=1h&startTime=${t}&limit=1000`); if (r.ok) break; console.log(s, r.status); } catch (e) { console.log(e.message); }
-        if (++tries > 5) throw new Error('fail ' + s); await new Promise(z => setTimeout(z, 2000));
-      }
-      const d = await r.json();
-      if (!d.length) break;
-      d.forEach(k => rows.push([Math.round(k[0] / 1000), +k[1], +k[2], +k[3], +k[4]].join(',')));
-      t = d[d.length - 1][0] + 3600000;
-    }
-    fs.writeFileSync(`${s}.csv.gz`, zlib.gzipSync('ts,o,h,l,c\n' + rows.join('\n')));
-    console.log(s, rows.length);
+  const out = {};
+  for (const p of ['/api/1.0/public/order-book/BTC-USD', '/api/1.0/public/order-book/BTC-USDC', '/api/1.0/public/order-book/SOL-USD', '/api/1.0/public/order-book/ETH-EUR', '/api/1.0/public/last-trades', '/api/1.0/balances']) {
+    try { const r = await fetch('https://revx.revolut.com' + p); const t = await r.text(); out[p] = {status: r.status, body: t.slice(0, 600)}; }
+    catch (e) { out[p] = {error: String(e)}; }
   }
-})().catch(e => { console.error(e); process.exit(1); });
+  try { const ip = await (await fetch('https://ipinfo.io/json')).json(); out.runner = {country: ip.country, region: ip.region}; } catch (e) {}
+  fs.writeFileSync('probe.json', JSON.stringify(out, null, 1));
+  console.log(Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.status || v.error || v.country])));
+})();
