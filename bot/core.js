@@ -48,7 +48,7 @@ async function stepCoin(ctx, coin, removed) {
   const t = await ex.ticker(pair);
   if (!(t && t.bid > 0 && t.ask > 0) || t.ask / t.bid > 1.03) { cs.note = 'Brak wiarygodnej ceny (zbyt duży rozrzut) – pominięto ten przebieg.'; return {}; }
   cs.px = (t.bid + t.ask) / 2; cs.pxAt = now; cs.note = '';
-  const N = Math.max(2, Math.min(12, (coin.steps || []).length + 1));
+  const N = Math.max(1, Math.min(12, (coin.steps || []).length + 1));
   const tp = Math.max(0.5, Math.min(50, +coin.tp || 5)) / 100;
   const dustBase = Math.max(info.baseStep, info.minBase);
 
