@@ -216,6 +216,30 @@
   button.action:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
   button.icon{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0 .25rem}
   button.icon:hover{color:var(--red)}
+  .bot-steps{display:flex;flex-direction:column;gap:.7rem}
+  .bot-step{border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem .9rem;background:var(--sunken)}
+  .bot-step h3{margin:0 0 .35rem;font-size:.95rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .bot-step.done .bot-n{background:var(--green);color:#fff}
+  .bot-n{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:.8rem;flex:none}
+  .bot-secret{display:flex;gap:.5rem;align-items:flex-start;margin:.4rem 0;min-width:0}
+  .bot-secret code{flex:1 1 0;min-width:0;font-size:.72rem;white-space:pre-wrap;word-break:break-all;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.45rem .55rem;max-height:9rem;overflow:auto}
+  .bot-ol{padding-left:1.2rem;margin:.3rem 0;display:flex;flex-direction:column;gap:.5rem}
+  .bot-coin-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.7rem}
+  .bot-coin{border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem .85rem;min-width:0;display:flex;flex-direction:column;gap:.3rem}
+  .bot-coin-h{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .bot-coin-h .chip-s{margin-left:auto}
+  .bot-dots{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .bot-dots i{width:14px;height:14px;border-radius:4px;background:var(--sunken);border:1px solid var(--border)}
+  .bot-dots i.on{background:var(--accent);border-color:var(--accent)}
+  .bot-dots i.wait{border:2px dashed var(--accent)}
+  .bot-dots span{margin-left:.4rem}
+  .bot-lot{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:.4rem;font-size:.78rem;font-variant-numeric:tabular-nums;padding:.2rem 0;border-top:1px solid var(--border)}
+  .bot-coins-set{display:flex;flex-direction:column;gap:.5rem}
+  .bot-cset{display:grid;grid-template-columns:90px repeat(3,minmax(0,1fr)) auto;gap:.5rem;align-items:end}
+  .bot-cset label{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+  .bot-cset input{width:100%;min-width:0;max-width:none !important}
+  @media (max-width:560px){.bot-cset{grid-template-columns:1fr 1fr}.bot-cset select{grid-column:1/-1}.bot-cset .icon-x{justify-self:end}}
+  .link-btn{background:none;border:none;color:var(--accent);font:inherit;padding:0;cursor:pointer;text-decoration:underline}
   .seg{display:inline-flex;padding:3px;border-radius:calc(var(--radius-sm) + 1px);background:var(--sunken);border:1px solid var(--border);vertical-align:middle;flex-wrap:wrap}
   .seg button{border:none;background:none;color:var(--muted);font:inherit;font-size:.8rem;font-weight:600;padding:.4rem .8rem;border-radius:calc(var(--radius-sm) - 2px);cursor:pointer;transition:all .15s}
   .seg button.on{background:var(--btn-bg);background-color:var(--accent);color:var(--accent-ink);box-shadow:0 4px 12px -6px color-mix(in srgb,var(--accent) 80%,transparent)}
@@ -925,6 +949,15 @@
     </div>
   </section>
 
+  <!-- ===================== AUTOMAT ===================== -->
+  <section id="bot">
+    <div class="card">
+      <h2 style="margin:0">Automat transz</h2>
+      <p class="small muted" style="margin:.2rem 0 .6rem">Revolut X · kupuje w transzach przy spadkach, każdą sprzedaje z zyskiem i powtarza</p>
+      <div id="botBody"></div>
+    </div>
+  </section>
+
   <!-- ===================== DOPŁATA ===================== -->
   <section id="budget">
     <div class="card">
@@ -1171,7 +1204,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v36 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v37 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -4258,7 +4291,7 @@ function setHtmlKeepIcons(el, html) {
 
 const GROUPS = [
   {id: 'today', label: 'Dziś', icon: ICON_SUN, items: [['today', 'Dziś']]},
-  {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż']]},
+  {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż'], ['bot', 'Automat']]},
   {id: 'mk', label: 'Rynek', icon: ICON_TREND, items: [['market', 'Rynek']]},
   {id: 'fin', label: 'Finanse', icon: TAB_ICONS.savings, items: [['savings:sav', 'Oszczędności'], ['savings:subs', 'Subskrypcje i opłaty'], ['savings:dates', 'Ważne daty'], ['journal', 'Dziennik / PIT']]}
 ];
@@ -4556,6 +4589,7 @@ function openTab(id) {
   if (id === 'market') mkOpen();
   else if (prevTab === 'market') mkLeave();
   if (id === 'settings') { applySub('settings'); renderSettings(); }
+  if (id === 'bot') { renderBot(); botLoad(true); }
   if (id === 'goal') { syncMonthlyInput(); renderMonth(); if (!benchState.busy && (!benchState.res || Date.now() - benchState.at > 600000)) runBench(); else renderBench(); }
 }
 
@@ -8066,6 +8100,12 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '37', date: '2026-10-29', title: 'Automat transz z Revolut X', items: [
+    'Nowa zakładka Portfel → Automat: kupuje w transzach przy spadkach, każdą transzę sprzedaje z zyskiem (domyślnie +5%) i zysk kupuje dalej.',
+    'Tryb próbny na prawdziwych cenach (bez pieniędzy, bez klucza giełdy), potem tryb na żywo na Revolut X.',
+    'Styl spokojny (8 transz, rosnące odstępy) albo klasyczny (5 transz), filtr trendu (średnia 200 dni), limit ceny i cena wyjścia dla każdej monety.',
+    'Bezpieczeństwo: automat sprzedaje tylko to, co sam kupił; ustawienia i stan zaszyfrowane osobnym kluczem; klucz prywatny Revolut X powstaje w przeglądarce i trafia tylko do sekretów GitHuba; dzienny bezpiecznik liczby zleceń.',
+    'Wstrzymanie zakupów, „Sprzedaj wszystko” z potwierdzeniem, historia transakcji i powiadomienia push o każdym kupnie i sprzedaży.']},
   {v: '36', date: '2026-10-29', title: 'Cel: scenariusze bez migania', items: [
     'Zakładka Cel: tabela „Kiedy? Scenariusze”, podsumowanie miesiąca i paski etapów nie przebudowują się przy każdej zmianie ceny – zmieniają się tylko liczby, więc nic nie miga.']},
   {v: '35', date: '2026-10-29', title: 'Przegląd kodu: poprawki i szybsze działanie', items: [
@@ -8477,6 +8517,278 @@ function tileUsdc(t, b) {
     <div class="form-row" style="margin-top:.6rem"><button class="action secondary" onclick="closeInfoModal();openTab('edit')">Kupno / Sprzedaż</button><button class="action secondary" onclick="closeInfoModal();openTab('plan')">Strategia</button></div>${tileLive()}`;
 }
 
+/* =========================================================
+   AUTOMAT TRANSZ (Revolut X) – zakładka Portfel → Automat
+   Automat działa na serwerze (GitHub Actions, co ~10 min, bot/run.js). Aplikacja:
+   - trzyma ustawienia (ccBotCfg) i klucz automatu (ccBotKey, synchronizowany tylko w zaszyfrowanej chmurze),
+   - zapisuje ustawienia w Firestore zaszyfrowane kluczem automatu (pole botCfg),
+   - czyta stan (botState, zaszyfrowany) i jawny „puls” (botBeat: czas, tryb, błąd – bez kwot),
+   - generuje w przeglądarce parę kluczy Ed25519 dla Revolut X (klucz prywatny pokazujemy raz, nigdzie go nie zapisujemy).
+   ========================================================= */
+const BOT_REPO = 'Kowals96/crypto-control';
+const BOT_COINS = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'LINK', 'ADA', 'AVAX', 'DOT'];
+const BOT_STEPS = {calm: [4, 5, 6, 8, 10, 12, 15], classic: [5, 5, 5, 5]};          // % odstępu kolejnych dokupów
+const botMult = sym => sym === 'BTC' ? 1 : sym === 'ETH' ? 1.5 : 2;                    // zmienniejsze monety: szersze odstępy (z symulacji)
+const BOT_DEFAULT = {v: 1, mode: 'off', quote: 'USD', budget: 1000, style: 'calm', tp: 5, trend: true, notify: true,
+  coins: [{sym: 'BTC', share: 50, cap: null, exit: null}, {sym: 'ETH', share: 50, cap: null, exit: null}]};
+LS.botCfg = 'ccBotCfg'; LS.botKey = 'ccBotKey';
+const BOT = {beat: null, state: null, loadedAt: 0, loading: false, msg: '', msgOk: true, keys: null, confirmLive: false, confirmSell: null, err: ''};
+
+function botCfg() { const c = lsGet(LS.botCfg); return c && typeof c === 'object' ? {...BOT_DEFAULT, ...c} : structuredClone(BOT_DEFAULT); }
+const botKeyB64 = () => { try { return JSON.parse(localStorage.getItem(LS.botKey) || 'null'); } catch (e) { return null; } };
+const b64e = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function botAesKey() { const k = botKeyB64(); if (!k) throw new Error('Brak klucza automatu.'); return crypto.subtle.importKey('raw', b64d(k), 'AES-GCM', false, ['encrypt', 'decrypt']); }
+async function botEnc(obj, aad) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(aad)}, await botAesKey(), new TextEncoder().encode(JSON.stringify(obj)));
+  return `b1.${b64e(iv)}.${b64e(ct)}`;
+}
+async function botDec(s, aad) {
+  const [v, iv, ct] = String(s).split('.');
+  if (v !== 'b1') throw new Error('nieznany format');
+  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: b64d(iv), additionalData: new TextEncoder().encode(aad)}, await botAesKey(), b64d(ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+// ustawienia wysyłane do serwera: odstępy liczone z wybranego stylu, bez zbędnych pól
+function botServerCfg(c) {
+  const steps = BOT_STEPS[c.style] || BOT_STEPS.calm;
+  return {v: 1, mode: c.mode, paused: !!c.paused, quote: c.quote, budget: +c.budget || 0, trend: !!c.trend, notify: c.notify !== false, cmd: c.cmd || null,
+    coins: c.coins.filter(x => BOT_COINS.includes(x.sym)).map(x => ({sym: x.sym, share: +x.share || 0, tp: +c.tp || 5, steps: steps.map(s => +(s * botMult(x.sym)).toFixed(2)),
+      cap: +x.cap > 0 ? +x.cap : null, exit: +x.exit > 0 ? +x.exit : null})), updatedAt: Date.now()};
+}
+async function botPush(c) {
+  const a = await cloudToken();
+  const res = await fetch(docUrl(a.uid) + '?updateMask.fieldPaths=botCfg', {method: 'PATCH', headers: {authorization: 'Bearer ' + a.idToken, 'content-type': 'application/json'},
+    body: JSON.stringify({fields: {botCfg: {stringValue: await botEnc(botServerCfg(c), a.uid + ':botCfg')}}})});
+  if (!res.ok) throw new Error(`Zapis ustawień automatu nieudany (${res.status}).`);
+}
+async function botLoad(force) {
+  if (!cloudReady() || BOT.loading || (!force && Date.now() - BOT.loadedAt < 25000)) return;
+  BOT.loading = true;
+  try {
+    const a = await cloudToken();
+    const res = await fetch(docUrl(a.uid) + '?mask.fieldPaths=botBeat&mask.fieldPaths=botState', {headers: {authorization: 'Bearer ' + a.idToken}});
+    if (res.ok) {
+      const d = await res.json();
+      try { BOT.beat = JSON.parse(d.fields?.botBeat?.stringValue || 'null'); } catch (e) { BOT.beat = null; }
+      BOT.err = '';
+      if (d.fields?.botState?.stringValue && botKeyB64()) {
+        try { BOT.state = await botDec(d.fields.botState.stringValue, a.uid + ':botState').catch(() => botDec(d.fields.botState.stringValue, 'botState')); }
+        catch (e) { BOT.err = 'Nie mogę odczytać stanu automatu – klucz automatu w aplikacji różni się od BOT_KEY w GitHubie.'; }
+      }
+    }
+    BOT.loadedAt = Date.now();
+  } catch (e) { BOT.err = e.message; }
+  BOT.loading = false;
+  if (activeTab === 'bot') renderBot();
+}
+async function botSave(patch, msg) {
+  const c = {...botCfg(), ...patch, savedAt: Date.now()};
+  lsSet(LS.botCfg, c);
+  BOT.msg = 'Zapisuję…'; BOT.msgOk = true; renderBot();
+  try { await botPush(c); BOT.msg = msg || 'Zapisano – automat zastosuje zmiany przy najbliższym przebiegu (do ~10 min).'; BOT.msgOk = true; }
+  catch (e) { BOT.msg = e.message; BOT.msgOk = false; }
+  renderBot();
+}
+function botNewKey() {
+  if (botKeyB64() && !confirm('Utworzyć nowy klucz automatu? Stary BOT_KEY w GitHubie trzeba będzie podmienić.')) return;
+  localStorage.setItem(LS.botKey, JSON.stringify(b64e(crypto.getRandomValues(new Uint8Array(32)))));
+  if (typeof cloudTouched === 'function') cloudTouched(LS.botKey);
+  renderBot();
+}
+const pem = (label, buf) => `-----BEGIN ${label}-----\n${b64e(buf).match(/.{1,64}/g).join('\n')}\n-----END ${label}-----`;
+async function botGenRevx() {
+  try {
+    const kp = await crypto.subtle.generateKey({name: 'Ed25519'}, true, ['sign', 'verify']);
+    BOT.keys = {pub: pem('PUBLIC KEY', await crypto.subtle.exportKey('spki', kp.publicKey)), priv: pem('PRIVATE KEY', await crypto.subtle.exportKey('pkcs8', kp.privateKey))};
+  } catch (e) { BOT.keys = {err: true}; }
+  renderBot();
+}
+async function botCopy(text, btn) {
+  try { await navigator.clipboard.writeText(text); if (btn) { const t = btn.textContent; btn.textContent = 'Skopiowano ✓'; setTimeout(() => { btn.textContent = t; }, 1600); } }
+  catch (e) { alert('Nie udało się skopiować – zaznacz tekst i skopiuj ręcznie.'); }
+}
+function botCmd(type, sym, mode) { return botSave({cmd: {id: Date.now().toString(36), type, sym: sym || null, mode: mode || botCfg().mode, at: Date.now()}}, type === 'liquidate' ? 'Polecenie „Sprzedaj wszystko” wysłane – automat wykona je przy najbliższym przebiegu.' : 'Wysłane.'); }
+function botSetCoin(i, k, v) { const c = botCfg(); c.coins = c.coins.map((x, j) => j === i ? {...x, [k]: k === 'sym' ? v : (parseFloat(String(v).replace(',', '.')) || null)} : x); lsSet(LS.botCfg, c); renderBot(); }
+function botAddCoin() { const c = botCfg(); const free = BOT_COINS.find(s => !c.coins.some(x => x.sym === s)); if (!free) return; c.coins.push({sym: free, share: 0, cap: null, exit: null}); lsSet(LS.botCfg, c); renderBot(); }
+function botDelCoin(i) { const c = botCfg(); c.coins.splice(i, 1); lsSet(LS.botCfg, c); renderBot(); }
+function botField(k, v) { const c = botCfg(); c[k] = v; lsSet(LS.botCfg, c); renderBot(); }
+
+const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'przed chwilą' : m < 60 ? `${m} min temu` : m < 1440 ? `${Math.round(m / 60)} godz. temu` : `${Math.round(m / 1440)} dni temu`; };
+const qfmt = (n, q) => (Math.abs(n) >= 1000 ? fixed(n, 0) : fixed(n, 2)) + ' ' + q;
+const pfmt = n => n >= 1000 ? fixed(n, 0) : n >= 1 ? fixed(n, 2) : upto(n, 6);
+
+function botStatusChip(c) {
+  const b = BOT.beat, stale = b && Date.now() - b.at > 40 * 60000;
+  if (c.mode === 'off') return '<span class="chip-s">wyłączony</span>';
+  if (!b) return '<span class="chip-s">czeka na pierwszy przebieg</span>';
+  if (stale) return '<span class="chip-s neg">nie odpowiada</span>';
+  if (!b.ok || b.halt) return '<span class="chip-s neg">błąd</span>';
+  if (c.paused) return '<span class="chip-s">zakupy wstrzymane</span>';
+  return c.mode === 'live' ? '<span class="chip-s pos">na żywo</span>' : '<span class="chip-s pos">tryb próbny</span>';
+}
+
+function botSetupHtml(c, hasKey, step) {
+  const k = botKeyB64();
+  const secretLink = `https://github.com/${BOT_REPO}/settings/secrets/actions/new`;
+  return `
+  <div class="bot-steps">
+    <div class="bot-step${hasKey ? ' done' : ''}">
+      <h3><span class="bot-n">1</span> Klucz automatu</h3>
+      <p class="small">Tym kluczem aplikacja szyfruje ustawienia, a automat – swój stan. Dzięki temu w chmurze nie ma jawnych kwot.</p>
+      ${hasKey ? `<p class="small">Klucz gotowy. Dodaj go w GitHubie jako sekret <strong>BOT_KEY</strong> (jeśli jeszcze go tam nie ma):</p>
+        <div class="bot-secret"><code class="sens">${esc(k)}</code><button class="action secondary" onclick="botCopy(${jsArg(k)}, this)">Kopiuj</button></div>
+        <p class="small"><a href="${secretLink}" target="_blank" rel="noopener">Otwórz „New repository secret” w GitHubie</a> → Name: <code>BOT_KEY</code>, Secret: wklej → Add secret.
+        <button class="link-btn" onclick="botNewKey()">Utwórz nowy klucz</button></p>`
+      : `<button class="action" onclick="botNewKey()">Utwórz klucz automatu</button>`}
+    </div>
+    <div class="bot-step${step > 1 ? ' done' : ''}">
+      <h3><span class="bot-n">2</span> Uruchom tryb próbny</h3>
+      <p class="small">Automat liczy na prawdziwych cenach, ale niczego nie kupuje. Działa od razu – klucz Revolut X nie jest do tego potrzebny. Wyniki próby są nieco optymistyczne (ceny Binance, brak kolejki zleceń). Ustaw budżet i monety poniżej, potem stuknij:</p>
+      <button class="action" ${hasKey ? '' : 'disabled'} onclick="botSave({mode:'paper',paused:false}, 'Tryb próbny włączony. Pierwszy przebieg w ciągu ~10 minut (albo od razu: GitHub → Actions → Automat transz → Run workflow).')">Włącz tryb próbny</button>
+      <p class="small muted">Pierwszy przebieg możesz wymusić: <a href="https://github.com/${BOT_REPO}/actions/workflows/bot.yml" target="_blank" rel="noopener">GitHub → Actions → Automat transz</a> → „Run workflow”.</p>
+    </div>
+    <div class="bot-step${BOT.state?.revx?.ok ? ' done' : ''}">
+      <h3><span class="bot-n">3</span> Połączenie z Revolut X <span class="small muted">(potrzebne dopiero do trybu na żywo)</span></h3>
+      ${!BOT.keys ? `<p class="small">Wygeneruję w tej przeglądarce parę kluczy. Publiczny wkleisz w Revolut X, prywatny tylko w sekrety GitHuba – aplikacja go nie zapisuje.</p>
+        <button class="action secondary" onclick="botGenRevx()">Wygeneruj klucze Revolut X</button>`
+      : BOT.keys.err ? `<p class="small">Ta przeglądarka nie umie wygenerować klucza Ed25519. Otwórz aplikację w aktualnym Safari, Chrome albo Firefoksie i spróbuj ponownie.</p>`
+      : `<ol class="small bot-ol">
+          <li>Skopiuj <strong>klucz publiczny</strong>:
+            <div class="bot-secret"><code>${esc(BOT.keys.pub)}</code><button class="action secondary" onclick="botCopy(BOT.keys.pub, this)">Kopiuj</button></div></li>
+          <li>Na komputerze otwórz <a href="https://exchange.revolut.com/account/api-keys" target="_blank" rel="noopener">Revolut X → klucze API</a>, dodaj nowy klucz, wklej klucz publiczny i wybierz uprawnienie do <strong>handlu</strong>. Listy adresów IP nie ustawiaj (serwery GitHuba zmieniają adresy).</li>
+          <li>Revolut pokaże <strong>klucz API</strong> (64 znaki) – dodaj go w GitHubie jako sekret <code>REVX_API_KEY</code>.</li>
+          <li>Skopiuj <strong>klucz prywatny</strong> i dodaj jako sekret <code>REVX_PRIVATE_KEY</code>. Pokazuję go tylko teraz – nie wysyłaj go nikomu.
+            <div class="bot-secret"><code class="sens">${esc(BOT.keys.priv)}</code><button class="action secondary" onclick="botCopy(BOT.keys.priv, this)">Kopiuj</button></div></li>
+        </ol>
+        <p class="small"><a href="${secretLink}" target="_blank" rel="noopener">Dodaj sekret w GitHubie</a>. Po najbliższym przebiegu tutaj pojawi się „Revolut X: połączono”.</p>`}
+      <p class="small" style="margin:.6rem 0 0"><strong>Bezpiecznik budżetu:</strong> dodaj też sekret <code>BOT_MAX_BUDGET</code> – najwyższy budżet, z jakim automat może pracować na żywo (np. <code>${Math.max(100, Math.round(+c.budget || 1000))}</code>). Nawet gdyby ktoś zmienił ustawienia, serwer nie przekroczy tej kwoty. Bez tego sekretu tryb na żywo nie kupuje.
+        ${BOT.beat?.maxBudget ? '<span class="positive">Ustawiony ✓</span>' : ''}</p>
+      <p class="small muted" style="margin:.3rem 0 0">Opcjonalnie sekret <code>BOT_UID</code> = <code>${esc(cloudAuth()?.uid || '')}</code> – automat obsłuży wtedy tylko Twoje konto. ${BOT.beat?.uid ? '<span class="positive">Ustawiony ✓</span>' : ''}</p>
+      ${BOT.state?.revx ? `<p class="small ${BOT.state.revx.ok ? 'positive' : 'negative'}">Revolut X: ${BOT.state.revx.ok ? 'połączono ✓' : esc(BOT.state.revx.msg)} <span class="muted">(${ago(BOT.state.revx.at)})</span></p>` : ''}
+    </div>
+  </div>`;
+}
+
+function botCoinHtml(c, coin, cs, q) {
+  const steps = (BOT_STEPS[c.style] || BOT_STEPS.calm).map(s => s * botMult(coin.sym)), N = steps.length + 1;
+  const lots = cs?.lots || [], px = cs?.px || prices[coin.sym]?.usd || 0;
+  const dots = Array.from({length: N}, (_, i) => `<i class="${i < lots.length ? 'on' : cs?.pend && i === lots.length ? 'wait' : ''}"></i>`).join('');
+  const val = lots.reduce((a, l) => a + l.qty * px, 0), cost = lots.reduce((a, l) => a + l.cost, 0);
+  const trend = cs?.trendUp === true ? '<span class="chip-s pos">nad średnią 200 dni</span>' : cs?.trendUp === false ? '<span class="chip-s neg">pod średnią 200 dni</span>' : '';
+  return `<div class="bot-coin">
+    <div class="bot-coin-h"><span class="pf-sym">${coinIcon(esc(coin.sym), 'sm')}<strong>${esc(coin.sym)}</strong></span><span class="muted small">${px ? pfmt(px) + ' ' + q : ''}</span>${c.trend ? trend : ''}</div>
+    <div class="bot-dots" title="Transze: kupione / czeka / wolne">${dots}<span class="small muted">${lots.length}/${N} transz</span></div>
+    ${lots.length ? `<div class="small" style="margin:.35rem 0">W transzach: <strong class="sens">${qfmt(cost, q)}</strong> · teraz <strong class="sens ${val >= cost ? 'positive' : 'negative'}">${qfmt(val, q)}</strong></div>` : ''}
+    ${lots.map((l, i) => `<div class="bot-lot"><span>#${i + 1}</span><span>kupno ${pfmt(l.buyPx)}</span><span>→ sprzedaż ${l.sellPx ? pfmt(l.sellPx) : '…'}${l.exit ? ' (wyjście)' : ''}</span>
+      <span class="${px >= l.buyPx ? 'positive' : 'negative'}">${l.sellPx && px ? (px >= l.sellPx ? 'na progu' : 'brakuje ' + pct((l.sellPx / px - 1) * 100)) : ''}</span></div>`).join('')}
+    ${cs?.pend ? `<div class="small muted">${cs.pend.kind === 'first' ? 'Kupuje pierwszą transzę' : `Czeka dokup przy <strong>${pfmt(cs.pend.px)}</strong> ${q} (${px ? pct((cs.pend.px / px - 1) * 100) : ''})`} · ${qfmt(cs.pend.quote, q)}</div>` : ''}
+    ${cs?.why ? `<div class="small muted">Nowe zakupy stoją: ${esc(cs.why)}.</div>` : ''}
+    ${cs?.note || cs?.err ? `<div class="small negative">${esc(cs.note || cs.err)}</div>` : ''}
+    ${cs?.realized ? `<div class="small">Zysk zrealizowany: <strong class="sens positive">${qfmt(cs.realized, q)}</strong> · ${cs.cycles} ${cs.cycles === 1 ? "cykl" : cs.cycles % 10 >= 2 && cs.cycles % 10 <= 4 && (cs.cycles % 100 < 10 || cs.cycles % 100 >= 20) ? "cykle" : "cykli"}</div>` : ''}
+  </div>`;
+}
+
+function botSettingsHtml(c, live) {
+  const sum = c.coins.reduce((a, x) => a + (+x.share || 0), 0);
+  const subSt = BOT.state?.[live ? 'live' : 'paper'];
+  const busyQ = Object.values(subSt?.coins || {}).some(x => x.lots?.length || x.pend);
+  return `<div class="bd-box">
+    <div class="form-row" style="margin:0">
+      <div><label class="small muted" for="botBudget">Budżet automatu</label><br><input type="number" id="botBudget" min="0" step="50" value="${c.budget}" onchange="botField('budget', +this.value || 0)" style="max-width:130px"></div>
+      <div><label class="small muted" for="botQuote">Waluta na giełdzie</label><br><select id="botQuote" ${busyQ ? 'disabled title="Zmiana waluty możliwa, gdy automat nie ma transz"' : ''} onchange="botField('quote', this.value)">${['USD', 'USDC', 'EUR'].map(x => `<option${x === c.quote ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
+      <div><label class="small muted" for="botTp">Sprzedaż przy zysku (%)</label><br><input type="number" id="botTp" min="1" max="20" step="0.5" value="${c.tp}" onchange="botField('tp', +this.value || 5)" style="max-width:90px"></div>
+    </div>
+    <div style="margin:.6rem 0"><span class="small muted">Styl transz</span><br>
+      <span class="seg"><button class="${c.style === 'calm' ? 'on' : ''}" onclick="botField('style','calm')">Spokojny · 8 transz, rosnące odstępy</button><button class="${c.style === 'classic' ? 'on' : ''}" onclick="botField('style','classic')">Klasyczny · 5 transz, równe</button></span></div>
+    <div class="set-row" style="padding:.4rem 0"><div><strong class="small">Filtr trendu</strong><span class="small">Nowe zakupy tylko, gdy cena jest nad średnią z 200 dni.</span></div>
+      <label class="switch"><input type="checkbox"${c.trend ? ' checked' : ''} onchange="botField('trend', this.checked)"><span></span></label></div>
+    <div class="set-row" style="padding:.4rem 0"><div><strong class="small">Powiadomienia o transakcjach</strong><span class="small">Push przy każdym kupnie i sprzedaży (te same urządzenia co alerty cen).</span></div>
+      <label class="switch"><input type="checkbox"${c.notify !== false ? ' checked' : ''} onchange="botField('notify', this.checked)"><span></span></label></div>
+    <h3 style="margin:.8rem 0 .3rem;font-size:.92rem">Monety</h3>
+    <div class="bot-coins-set">${c.coins.map((x, i) => `<div class="bot-cset">
+      <select onchange="botSetCoin(${i},'sym',this.value)" aria-label="Moneta">${BOT_COINS.map(s => `<option${s === x.sym ? ' selected' : ''}>${s}</option>`).join('')}</select>
+      <label><span class="small muted">udział %</span><input type="number" min="0" max="100" step="5" value="${x.share ?? 0}" onchange="botSetCoin(${i},'share',this.value)"></label>
+      <label><span class="small muted">nie kupuj powyżej</span><input type="number" min="0" step="any" value="${x.cap ?? ''}" placeholder="bez limitu" onchange="botSetCoin(${i},'cap',this.value)"></label>
+      <label><span class="small muted">sprzedaj wszystko przy</span><input type="number" min="0" step="any" value="${x.exit ?? ''}" placeholder="—" onchange="botSetCoin(${i},'exit',this.value)"></label>
+      <button class="icon-x" onclick="botDelCoin(${i})" aria-label="Usuń monetę">×</button></div>`).join('')}</div>
+    <p class="small ${sum === 100 ? 'muted' : 'negative'}" style="margin:.3rem 0">Suma udziałów: ${sum}%${sum === 100 ? '' : ' – powinno być 100%'}.</p>
+    ${c.coins.length < BOT_COINS.length ? '<button class="action secondary" onclick="botAddCoin()">+ Dodaj monetę</button>' : ''}
+    <div class="form-row" style="margin:.8rem 0 0"><button class="action" ${sum === 100 ? '' : 'disabled'} onclick="botSave({})">Zapisz ustawienia</button></div>
+    <p class="small muted" style="margin:.5rem 0 0">Ceny w ${c.quote}. „Nie kupuj powyżej” wstrzymuje tylko nowe zakupy. „Sprzedaj wszystko przy” sprzedaje wszystkie transze tej monety po dojściu do ceny i kończy zakupy.</p>
+  </div>`;
+}
+
+function renderBot() {
+  const el = document.getElementById('botBody');
+  if (!el) return;
+  if (el.contains(document.activeElement) && /INPUT|SELECT/.test(document.activeElement.tagName)) return;     // nie przerywaj wpisywania
+  const c = botCfg(), q = c.quote, hasKey = !!botKeyB64(), st = BOT.state, live = c.mode === 'live';
+  const sub = st?.[live ? 'live' : 'paper'], b = BOT.beat;
+  if (!cloudReady()) { el.innerHTML = `<div class="info">Automat działa przez Twoje konto w chmurze (tam trafiają zaszyfrowane ustawienia). Zaloguj się: Ustawienia → Konto i synchronizacja.</div>`; return; }
+  const step = c.mode !== 'off' ? 2 : 1;
+  const t = sub?.totals;
+  const hist = (sub?.history || []).slice(-15).reverse();
+  const revxOk = !!st?.revx?.ok;
+  setHtmlKeepIcons(el, `
+    <div class="bd-top"><div><div class="pf-big">${live ? 'Na żywo' : c.mode === 'paper' ? 'Tryb próbny' : 'Wyłączony'}</div>
+      <div class="small muted">${b ? `ostatni przebieg ${ago(b.at)}` : c.mode === 'off' ? 'automat nie składa zleceń' : 'czekam na pierwszy przebieg (do ~10 min)'}</div></div>${botStatusChip(c)}</div>
+    ${b && !b.ok && b.msg ? `<div class="warning" style="margin-top:.6rem">${esc(b.msg)}</div>` : ''}
+    ${b && Date.now() - b.at > 40 * 60000 && c.mode !== 'off' ? `<div class="warning" style="margin-top:.6rem">Automat nie odezwał się od ${ago(b.at)}. Sprawdź <a href="https://github.com/${BOT_REPO}/actions/workflows/bot.yml" target="_blank" rel="noopener">GitHub → Actions</a> (czy sekrety są dodane, czy przebiegi się udają).</div>` : ''}
+    ${c.mode !== 'off' && (!b || b.at < (c.savedAt || 0)) && Date.now() - (c.savedAt || 0) > 20 * 60000 ? `<div class="warning" style="margin-top:.6rem">Od zapisania ustawień automat się nie odezwał. Sprawdź w GitHubie sekrety <strong>BOT_KEY</strong> i <strong>FIREBASE_SA</strong> oraz zakładkę <a href="https://github.com/${BOT_REPO}/actions/workflows/bot.yml" target="_blank" rel="noopener">Actions</a>.</div>` : ''}
+    ${sub?.halt ? `<div class="warning" style="margin-top:.6rem">${esc(sub.halt)} <button class="action secondary" onclick="botCmd('resetHalt')">Wznów</button></div>` : ''}
+    ${BOT.err ? `<div class="warning" style="margin-top:.6rem">${esc(BOT.err)}</div>` : ''}
+    ${sub?.quoteNote ? `<div class="info" style="margin-top:.6rem">${esc(sub.quoteNote)}</div>` : ''}
+    ${!live && Object.values(st?.live?.coins || {}).some(x => x.lots?.length || x.pend) ? `<div class="warning" style="margin-top:.6rem">Na Revolut X zostały transze z trybu na żywo – automat dalej pilnuje ich sprzedaży z zyskiem, ale nie kupuje.
+      ${BOT.confirmSell === 'live' ? `<button class="action danger" onclick="BOT.confirmSell=null;botCmd('liquidate', null, 'live')">Tak, sprzedaj je teraz</button><button class="action secondary" onclick="BOT.confirmSell=null;renderBot()">Anuluj</button>`
+        : `<button class="action secondary" onclick="BOT.confirmSell='live';renderBot()">Sprzedaj transze na żywo</button>`}</div>` : ''}
+    ${BOT.msg ? `<p class="small ${BOT.msgOk ? 'positive' : 'negative'}" style="margin:.5rem 0 0">${esc(BOT.msg)}</p>` : ''}
+
+    ${t ? `<div class="kv" style="margin-top:.8rem">
+      <div><span>Wartość automatu</span><strong class="sens">${qfmt(t.cash + t.value + Object.values(sub.coins || {}).reduce((a, x) => a + (x.pend ? x.pend.quote : 0), 0), q)}</strong></div>
+      <div><span>Zysk zrealizowany</span><strong class="sens ${t.realized >= 0 ? 'positive' : 'negative'}">${signed(t.realized, v => qfmt(v, q))}</strong></div>
+      <div><span>Cykle (sprzedaże z zyskiem)</span><strong>${t.cycles}</strong></div>
+      <div><span>W transzach / wolne</span><strong class="sens">${qfmt(t.invested, q)} / ${qfmt(Math.max(0, t.cash), q)}</strong></div>
+    </div>` : ''}
+
+    ${c.mode !== 'off' ? `<div class="form-row" style="margin:.6rem 0 0">
+      ${c.paused ? `<button class="action" onclick="botSave({paused:false}, 'Zakupy wznowione.')">Wznów zakupy</button>` : `<button class="action secondary" onclick="botSave({paused:true}, 'Nowe zakupy wstrzymane – zlecenia sprzedaży zostają na giełdzie.')">Wstrzymaj zakupy</button>`}
+      ${BOT.confirmSell === 1 ? `<span class="small">Sprzedać wszystkie transze ${live ? 'na giełdzie' : '(próba)'}?</span><button class="action danger" onclick="BOT.confirmSell=null;botCmd('liquidate')">Tak, sprzedaj</button><button class="action secondary" onclick="BOT.confirmSell=null;renderBot()">Anuluj</button>`
+        : `<button class="action secondary" onclick="BOT.confirmSell=1;renderBot()">Sprzedaj wszystko</button>`}
+      ${Object.values(sub?.coins || {}).some(x => x.exited) ? `<button class="action secondary" onclick="botCmd('resetExit')">Wznów monety po wyjściu</button>` : ''}
+      <button class="action secondary" onclick="botSave({mode:'off'}, 'Automat wyłączony. Czekające dokupy zostaną anulowane, zlecenia sprzedaży zostają.')">Wyłącz</button>
+    </div>` : ''}
+
+    <h3 style="margin:1.1rem 0 .4rem;font-size:.95rem">Monety</h3>
+    <div class="bot-coin-list">${c.coins.map(coin => botCoinHtml(c, coin, sub?.coins?.[coin.sym], q)).join('')}</div>
+
+    ${hist.length ? `<h3 style="margin:1.1rem 0 .4rem;font-size:.95rem">Ostatnie transakcje${live ? '' : ' (próba)'}</h3>
+      <div class="cal-list">${hist.map(h => `<div class="td-row"><div class="td-day"><strong>${new Date(h.t).getDate()}</strong><span>${['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'][new Date(h.t).getMonth()]}</span></div>
+        <div style="flex:1;min-width:0"><strong>${h.side === 'buy' ? 'Kupno' : 'Sprzedaż'} ${esc(h.sym)}</strong><div class="small muted">${pfmt(h.px)} ${q}${h.side === 'buy' && h.n ? ` · transza ${h.n}/${h.of}` : ''}</div></div>
+        <div style="text-align:right"><strong class="sens">${qfmt(h.quote, q)}</strong>${h.pnl != null ? `<div class="small sens ${h.pnl >= 0 ? 'positive' : 'negative'}">${signed(h.pnl, v => qfmt(v, q))}</div>` : ''}</div></div>`).join('')}</div>` : ''}
+
+    ${st?.revx?.bal?.length ? `<p class="small muted" style="margin:.8rem 0 0">Saldo Revolut X: <span class="sens">${st.revx.bal.map(x => `${upto(x.available, 6)} ${esc(x.cur)}`).join(' · ')}</span></p>` : ''}
+
+    <h3 style="margin:1.1rem 0 .4rem;font-size:.95rem">Ustawienia</h3>
+    ${botSettingsHtml(c, live)}
+
+    ${c.mode === 'paper' || live ? `<div class="bd-box">
+      <strong class="small">Tryb</strong>
+      <div style="margin:.4rem 0"><span class="seg"><button class="${c.mode === 'paper' ? 'on' : ''}" onclick="botSave({mode:'paper'}, 'Tryb próbny.')">Próbny</button><button class="${live ? 'on' : ''}" ${revxOk ? '' : 'disabled'} onclick="BOT.confirmLive=true;renderBot()">Na żywo</button></span></div>
+      ${!revxOk ? '<p class="small muted" style="margin:0">„Na żywo” odblokuje się po połączeniu z Revolut X (krok 3 poniżej).</p>' : ''}
+      ${BOT.confirmLive && !live ? `<div class="warning"><p class="small" style="margin:0 0 .5rem">Automat zacznie składać prawdziwe zlecenia na Revolut X za maksymalnie <strong>${qfmt(+c.budget, q)}</strong> (plus zysk, który wypracuje). Upewnij się, że na Revolut X jest tyle ${q}. Zlecenia możesz w każdej chwili wstrzymać albo anulować w Revolut X.</p>
+        <label class="small"><input type="checkbox" id="botLiveOk"> Rozumiem, że to prawdziwe pieniądze i mogę stracić część środków</label>
+        <div class="form-row" style="margin:.5rem 0 0"><button class="action" onclick="if(!document.getElementById('botLiveOk').checked){alert('Zaznacz potwierdzenie.');return;}BOT.confirmLive=false;botSave({mode:'live',paused:false}, 'Tryb na żywo włączony – pierwsza transza przy najbliższym przebiegu.')">Włącz na żywo</button><button class="action secondary" onclick="BOT.confirmLive=false;renderBot()">Anuluj</button></div></div>` : ''}
+    </div>` : ''}
+
+    <h3 style="margin:1.1rem 0 .4rem;font-size:.95rem">Konfiguracja</h3>
+    ${botSetupHtml(c, hasKey, step)}
+    <p class="small muted" style="margin:.8rem 0 0">Zasada: każda transza sprzedaje się przy +${fixed(+c.tp, 1)}% od własnej ceny zakupu, nigdy ze stratą (poza „Sprzedaj wszystko” i ceną wyjścia). Kolejne transze czekają na giełdzie jako zlecenia przy spadkach. Automat sprzedaje tylko to, co sam kupił. Na danych z lat 2021–2026 taki automat (BTC i ETH po połowie) dawał typowo ok. +15–17% rocznie, ale to przeszłość, nie prognoza i nie porada inwestycyjna.</p>`);
+}
+function botTick() { if (activeTab === 'bot' && document.visibilityState === 'visible') botLoad(); }
+setInterval(botTick, 30000);
+
 /* ---------- start ---------- */
 loadState();
 fillMonthSelect();
@@ -8500,6 +8812,7 @@ updateEditForm();
 setCurrency(ui.defaultCur === 'PLN' ? 'PLN' : 'USD');
 fullRefresh();
 cloudStart();
+if (location.hash === '#bot') setTimeout(() => navTo('bot'), 300);      // powiadomienie z automatu otwiera jego zakładkę
 
 /* Podsumowanie poprzedniego miesiąca przy pierwszym otwarciu w nowym miesiącu */
 LS.monthSeen = 'ccMonthSeen';

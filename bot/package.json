@@ -1,0 +1,8 @@
+{
+  "name": "crypto-control-bot",
+  "private": true,
+  "description": "Automat transz Crypto Control (GitHub Actions)",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

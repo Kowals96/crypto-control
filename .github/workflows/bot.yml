@@ -1,0 +1,39 @@
+name: Automat transz
+
+on:
+  schedule:
+    - cron: '5-59/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: bot
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: bot
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Instalacja zależności (zablokowane wersje, bez skryptów instalacyjnych)
+        working-directory: bot
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Przebieg automatu
+        working-directory: bot
+        run: node run.js
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          BOT_KEY: ${{ secrets.BOT_KEY }}
+          REVX_API_KEY: ${{ secrets.REVX_API_KEY }}
+          REVX_PRIVATE_KEY: ${{ secrets.REVX_PRIVATE_KEY }}
+          BOT_MAX_BUDGET: ${{ secrets.BOT_MAX_BUDGET }}
+          BOT_UID: ${{ secrets.BOT_UID }}
