@@ -1,0 +1,30 @@
+{
+ "/api/1.0/public/order-book/BTC-USD": {
+  "status": 200,
+  "body": "{\"data\":{\"asks\":[{\"aid\":\"BTC\",\"anm\":\"Bitcoin\",\"s\":\"SELL\",\"p\":\"79029.59\",\"pc\":\"USD\",\"pn\":\"MONE\",\"q\":\"6.17084444\",\"qc\":\"BTC\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"no\":\"1\",\"ts\":\"CLOB\",\"pdt\":\"2026-10-29T20:44:13.061246Z\"},{\"aid\":\"BTC\",\"anm\":\"Bitcoin\",\"s\":\"SELL\",\"p\":\"79053.17\",\"pc\":\"USD\",\"pn\":\"MONE\",\"q\":\"0.12659761\",\"qc\":\"BTC\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"no\":\"1\",\"ts\":\"CLOB\",\"pdt\":\"2026-10-29T20:44:13.061246Z\"},{\"aid\":\"BTC\",\"anm\":\"Bitcoin\",\"s\":\"SELL\",\"p\":\"79095.76\",\"pc\":\"USD\",\"pn\":\"MONE\",\"q\":\"19.48687718\",\"qc\":\"BTC\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"no\":\"1\",\"ts\":\"CLOB\",\"pdt\":\"2026-10-29T20:44:13.061246Z\"},{\"aid\":\"BTC\",\"anm\""
+ },
+ "/api/1.0/public/order-book/BTC-USDC": {
+  "status": 200,
+  "body": "{\"data\":{\"asks\":[{\"aid\":\"BTC\",\"anm\":\"Bitcoin\",\"s\":\"SELL\",\"p\":\"79179.51\",\"pc\":\"USDC\",\"pn\":\"MONE\",\"q\":\"0.45712724\",\"qc\":\"BTC\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"no\":\"1\",\"ts\":\"CLOB\",\"pdt\":\"2026-10-29T20:44:13.365040Z\"},{\"aid\":\"BTC\",\"anm\":\"Bitcoin\",\"s\":\"SELL\",\"p\":\"79192.12\",\"pc\":\"USDC\",\"pn\":\"MONE\",\"q\":\"4.64088567\",\"qc\":\"BTC\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"no\":\"1\",\"ts\":\"CLOB\",\"pdt\":\"2026-10-29T20:44:13.365040Z\"},{\"aid\":\"BTC\",\"anm\":\"Bitcoin\",\"s\":\"SELL\",\"p\":\"79406.95\",\"pc\":\"USDC\",\"pn\":\"MONE\",\"q\":\"6.49723994\",\"qc\":\"BTC\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"no\":\"1\",\"ts\":\"CLOB\",\"pdt\":\"2026-10-29T20:44:13.365040Z\"},{\"aid\":\"BTC\",\"an"
+ },
+ "/api/1.0/public/order-book/SOL-USD": {
+  "status": 429,
+  "body": "{\"message\":\"Rate limit exceeded\",\"error_id\":\"399eb749-799b-4037-8cab-22f86aba9840\",\"timestamp\":1793306653501}"
+ },
+ "/api/1.0/public/order-book/ETH-EUR": {
+  "status": 429,
+  "body": "{\"message\":\"Rate limit exceeded\",\"error_id\":\"f350197d-ff28-4d32-99e1-7f9e0f459908\",\"timestamp\":1793306653633}"
+ },
+ "/api/1.0/public/last-trades": {
+  "status": 200,
+  "body": "{\"data\":[{\"tdt\":\"2026-10-29T20:44:13.753Z\",\"aid\":\"ETH\",\"anm\":\"Ethereum\",\"p\":\"2258.53\",\"pc\":\"USD\",\"pn\":\"MONE\",\"q\":\"0.44214257\",\"qc\":\"ETH\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"pdt\":\"2026-10-29T20:44:13.753Z\",\"vp\":\"REVX\",\"tid\":\"f15f1e72cc2c369a9cb9300771602844\"},{\"tdt\":\"2026-10-29T20:44:13.658Z\",\"aid\":\"ETH\",\"anm\":\"Ethereum\",\"p\":\"2258.47\",\"pc\":\"USD\",\"pn\":\"MONE\",\"q\":\"0.44219063\",\"qc\":\"ETH\",\"qn\":\"UNIT\",\"ve\":\"REVX\",\"pdt\":\"2026-10-29T20:44:13.658Z\",\"vp\":\"REVX\",\"tid\":\"87c7d279f5c4397d8e7c4e93640f27dc\"},{\"tdt\":\"2026-10-29T20:44:13.633Z\",\"aid\":\"ETH\",\"anm\":\"Ethereum\",\"p\":\"2258.47\",\"pc\":\"USD\",\"pn\":\"MONE\",\"q\":\"0.442269"
+ },
+ "/api/1.0/balances": {
+  "status": 401,
+  "body": "{\"message\":\"Unauthorized\",\"error_id\":\"cc5059bf-406a-4404-ab5a-3a7d8327dd62\",\"timestamp\":1793306653955}"
+ },
+ "runner": {
+  "country": "US",
+  "region": "Wyoming"
+ }
+}
