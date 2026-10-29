@@ -1171,7 +1171,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v34 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v35 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1369,6 +1369,8 @@ const signed = (v, f) => { const t = f(Math.abs(v)); return (v >= 0 || !/[1-9]/.
 const pct = v => fixed(v, 1) + '%';
 const hhmm = ts => new Date(ts).toLocaleTimeString('pl-PL');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fngCls = c => String(c || '').replace(/[^A-Za-z ]/g, '').slice(0, 20);   // tekst z API trafia do HTML
+const jsArg = v => esc(JSON.stringify(String(v)));        // bezpieczny argument tekstowy w onclick="…"
 const todayStr = () => new Date().toLocaleDateString('sv-SE');          // RRRR-MM-DD, czas lokalny
 const monthName = (ym = todayStr().slice(0, 7)) =>
   new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1).toLocaleDateString('pl-PL', {month:'long', year:'numeric'});
@@ -1426,7 +1428,7 @@ function loadState() {
 }
 function sanitizeHoldings() {
   for (const [s, p] of Object.entries(holdings)) {
-    if (!(p && p.qty > 0 && p.avg > 0)) delete holdings[s];
+    if (!/^[A-Z0-9]{1,15}$/.test(s) || !(p && p.qty > 0 && p.avg > 0)) delete holdings[s];   // klucze trafiają do onclick – tylko bezpieczne symbole
   }
 }
 const validEntry = e => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && (e.type === 'buy' || e.type === 'sell') && e.pln > 0;
@@ -1606,13 +1608,17 @@ setInterval(async () => {
   if (await loadFallback(needsFallback())) scheduleRender();
 }, 180000);
 setInterval(() => { loadRate().then(ok => ok && scheduleRender()); }, 3600000);
+let wsHideTimer = null;
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && !wsLive) fullRefresh();
+  clearTimeout(wsHideTimer);
+  // karta w tle dłużej niż minutę: zamykamy strumień cen (bateria, dane); po powrocie fullRefresh łączy od nowa
+  if (document.visibilityState === 'hidden') { wsHideTimer = setTimeout(() => { clearTimeout(wsTimer); closeWS(); }, 60000); return; }
+  if (!wsLive) fullRefresh();
 });
 
 function scheduleRender() {
   if (renderTimer) return;
-  renderTimer = setTimeout(() => { renderTimer = null; renderAll(); }, 1500);
+  renderTimer = setTimeout(() => { renderTimer = null; renderAll(true); }, 1500);
 }
 
 function setInfo(html) { document.getElementById('refreshInfo').innerHTML = html; }
@@ -1636,11 +1642,15 @@ function updateInfo() {
 }
 
 /* ---------- render wszystkiego ---------- */
-function renderAll() {
-  render();
+// lite = odświeżenie po ticku cen: liczymy tylko to, co widać; reszta przy wejściu w zakładkę
+function renderAll(lite) {
+  if (lite && document.visibilityState === 'hidden') { renderAll.stale = true; return; }
+  const on = id => !lite || activeTab === id;
+  if (on('portfolio')) render();
+  else if (tileModal && Date.now() - (render.tileAt || 0) > 2000) { render.tileAt = Date.now(); renderTileModal(); }
   generateTasks();
-  renderGoal();
-  renderBudget();
+  if (on('goal')) renderGoal();
+  if (on('budget')) renderBudget();
   updateInfo();
   takeSnapshot();
   if (activeTab === 'savings' && isUnlocked()) {
@@ -1651,11 +1661,16 @@ function renderAll() {
   }
   if (activeTab === 'goal') renderMonth();
   if (activeTab === 'risk') { renderLadder(); renderRisk(); }
-  if (modalSym) openModal(modalSym);
-  const toSave = {};
-  for (const [s, p] of Object.entries(prices)) toSave[s] = {usd: p.usd, ts: p.ts, ch24: p.ch24};
-  lsSet(LS.prices, toSave);
+  if (modalSym && (!lite || Date.now() - (renderAll.modalAt || 0) > 3000)) { renderAll.modalAt = Date.now(); openModal(modalSym); }
+  renderAll.stale = !!lite;
+  if (!lite || Date.now() - (renderAll.savedAt || 0) > 30000) {
+    renderAll.savedAt = Date.now();
+    const toSave = {};
+    for (const [s, p] of Object.entries(prices)) toSave[s] = {usd: p.usd, ts: p.ts, ch24: p.ch24};
+    lsSet(LS.prices, toSave);
+  }
 }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && renderAll.stale) renderAll(); });
 
 /* ---------- widok portfela ---------- */
 /* =========================================================
@@ -1803,7 +1818,6 @@ function render() {
   renderPfHero(rows, totVal, totCost);
   renderPfList(renderTable.list || []);
   loadCoinIcons();
-  if (activeTab === 'today' && Date.now() - (render.todayAt || 0) > 1500) { render.todayAt = Date.now(); renderToday(); }
 }
 
 function renderAllocation(rows, total) {
@@ -2110,6 +2124,7 @@ function contributionPlan(amount) {
     const over = x => STRATEGY[x.sym]?.target > 0 && total > 0 && valuePln(x.sym) / total * 100 >= STRATEGY[x.sym].target;
     let sp = goal.split.filter(x => x.pct > 0 && !isStable(x.sym));
     if (sp.some(x => !over(x))) sp = sp.filter(x => !over(x));
+    if (sp.some(x => pricePln(x.sym) > 0)) sp = sp.filter(x => pricePln(x.sym) > 0);   // bez ceny nie da się kupić (np. moneta spoza portfela z planu AI)
     const ssum = sp.reduce((t, x) => t + x.pct, 0) || 1;
     rows = sp.map(x => { const a = rest * x.pct / ssum, pp = pricePln(x.sym); return {sym: x.sym, amount: a, qty: pp > 0 ? a / pp : 0, before: total > 0 ? valuePln(x.sym) / total * 100 : 0, afterPct: after > 0 ? (valuePln(x.sym) + a) / after * 100 : 0, target: STRATEGY[x.sym]?.target ?? '—', note: x.note}; });
   } else rows = rest >= MIN_ORDER_PLN ? splitContribution(rest, {extra: res}).rows : [];
@@ -2257,7 +2272,7 @@ function renderJournal() {
         <td><span class="tag tag-${e.type}">${e.type === 'buy' ? 'zakup' : 'sprzedaż'}</span></td>
         <td class="num">${zl2(e.pln)}</td>
         <td class="small muted">${[e.orig ? `${esc(e.orig)} × ${fixed(e.rate, 4)}${e.table ? ' (' + esc(e.table) + ')' : ''}` : '', esc(e.exch || ''), esc(e.note || '')].filter(Boolean).join(' · ')}</td>
-        <td><button class="icon" title="Usuń" onclick="deleteEntry('${esc(e.id)}')">✕</button></td>
+        <td><button class="icon" title="Usuń" onclick="deleteEntry(${jsArg(e.id)})">✕</button></td>
       </tr>`).join('')}</tbody></table>
       <div class="year-actions"><button class="action secondary" onclick="exportCsv('${y}')">Pobierz CSV ${y} (dla księgowego)</button></div>
     </details>`;
@@ -2454,14 +2469,14 @@ function collectData() {
           vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
           pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom), fin: lsGet(LS.fin)};
 }
-const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && typeof d.holdings === 'object' && Array.isArray(d.journal);
+const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && d.holdings && typeof d.holdings === 'object' && !Array.isArray(d.holdings) && Array.isArray(d.journal);
 function applyData(d) {
   holdings = d.holdings; sanitizeHoldings(); saveHoldings();
   journal = d.journal.filter(validEntry); saveJournal();
   if (d.goal) { goal = {...GOAL_DEFAULTS, ...d.goal}; lsSet(LS.goal, goal); loadGoalInputs(); }
   if (d.layout) { loadLayout(d.layout); saveLayout(); renderNav(); renderColSettings(); }
   if (d.pit && typeof d.pit === 'object') { FILED_PIT = d.pit; lsSet(LS.pit, FILED_PIT); }
-  if (d.ladder && typeof d.ladder === 'object') { ladder = d.ladder; saveLadder(); }
+  if (d.ladder && typeof d.ladder === 'object') { ladder = Object.fromEntries(Object.entries(d.ladder).filter(([k, v]) => /^[A-Z0-9]{1,15}$/.test(k) && Array.isArray(v))); saveLadder(); }
   if (d.snapshots && typeof d.snapshots === 'object') { snaps = {...d.snapshots, ...snaps}; lsSet(LS.snaps, snaps); }
   if (d.vault && d.vault.pinWrap) { lsSet(LS.vault, d.vault); try { localStorage.removeItem(LS.savPlain); } catch (e) {} }
   else if (d.savingsPlain) lsSet(LS.savPlain, d.savingsPlain);
@@ -2529,7 +2544,7 @@ function openModal(sym) {
       <div><span>Wartość</span><strong class="sens">${r.hasPrice ? money(r.value) : '—'}</strong></div>
       <div><span>Wynik</span><strong class="sens ${r.hasPrice ? (r.pl >= 0 ? 'positive' : 'negative') : ''}">${r.hasPrice ? `${signed(r.pl, money)} (${signed(r.plPct, pct)})` : '—'}</strong></div>
     </div>
-    <div class="cm-plan"><strong>Według planu:</strong> ${c.target ? `cel ${c.target}% portfela, teraz ${r.hasPrice ? pct(r.alloc) : '—'}. ` : ''}${cap(describeRule(sym)).replace(/\.?$/, '.')}</div>
+    <div class="cm-plan"><strong>Według planu:</strong> ${c.target ? `cel ${c.target}% portfela, teraz ${r.hasPrice ? pct(r.alloc) : '—'}. ` : ''}${esc(cap(describeRule(sym)).replace(/\.?$/, '.'))}</div>
     <div class="form-row" style="margin:.2rem 0 .6rem">
       <button class="action" style="flex:1" onclick="closeModal();quickAdd('${sym}')">Kup / Sprzedaj</button>
       <button class="action secondary" style="flex:1" onclick="closeModal();openTab('market');setSub('market','quotes');setTimeout(()=>{try{mkSelect('${sym}',true)}catch(e){}},300)">Wykres w Rynku</button>
@@ -2551,9 +2566,9 @@ function describeRule(sym) {
   const c = STRATEGY[sym];
   if (!c) return '—';
   switch (c.status) {
-    case 'core':    return `dokupuj przy cenie ≤ ${usd(c.buyBelow)} (sugestia: ${c.buyPct}% obecnej pozycji, w ramach budżetu)`;
+    case 'core':    return `dokupuj przy cenie ≤ ${usd(c.buyBelow)} (sugestia: ${c.buyPct || 30}% obecnej pozycji, w ramach budżetu)`;
     case 'hold':    return c.buyBelow
-                      ? `${c.note}; dokupienie tylko przy ≤ ${usd(c.buyBelow)} (max ${c.buyPct}% pozycji)`
+                      ? `${c.note}; dokupienie tylko przy ≤ ${usd(c.buyBelow)} (max ${c.buyPct || 30}% pozycji)`
                       : c.note;
     case 'reduce':  return c.reboundPct ? `przy odbiciu +${c.reboundPct}% od ${c.reboundBase ? `ceny z ${fmtDate(c.reboundAt)} (${usd(c.reboundBase)})` : 'średniej'} sprzedaj ${c.sellPct || 100}%, kapitał do rdzenia` : `wygaszaj – kapitał do rdzenia${c.note ? '; ' + c.note : ''}`;
     case 'lottery': return c.sellAt
@@ -3345,11 +3360,15 @@ async function applyOp(op) {
     const qu = await usdOfAsset(op.quote, op.ts);
     unitUsd = qu ? op.total * qu / op.qty : null;
   }
+  // bez kursu nie zmieniamy niczego – transakcja zostaje na liście do ponownego dodania
+  if ((op.side === 'buy' && !(unitUsd > 0)) || (fiat && !(totalPln > 0))) throw new Error(`brak kursu ${op.quote} z ${day} (${op.base}) – spróbuj ponownie za chwilę`);
   const feeIn = a => op.fee > 0 && op.feeAsset === a ? op.fee : 0;
   if (op.side === 'buy') {
     const qty = op.qty - feeIn(op.base);
     if (qty > 0 && unitUsd > 0) {
-      const cur = holdings[op.base], unitPln = fiat ? totalPln / qty : unitUsd * usdRate;
+      const cur = holdings[op.base], qh = !fiat && holdings[op.quote];
+      // krypto→krypto: koszt w zł przechodzi z monety, którą zapłacono (tak samo jak przy ręcznym wpisie)
+      const unitPln = fiat ? totalPln / qty : qh && qh.qty > 0 ? Math.min(op.total, qh.qty) * avgPlnOf(qh) / qty + Math.max(0, op.total - qh.qty) * (unitUsd * op.qty / op.total) * usdRate / qty : unitUsd * usdRate;
       if (!cur) holdings[op.base] = {qty: +qty.toPrecision(12), avg: unitUsd * op.qty / qty, avgPln: unitPln};
       else {
         const nq = cur.qty + qty;
@@ -3360,7 +3379,14 @@ async function applyOp(op) {
   } else {
     const cur = holdings[op.base];
     if (cur) { cur.qty = +(cur.qty - op.qty - feeIn(op.base)).toPrecision(12); if (cur.qty <= 1e-12) delete holdings[op.base]; }
-    if (!fiat && holdings[op.quote]) holdings[op.quote].qty = +(holdings[op.quote].qty + op.total - feeIn(op.quote)).toPrecision(12);
+    if (!fiat) {
+      const q = holdings[op.quote], add = op.total - feeIn(op.quote);
+      if (q) q.qty = +(q.qty + add).toPrecision(12);
+      else if (add > 0 && (STRATEGY[op.quote] || USD_STABLE.has(op.quote))) {
+        const qu = await usdOfAsset(op.quote, op.ts);
+        if (qu > 0) holdings[op.quote] = {qty: +add.toPrecision(12), avg: qu, avgPln: qu * usdRate};
+      }
+    }
   }
   if (op.fee > 0 && op.feeAsset && ![op.base, op.quote].includes(op.feeAsset) && holdings[op.feeAsset]) {
     holdings[op.feeAsset].qty = Math.max(0, holdings[op.feeAsset].qty - op.fee);
@@ -3709,7 +3735,7 @@ function payCalc() {
     // koszt w PLN przechodzi z oddanej monety (ważne dla PIT: wymiana krypto→krypto nie zmienia kosztu)
     return {payCoin: c, payAmt: unit * qty, pUsd: unit * pxUsd, pPln: unit * avgPlnOf(h), totPln: unit * qty * avgPlnOf(h), totUsd: unit * qty * pxUsd};
   }
-  return cur === 'PLN' ? {pPln: unit, pUsd: unit / usdPlnRate, totPln: unit * qty} : {pUsd: unit, pPln: unit * usdPlnRate, totPln: unit * usdPlnRate * qty};
+  return cur === 'PLN' ? {pPln: unit, pUsd: unit / usdPlnRate, totPln: unit * qty} : {pUsd: unit, pPln: unit * usdPlnRate, totPln: unit * usdPlnRate * qty, totUsd: unit * qty, usdPay: true};
 }
 function payPreview() {
   const el = document.getElementById('payInfo');
@@ -3741,7 +3767,7 @@ function applyEdit() {
   const toJournal = document.getElementById('editJournal').checked;
   const cur = holdings[sym];
   const isNew = !cur;
-  let entry = null;
+  let entry = null, usdTot = 0;
 
   if (!(qty > 0)) return editMsg('Podaj poprawną ilość.', false);
 
@@ -3768,6 +3794,7 @@ function applyEdit() {
         paid = c;
       }
       pUsdX = c.pUsd; pPlnX = c.pPln;
+      if (c.usdPay) usdTot = c.totUsd;
     }
     if (!(pUsdX > 0)) return editMsg('Podaj poprawną cenę w USD.', false);
     const pPln = pPlnX > 0 ? pPlnX : null;
@@ -3802,7 +3829,15 @@ function applyEdit() {
   }
   saveHoldings();
   if (entry) {
-    journal.push({id: 'u' + Date.now().toString(36), ...entry});
+    const je = {id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry};
+    journal.push(je);
+    // zapłata w USD: do PIT liczy się kurs NBP z dnia roboczego przed transakcją – poprawiamy wpis, gdy NBP odpowie
+    if (entry.type === 'buy' && usdTot > 0) nbpBefore('USD', je.date).then(r => {
+      const e = journal.find(x => x.id === je.id);
+      if (!e || !(r > 0)) return;
+      Object.assign(e, {pln: round2(usdTot * r), orig: String(round2(usdTot)).replace('.', ','), rate: r, cur: 'USD'});
+      saveJournal(); renderJournal(); renderAll();
+    }).catch(() => {});
     saveJournal();
     renderJournal();
     const el = document.getElementById('editMessage');
@@ -3852,18 +3887,18 @@ function generateTasks() {
     if (!pos || !(p > 0)) continue;
 
     if (c.buyBelow && p <= c.buyBelow) {
-      const planQty = pos.qty * c.buyPct / 100;
+      const bp = c.buyPct > 0 ? c.buyPct : 30, planQty = pos.qty * bp / 100;   // puste pole w strategii = domyślnie 30%
       const pp = p * usdPlnRate;
       const planPln = planQty * pp;
       const head = `${sym}: cena ${usd(p)} ≤ ${usd(c.buyBelow)} (Twoja średnia ${usd(pos.avg)}).`;
       let tail;
       if (!(curMonthly() > 0)) {
-        tail = `${c.optional ? 'Max' : 'Sugestia:'} ~${fmtQty(planQty)} ${sym} (≈ ${zl(planPln)}, ${c.buyPct}% pozycji).`;
+        tail = `${c.optional ? 'Max' : 'Sugestia:'} ~${fmtQty(planQty)} ${sym} (≈ ${zl(planPln)}, ${bp}% pozycji).`;
       } else if (left < MIN_ORDER_PLN) {
         tail = `Plan: ~${fmtQty(planQty)} ${sym} (≈ ${zl(planPln)}), ale budżet na ${mName} jest wykorzystany.`;
       } else {
         const q = Math.min(planQty, left / pp);
-        tail = `${c.optional ? 'Max' : 'Sugestia:'} ~${fmtQty(q)} ${sym} (≈ ${zl(q * pp)}${q < planQty ? `, ograniczone budżetem – zostało ${zl(left)}` : `, ${c.buyPct}% pozycji`}).`;
+        tail = `${c.optional ? 'Max' : 'Sugestia:'} ~${fmtQty(q)} ${sym} (≈ ${zl(q * pp)}${q < planQty ? `, ograniczone budżetem – zostało ${zl(left)}` : `, ${bp}% pozycji`}).`;
       }
       tasks.push({type:'buy', label: c.optional ? 'OPCJONALNIE DOKUP' : 'DOKUP', msg: `${head} ${tail}`});
     }
@@ -3913,17 +3948,15 @@ function updateNotifications() {
   const badge = document.getElementById('bellBadge');
   badge.textContent = n;
   badge.style.display = n ? 'flex' : 'none';
-  document.getElementById('notifPanel').innerHTML = tasks.length
-    ? tasks.map(taskHtml).join('')
-    : '<div class="notif-item">Brak aktywnych zadań kupna/sprzedaży.</div>';
+  const h = tasks.length ? tasks.map(taskHtml).join('') : '<div class="notif-item">Brak aktywnych zadań kupna/sprzedaży.</div>';
+  if (h !== updateNotifications.h) { updateNotifications.h = h; document.getElementById('notifPanel').innerHTML = h; }
 }
 
 function renderTasks() {
   if (typeof renderToday === 'function' && activeTab === 'today') renderToday();
   const noPrices = !Object.keys(prices).length;
-  document.getElementById('tasksList').innerHTML = tasks.length
-    ? tasks.map(taskHtml).join('')
-    : `<p class="muted">${noPrices ? 'Brak zadań – odśwież ceny.' : 'Brak aktywnych zadań przy obecnych cenach.'}</p>`;
+  const h = tasks.length ? tasks.map(taskHtml).join('') : `<p class="muted">${noPrices ? 'Brak zadań – odśwież ceny.' : 'Brak aktywnych zadań przy obecnych cenach.'}</p>`;
+  if (h !== renderTasks.h) { renderTasks.h = h; document.getElementById('tasksList').innerHTML = h; }
 }
 
 /* ---------- powiadomienia ---------- */
@@ -4053,7 +4086,12 @@ function cardifyTables(root = document) {
 (function cardObserver() {
   let tm = null;
   const run = () => { tm = null; cardifyTables(); };
-  new MutationObserver(() => { if (!tm) tm = setTimeout(run, 60); }).observe(document.body, {childList: true, subtree: true});
+  // reaguje tylko, gdy w DOM pojawiła się tabela lub wiersz – zmiany samego tekstu (ceny, animowane liczby) są pomijane
+  const hasRows = n => n.nodeType === 1 && (n.tagName === 'TABLE' || n.tagName === 'TR' || n.tagName === 'TBODY' || (n.firstElementChild && n.querySelector('tr')));
+  new MutationObserver(ms => {
+    if (tm) return;
+    for (const m of ms) { if (m.target.closest?.('#market')) continue; for (const n of m.addedNodes) if (hasRows(n)) { tm = setTimeout(run, 60); return; } }
+  }).observe(document.body, {childList: true, subtree: true});
   setTimeout(run, 0);
 })();
 
@@ -4167,8 +4205,14 @@ function afterReorder(id) {
     lsSet('ccOrder_' + id, keys);
     afterReorder(id);
   }
-  document.addEventListener('touchstart', e => { const b = e.target.closest(SEL); if (b && e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY, b); else cancel(); }, {passive: true});
-  document.addEventListener('touchmove', e => { if (st) move(e.touches[0].clientX, e.touches[0].clientY, e); }, {passive: false});
+  // touchmove tylko na trzymanym kafelku – bez globalnego, nie-pasywnego nasłuchu przewijanie na iPhonie jest płynne
+  const onTMove = e => { if (st) move(e.touches[0].clientX, e.touches[0].clientY, e); };
+  let tEl = null;
+  document.addEventListener('touchstart', e => {
+    if (tEl) { tEl.removeEventListener('touchmove', onTMove); tEl = null; }
+    const b = e.target.closest(SEL);
+    if (b && e.touches.length === 1) { tEl = e.target; tEl.addEventListener('touchmove', onTMove, {passive: false}); start(e.touches[0].clientX, e.touches[0].clientY, b); } else cancel();
+  }, {passive: true});
   document.addEventListener('touchend', end);
   document.addEventListener('touchcancel', () => cancel());
   document.addEventListener('mousedown', e => { if (e.button !== 0) return; const b = e.target.closest(SEL); if (b) start(e.clientX, e.clientY, b); });
@@ -4343,7 +4387,7 @@ function loadFngToday() {
   loadFngToday.busy = true;
   fetchJson('https://api.alternative.me/fng/?limit=1').then(d => {
     const x = d?.data?.[0];
-    if (x) { mkt.fng = {v: +x.value, cls: x.value_classification}; mkt.fngAt = Date.now(); renderToday(); }
+    if (x) { mkt.fng = {v: +x.value, cls: fngCls(x.value_classification)}; mkt.fngAt = Date.now(); renderToday(); }
   }).catch(() => {}).finally(() => { loadFngToday.busy = false; });
 }
 function todayUpcoming() {
@@ -4487,48 +4531,9 @@ function quickAdd(sym) {
 function toggleNav(force) {
   document.body.classList.toggle('nav-open', typeof force === 'boolean' ? force : !document.body.classList.contains('nav-open'));
 }
-/* Telefon: menu wysuwa się przeciągnięciem palcem od lewej krawędzi, chowa przeciągnięciem w lewo albo stuknięciem obok */
-(function navGestures() {
-  const mq = window.matchMedia('(max-width:0px)');      // v23: na telefonie jest dolny pasek zamiast menu z boku
-  const nav = document.getElementById('sidebar'), bd = document.querySelector('.nav-backdrop');
-  const EDGE = 30;
-  let g = null;
-  const isOpen = () => document.body.classList.contains('nav-open');
-  document.addEventListener('touchstart', e => {
-    g = null;
-    if (!mq.matches || e.touches.length !== 1 || (typeof editing !== 'undefined' && editing)) return;
-    const t = e.touches[0], open = isOpen();
-    if (!open && t.clientX > EDGE) return;
-    g = {x0: t.clientX, y0: t.clientY, open, w: nav.offsetWidth * 1.05, drag: false, off: 0, lx: t.clientX, lt: e.timeStamp, v: 0};
-  }, {passive: true});
-  document.addEventListener('touchmove', e => {
-    if (!g) return;
-    const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
-    if (!g.drag) {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      if (Math.abs(dy) > Math.abs(dx) || (g.open && dx > 0) || (!g.open && dx < 0)) { g = null; return; }
-      g.drag = true;
-      document.body.classList.add('nav-dragging');
-    }
-    if (e.cancelable) e.preventDefault();
-    g.off = g.open ? Math.max(-g.w, Math.min(0, dx)) : Math.max(-g.w, Math.min(0, -g.w + dx));
-    nav.style.transform = `translateX(${g.off}px)`;
-    bd.style.opacity = String(1 + g.off / g.w);
-    bd.style.pointerEvents = 'none';
-    const dt = Math.max(1, e.timeStamp - g.lt);
-    g.v = (t.clientX - g.lx) / dt; g.lx = t.clientX; g.lt = e.timeStamp;
-  }, {passive: false});
-  const end = () => {
-    const s = g; g = null;
-    if (!s || !s.drag) return;
-    document.body.classList.remove('nav-dragging');
-    nav.style.transform = ''; bd.style.opacity = ''; bd.style.pointerEvents = '';
-    const open = s.v > 0.3 ? true : s.v < -0.3 ? false : (s.w + s.off) > s.w / 2;
-    toggleNav(open);
-  };
-  document.addEventListener('touchend', end);
-  document.addEventListener('touchcancel', end);
-  bd.addEventListener('touchend', e => { if (isOpen() && !document.body.classList.contains('nav-dragging')) { e.preventDefault(); toggleNav(false); } });
+(function navBackdrop() {
+  const bd = document.querySelector('.nav-backdrop');
+  if (bd) bd.addEventListener('touchend', e => { if (document.body.classList.contains('nav-open')) { e.preventDefault(); toggleNav(false); } });
 })();
 
 function openTab(id) {
@@ -4539,7 +4544,8 @@ function openTab(id) {
   if (!editing) document.body.classList.remove('nav-open');
   document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === id));
   updateNavState();
-  if (id === 'today') renderToday();
+  if (renderAll.stale && id !== prevTab) renderAll();
+  else if (id === 'today') renderToday();
   document.body.classList.toggle('tab-edit', id === 'edit');
   window.scrollTo({top: 0});
   if (id === 'risk') { renderLadder(); renderRisk(); loadRiskData(); }
@@ -4558,18 +4564,7 @@ function openTab(id) {
 const usdM = n => (n < 0 ? '-$' : '$') + fixed(Math.abs(n), 2);
 const usdP = n => '$' + (n >= 1000 ? fixed(n, 2) : fmtPrice(n));
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
-function rsi(cl, n = 14) {
-  if (cl.length < n + 1) return null;
-  let g = 0, l = 0;
-  for (let i = 1; i <= n; i++) { const d = cl[i] - cl[i - 1]; if (d > 0) g += d; else l -= d; }
-  g /= n; l /= n;
-  for (let i = n + 1; i < cl.length; i++) {
-    const d = cl[i] - cl[i - 1];
-    g = (g * (n - 1) + Math.max(d, 0)) / n;
-    l = (l * (n - 1) + Math.max(-d, 0)) / n;
-  }
-  return l === 0 ? 100 : 100 - 100 / (1 + g / l);
-}
+function rsi(cl, n = 14) { const o = rsiS(cl, n); return o.length ? o[o.length - 1] : null; }   // ostatnia wartość serii
 function beep() {
   try {
     const ctx = beep.ctx || (beep.ctx = new (window.AudioContext || window.webkitAudioContext)());
@@ -4612,8 +4607,6 @@ const riskData = {};                   // SYM → {daily:[{t,o,h,l,c}], at}
 const mkt = {fng: null, fngAt: 0, cg: {}, cgAt: 0};
 let riskLoading = false;
 const notifiedLadder = new Set();
-const riskOpen = new Set();
-let riskOpenInit = false;
 const saveLadder = () => lsSet(LS.ladder, ladder);
 const isStable = s => statusOf(s) === 'stable';
 const riskCoins = () => Object.keys(holdings).filter(s => STRATEGY[s] && !isStable(s)).sort((a, b) => valuePln(b) - valuePln(a));
@@ -4644,7 +4637,7 @@ async function loadRiskData() {
   if (Date.now() - mkt.fngAt > 30 * 60000) {
     jobs.push(fetchJson('https://api.alternative.me/fng/?limit=1').then(d => {
       const x = d?.data?.[0];
-      if (x) { mkt.fng = {v: +x.value, cls: x.value_classification}; mkt.fngAt = Date.now(); }
+      if (x) { mkt.fng = {v: +x.value, cls: fngCls(x.value_classification)}; mkt.fngAt = Date.now(); }
     }).catch(() => null));
   }
   await Promise.all(jobs);
@@ -4783,7 +4776,6 @@ function levelsTable(sym, levels, opts = {}) {
     <p class="small muted" style="margin:.35rem 0 0">Po wszystkich szczeblach zostaje ok. <strong>${Math.round(remain)}%</strong> pozycji. Procent liczy się od tego, co zostanie po wcześniejszych szczeblach.</p>`;
 }
 
-function riskToggle(s, open) { if (open) riskOpen.add(s); else riskOpen.delete(s); }
 
 /* =========================================================
    ZYSKI I RYZYKO (v30): zwarta lista monet z najbliższym progiem; pełna analiza w oknie od dołu
@@ -4821,11 +4813,10 @@ function riskRowHtml(s) {
 function renderRisk() {
   if (activeTab !== 'risk') return;
   const f = mkt.fng;
-  const fngPl = {'Extreme Fear':'skrajny strach', 'Fear':'strach', 'Neutral':'neutralnie', 'Greed':'chciwość', 'Extreme Greed':'skrajna chciwość'};
   const coins = riskCoins().slice().sort((x, y) => valuePln(y) - valuePln(x));
   const hits = coins.filter(s => nextLevel(s)?.hit);
   document.getElementById('riskMarket').innerHTML = riskLoading ? 'Pobieram i analizuję dane historyczne…'
-    : `${f ? `Nastroje rynku: <strong>${f.v}/100 – ${fngPl[f.cls] || f.cls}</strong>` : ''}${hits.length ? ` · <strong style="color:var(--orange)">Osiągnięte progi: ${hits.join(', ')}</strong>` : ''}`;
+    : `${f ? `Nastroje rynku: <strong>${f.v}/100 – ${esc(BRIEF.FG_PL[String(f.cls || '').toLowerCase()] || f.cls)}</strong>` : ''}${hits.length ? ` · <strong style="color:var(--orange)">Osiągnięte progi: ${hits.join(', ')}</strong>` : ''}`;
   setHtmlKeepIcons(document.getElementById('riskBody'), `<div class="rk-list">${coins.map(riskRowHtml).join('') || '<p class="muted">Brak monet do analizy.</p>'}</div>`);
   if (tileModal === 'risk') renderTileModal();
 }
@@ -4996,7 +4987,8 @@ let lastSnapAt = 0;
 const netFlows = (from, to) => journal.filter(e => e.date > from && e.date <= to).reduce((a, e) => a + (e.type === 'buy' ? e.pln : -e.pln), 0);
 
 function takeSnapshot() {
-  if (Date.now() - lastSnapAt < 60000) return;
+  // pierwszy zapis dnia od razu, potem co 15 min (cała historia to ~300 KB do serializacji)
+  if (Date.now() - lastSnapAt < (snaps[todayStr()] ? 15 * 60000 : 60000)) return;
   const held = Object.keys(holdings);
   const fresh = held.filter(s => prices[s]?.usd > 0 && prices[s].src !== 'pamięć');
   if (!held.length || fresh.length < held.length * 0.8) return;
@@ -5489,7 +5481,6 @@ const toPln = a => a.cur === 'USD' ? a.amount * usdPlnRate : a.cur === 'EUR' ? a
 const savCat = a => a.form === 'cash' ? 'cash' : (a.kind || 'free');
 const ymLabel = ym => monthName(ym);
 const prevYm = () => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.toLocaleDateString('sv-SE').slice(0, 7); };
-const daysTo = date => Math.ceil((Date.parse(date + 'T00:00:00') - Date.parse(todayStr() + 'T00:00:00')) / 86400000);
 
 /* --- widok zakładki --- */
 function renderSavings() {
@@ -5913,8 +5904,8 @@ function renderMacro() {
         <button class="action secondary" onclick="loadLiveMacro(true)">↻ Odśwież</button>
       </div>
       <div class="summary-bar">
-        <div class="summary-item"><span>Stopa referencyjna NBP</span><strong>${fixed(ref, 2)}%</strong><span>${LIVE.ref ? 'od ' + fmtDate(LIVE.refSince || M.refSince) : 'decyzja ' + fmtDate(M.refDecision)} ${tagLive(!!LIVE.ref)}</span></div>
-        <div class="summary-item"><span>Inflacja</span><strong>${fixed(infl, 1)}%</strong><span>${LIVE.infl ? 'HICP ' + LIVE.inflMonth + ' (Eurostat)' : 'CPI ' + M.cpiMonth + ' (GUS)'} ${tagLive(!!LIVE.infl)}</span></div>
+        <div class="summary-item"><span>Stopa referencyjna NBP</span><strong>${fixed(ref, 2)}%</strong><span>${LIVE.ref ? 'od ' + esc(fmtDate(LIVE.refSince || M.refSince)) : 'decyzja ' + fmtDate(M.refDecision)} ${tagLive(!!LIVE.ref)}</span></div>
+        <div class="summary-item"><span>Inflacja</span><strong>${fixed(infl, 1)}%</strong><span>${LIVE.infl ? 'HICP ' + esc(LIVE.inflMonth) + ' (Eurostat)' : 'CPI ' + M.cpiMonth + ' (GUS)'} ${tagLive(!!LIVE.infl)}</span></div>
         <div class="summary-item"><span>Realna stopa (NBP − inflacja)</span><strong class="${real >= 0 ? 'positive' : 'negative'}">${signed(real, v => fixed(v, 2) + ' pp')}</strong><span>${real < 0 ? 'pieniądz bez oprocentowania traci na wartości' : 'stopa NBP powyżej inflacji'}</span></div>
         <div class="summary-item"><span>Złoto (1 g, NBP)</span><strong>${LIVE.gold ? fixed(LIVE.gold, 2) + ' zł' : '—'}</strong><span>${LIVE.gold ? `30 dni: ${signed(LIVE.goldCh, pct)}` : (LIVE.loading ? 'ładowanie…' : 'brak danych')}</span></div>
         <div class="summary-item"><span>Kursy NBP</span><strong>${fixed(usdPlnRate, 4)}</strong><span>USD/PLN${eurPlnRate ? ` · EUR ${fixed(eurPlnRate, 4)}` : ''}</span></div>
@@ -6157,7 +6148,7 @@ async function mkLoadSparks(force) {
 async function mkLoadMarket(force) {
   const now = Date.now(), jobs = [];
   if (force || now - MK.fngAt > 30 * 60000) jobs.push(fetchJson('https://api.alternative.me/fng/?limit=31').then(d => {
-    if (Array.isArray(d?.data) && d.data.length) { MK.fng = d.data.map(x => ({v: +x.value, cls: x.value_classification})); MK.fngAt = Date.now(); mkt.fng = MK.fng[0]; mkt.fngAt = Date.now(); }
+    if (Array.isArray(d?.data) && d.data.length) { MK.fng = d.data.map(x => ({v: +x.value, cls: fngCls(x.value_classification)})); MK.fngAt = Date.now(); mkt.fng = MK.fng[0]; mkt.fngAt = Date.now(); }
   }).catch(() => null));
   if (force || now - MK.globalAt > 10 * 60000) jobs.push(fetchJson('https://api.coingecko.com/api/v3/global').then(d => {
     const g = d?.data; if (g) { MK.global = {cap: g.total_market_cap?.usd, vol: g.total_volume?.usd, ch: g.market_cap_change_percentage_24h_usd, btc: g.market_cap_percentage?.btc, eth: g.market_cap_percentage?.eth}; MK.globalAt = Date.now(); }
@@ -6427,7 +6418,6 @@ function mkStatus() {
 }
 
 /* ---------- przegląd rynku ---------- */
-const FNG_PL = {'Extreme Fear': 'skrajny strach', 'Fear': 'strach', 'Neutral': 'neutralnie', 'Greed': 'chciwość', 'Extreme Greed': 'skrajna chciwość'};
 function mkRenderOverview() {
   const el = document.getElementById('mkOverview');
   if (!el) return;
@@ -6436,7 +6426,7 @@ function mkRenderOverview() {
   const fngCol = v => v <= 25 ? 'var(--red)' : v <= 45 ? 'var(--orange)' : v < 55 ? 'var(--text)' : v < 75 ? 'var(--green)' : 'var(--green)';
   el.innerHTML = `
     <div class="summary-item"><span>Bitcoin</span><strong id="mkOvBtc">${btc ? mP(btc.c) : '—'}</strong><span id="mkOvBtcCh">${btc ? chg((btc.c / btc.o - 1) * 100) + ' / 24 h' : ''}</span></div>
-    <div class="summary-item"><span>Strach i chciwość</span><strong style="color:${f ? fngCol(f[0].v) : 'inherit'}">${f ? f[0].v + ' · ' + (FNG_PL[f[0].cls] || f[0].cls) : '—'}</strong>
+    <div class="summary-item"><span>Strach i chciwość</span><strong style="color:${f ? fngCol(f[0].v) : 'inherit'}">${f ? f[0].v + ' · ' + esc(BRIEF.FG_PL[String(f[0].cls || '').toLowerCase()] || f[0].cls) : '—'}</strong>
       <span>${f && f.length > 30 ? `wczoraj ${f[1].v} · tydz. ${f[7].v} · mies. ${f[30].v}` : 'alternative.me'}</span></div>
     <div class="summary-item"><span>Kapitalizacja krypto</span><strong>${g ? bigMoney(g.cap) : '—'}</strong><span>${g ? chg(g.ch) + ' / 24 h' : 'CoinGecko'}</span></div>
     <div class="summary-item"><span>Dominacja BTC</span><strong>${g?.btc ? pct(g.btc) : '—'}</strong><span>${g?.eth ? 'ETH ' + pct(g.eth) : ''}</span></div>
@@ -7288,7 +7278,9 @@ document.addEventListener('visibilitychange', () => {
 setInterval(() => { if (cloudReady() && cloudMeta().dirty && !CL.pushing && document.visibilityState === 'visible') cloudPush(); }, 60000);
 
 /* ---------- logowanie, zakładanie konta ---------- */
-const localHasData = () => Object.keys(holdings || {}).length > 0 || (journal || []).length > 0;
+// dane wbudowane (ORIGINAL/HISTORY) nie liczą się jako „dane z tego urządzenia”
+const localIsSeed = () => JSON.stringify(holdings) === JSON.stringify(ORIGINAL) && (journal || []).every(e => /^h\d+$/.test(e.id || ''));
+const localHasData = () => !localIsSeed() && (Object.keys(holdings || {}).length > 0 || (journal || []).length > 0);
 async function cloudSignUp(email, pw, pw2) {
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Wpisz poprawny adres e-mail.');
   if (pw.length < 8) throw new Error('Hasło musi mieć co najmniej 8 znaków.');
@@ -8073,6 +8065,15 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '35', date: '2026-10-29', title: 'Przegląd kodu: poprawki i szybsze działanie', items: [
+    'Powiadomienia: zmiany progów, strategii, płatności i ważnych dat znów trafiają na serwer także przy cenach na żywo (wcześniej ciągłe odświeżanie cen blokowało wysyłkę).',
+    'Prywatność: powiadomienie w dniu dopłaty nie zawiera już kwot – serwer dostaje tylko progi, wagi i nazwy, a kwotę i podział widzisz w aplikacji.',
+    'Import z giełdy: gdy nie uda się pobrać kursu, transakcja nie jest dodawana „na pół” (bez znikających monet) i zostaje na liście do ponownego dodania. Sprzedaż za stablecoina, którego nie masz, tworzy pozycję. Wymiana krypto→krypto przenosi koszt w zł jak przy ręcznym wpisie.',
+    'Kupno za USD w formularzu: wpis w dzienniku PIT liczony po kursie NBP z dnia roboczego przed transakcją.',
+    'Logowanie na nowym urządzeniu: dane przykładowe nie są traktowane jak Twoje i nie nadpiszą chmury.',
+    'Szybkość na iPhonie: przy każdej zmianie ceny odświeża się tylko widoczna zakładka, płynniejsze przewijanie (bez globalnych blokad dotyku), rzadsze zapisy historii i cen, w tle po minucie zamyka się strumień cen.',
+    'Poprawki: zadania dokupu nie pokazują „NaN”, podział według planu pomija monety bez ceny, bezpieczniejsze wyświetlanie tekstów z kopii zapasowej i zewnętrznych źródeł, serwer powiadomień ponawia zapis stanu.',
+    'Usunięty nieużywany kod.']},
   {v: '34', date: '2026-10-29', title: 'Zmiana wysokości dopłaty i nowy ekran dopłaty', items: [
     'Dopłata: nowy ekran z postępem miesiąca, szybką zmianą kwoty (−/+, gotowe kwoty) i wyborem, czy zmiana działa od tego, czy od następnego miesiąca.',
     'Harmonogram dopłat: zaplanujesz zmianę od wybranego miesiąca (np. od stycznia 2 400 zł), a przy dużej podwyżce jednym stuknięciem rozłożysz ją na 3 miesiące.',
@@ -8237,9 +8238,9 @@ function alertRules() {
     let y = d.getFullYear(), m = d.getMonth();
     if (d.getDate() > day) { m++; if (m > 11) { m = 0; y++; } }
     const date = new Date(y, m, day, 12).toLocaleDateString('sv-SE');
-    const amtM = monthlyFor(date.slice(0, 7)), cpl = amtM > 0 ? contributionPlan(amtM).rows.filter(x => x.amount >= 1) : [];
-    r.push({id: 'dca:' + date.slice(0, 7), at: date + 'T09:00', until: new Date(y, m, day + 3, 12).toLocaleDateString('sv-SE') + 'T23:59', title: 'Dzień dopłaty',
-      body: `Jeśli jeszcze nie dopłaciłeś w tym miesiącu: ${zl(amtM)}${cpl.length ? ' – ' + cpl.map(x => `${x.sym}${x.reserve ? ' (rezerwa)' : ''} ${zl(x.amount)}`).join(', ') : ''}.`});
+    // bez kwot: pole alerts w chmurze nie jest szyfrowane – kwota i podział są tylko w aplikacji
+    if (monthlyFor(date.slice(0, 7)) > 0) r.push({id: 'dca:' + date.slice(0, 7), at: date + 'T09:00', until: new Date(y, m, day + 3, 12).toLocaleDateString('sv-SE') + 'T23:59', title: 'Dzień dopłaty',
+      body: 'Jeśli jeszcze nie dopłaciłeś w tym miesiącu – kwotę i podział znajdziesz w aplikacji (Portfel → Dopłata).'});
   }
   if (typeof calEvents === 'function') calEvents(45).filter(e => e.type === 'unlock' && holdings[e.sym]).forEach(e => {
     const before = new Date(Date.parse(e.date + 'T12:00:00') - 86400000).toLocaleDateString('sv-SE');
@@ -8278,7 +8279,7 @@ async function alertsSync(force, removeMine) {
   } catch (e) { pushMsg = e.message; pushMsgOk = false; }
   if (activeTab === 'settings') { renderPushCard(); renderBriefCard(); }
 }
-function alertsSyncSoon() { clearTimeout(alertsTimer); alertsTimer = setTimeout(() => alertsSync(false), 4000); }
+function alertsSyncSoon() { if (alertsTimer) return; alertsTimer = setTimeout(() => { alertsTimer = null; alertsSync(false); }, 4000); }
 
 async function pushEnable() {
   pushMsg = ''; pushMsgOk = true;

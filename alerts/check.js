@@ -145,8 +145,14 @@ function warsawNow() {
     }
     S.checkedAt = Date.now();
     S.dead = [...new Set(S.dead)].slice(-20);
-    await fetch(`${doc.name.replace(/^projects/, 'https://firestore.googleapis.com/v1/projects')}?updateMask.fieldPaths=alertState`, {method: 'PATCH', headers: {...auth, 'content-type': 'application/json'},
-      body: JSON.stringify({fields: {alertState: {stringValue: JSON.stringify(S)}}})});
+    // bez zapisanego stanu serwer wysłałby te same powiadomienia ponownie przy następnym sprawdzeniu – ponów raz i zgłoś błąd
+    for (let i = 0; i < 2; i++) {
+      const pr = await fetch(`${doc.name.replace(/^projects/, 'https://firestore.googleapis.com/v1/projects')}?updateMask.fieldPaths=alertState`, {method: 'PATCH', headers: {...auth, 'content-type': 'application/json'},
+        body: JSON.stringify({fields: {alertState: {stringValue: JSON.stringify(S)}}})}).catch(e => ({ok: false, status: 0, text: async () => String(e)}));
+      if (pr.ok) break;
+      console.error('zapis alertState nieudany', pr.status, (await pr.text()).slice(0, 300));
+      if (i) process.exitCode = 1; else await new Promise(r => setTimeout(r, 2000));
+    }
   }
   console.log(`Sprawdzono ${docs.length} konto(a), ${now}.`);
 })().catch(e => { console.error(e); process.exit(1); });
