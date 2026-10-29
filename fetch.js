@@ -1,9 +1,9 @@
 // pobiera świece 1h z publicznego API danych Binance (bez klucza) i zapisuje jako CSV
 const fs = require('fs'), zlib = require('zlib');
-const syms = ['BTCUSDT', 'SOLUSDT', 'ETHUSDT'];
+const syms = ['DOGEUSDT', 'AVAXUSDT', 'LINKUSDT', 'XRPUSDT', 'ADAUSDT', 'BNBUSDT', 'DOTUSDT', 'NEARUSDT', 'SUIUSDT', 'PEPEUSDT'];
 (async () => {
   for (const s of syms) {
-    let t = Date.parse('2020-01-01T00:00:00Z'), rows = [];
+    let t = Date.parse('2021-01-01T00:00:00Z'), rows = [];
     while (t < Date.now()) {
       let r, tries = 0;
       for (;;) {
