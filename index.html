@@ -911,7 +911,7 @@
         <div><label for="goal2">Cel 2 (zł)</label><br><input type="number" id="goal2" min="0" step="1000" oninput="saveGoalSettings()"></div>
       </div>
       <p id="goalSummary" style="font-size:.9rem"></p>
-      <table id="goalTable"></table>
+      <div id="goalTable"></div>
       <div class="warning" style="margin-top:1rem">
         To nie jest prognoza. Krypto nie rośnie w stałym tempie: jeden rok potrafi przynieść −60%, następny +150%.
         Scenariusze zakładają stały roczny wynik i regularne dopłaty co miesiąc, żeby pokazać rząd wielkości.
@@ -1171,7 +1171,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v35 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v36 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1923,12 +1923,12 @@ function renderGoal() {
   const sells = journal.filter(e => e.type === 'sell').reduce((s, e) => s + e.pln, 0);
   const net = buys - sells;
   const res = v - net;
-  document.getElementById('goalKv').innerHTML = `
+  setHtmlKeepIcons(document.getElementById('goalKv'), `
     <div><span>Wpłacone netto (zakupy − sprzedaże)</span><strong>${zl(net)}</strong></div>
-    <div><span>Wynik całkowity od 2022</span><strong class="${hasData ? (res >= 0 ? 'positive' : 'negative') : ''}">${hasData ? `${signed(res, zl)} (${signed(net > 0 ? res / net * 100 : 0, pct)})` : '—'}</strong></div>`;
+    <div><span>Wynik całkowity od 2022</span><strong class="${hasData ? (res >= 0 ? 'positive' : 'negative') : ''}">${hasData ? `${signed(res, zl)} (${signed(net > 0 ? res / net * 100 : 0, pct)})` : '—'}</strong></div>`);
 
   let reachedPrev = true;
-  document.getElementById('goalBars').innerHTML = list.map((g, i) => {
+  setHtmlKeepIcons(document.getElementById('goalBars'), list.map((g, i) => {
     const p = hasData ? Math.min(100, v / g * 100) : 0;
     const done = v >= g;
     const waiting = !reachedPrev && !done;
@@ -1941,24 +1941,25 @@ function renderGoal() {
       <div class="bar"><div style="width:${p}%"></div></div>
       <div class="goal-sub">${sub}</div>
     </div>`;
-  }).join('') || '<p class="muted">Ustaw cel poniżej.</p>';
+  }).join('') || '<p class="muted">Ustaw cel poniżej.</p>');
 
   const monthly = Math.max(0, curMonthly()), fc = futureChanges(), sched = fc.length ? (k => Math.max(0, monthlyAt(k))) : monthly;
   const longRun = Math.max(0, monthlyAt(240));
   const scen = [...SCENARIOS, {name:'Twój wariant', rate: Number(goal.custom) || 0, cls:'scen-own'}];
   const table = document.getElementById('goalTable');
   if (!hasData || !list.length) {
-    table.innerHTML = '';
-    document.getElementById('goalSummary').textContent = hasData ? '' : 'Scenariusze pojawią się po pobraniu cen.';
+    setHtmlKeepIcons(table, '');
+    setHtmlKeepIcons(document.getElementById('goalSummary'), hasData ? '' : 'Scenariusze pojawią się po pobraniu cen.');
     return;
   }
-  table.innerHTML = `
+  // morph zamiast innerHTML: przy każdym ticku cen zmieniają się tylko teksty, tabela (karty na telefonie) nie przebudowuje się i nie miga
+  setHtmlKeepIcons(table, `<table>
     <thead><tr><th>Scenariusz</th><th>Wynik / rok</th>${list.map(g => `<th>${zl(g)}</th>`).join('')}</tr></thead>
     <tbody>${scen.map(s => `<tr>
       <td class="${s.cls}"><strong>${s.name}</strong></td>
       <td>${s.rate > 0 ? '+' : ''}${s.rate}%</td>
       ${list.map(g => `<td>${cell(monthsTo(g, v, sched, s.rate))}</td>`).join('')}
-    </tr>`).join('')}</tbody>`;
+    </tr>`).join('')}</tbody></table>`);
 
   const first = list.find(g => v < g);
   const lines = [];
@@ -1981,7 +1982,7 @@ function renderGoal() {
       lines.push(`Przy długiej bessie (${bad}% rocznie) dopłaty ${zl(longRun)} nie wystarczą – portfel zatrzymałby się w okolicy ${zl(cap)}, bo spadki zjadałyby tyle, ile dopłacasz.`);
     }
   }
-  document.getElementById('goalSummary').innerHTML = lines.join(' ');
+  setHtmlKeepIcons(document.getElementById('goalSummary'), lines.join(' '));
 }
 
 function loadGoalInputs() {
@@ -5023,7 +5024,7 @@ function renderMonth() {
   const startKey = before.length ? before[before.length - 1] : inM[0];
   const endKey = inM[inM.length - 1];
   if (!startKey || !endKey) {
-    el.innerHTML = '<p class="muted">Brak zapisów z tego miesiąca. Aplikacja zapisuje wartość portfela raz dziennie, gdy jest otwarta z aktualnymi cenami.</p>';
+    setHtmlKeepIcons(el, '<p class="muted">Brak zapisów z tego miesiąca. Aplikacja zapisuje wartość portfela raz dziennie, gdy jest otwarta z aktualnymi cenami.</p>');
     return;
   }
   const s0 = snaps[startKey], s1 = snaps[endKey];
@@ -5041,7 +5042,7 @@ function renderMonth() {
   const moves = Object.keys(holdings).filter(s => !isStable(s) && s0.p?.[s] > 0 && endPrices?.[s] > 0)
     .map(s => ({s, ch: (endPrices[s] / s0.p[s] - 1) * 100})).sort((a, b) => b.ch - a.ch);
   const partial = !before.length;
-  el.innerHTML = `
+  setHtmlKeepIcons(el, `
     <div class="kv">
       <div><span>Wartość ${partial ? 'od ' + fmtDate(startKey) : 'na początek'}</span><strong>${zl(s0.v)}</strong></div>
       <div><span>Wartość ${isCur ? 'teraz' : 'na koniec'}</span><strong>${zl(endV)}</strong></div>
@@ -5053,7 +5054,7 @@ function renderMonth() {
     ${moves.length ? `<p style="font-size:.85rem;margin:.5rem 0">Najlepiej: <strong>${moves[0].s}</strong> ${colored(moves[0].ch, signed(moves[0].ch, pct))} ·
       najsłabiej: <strong>${moves[moves.length - 1].s}</strong> ${colored(moves[moves.length - 1].ch, signed(moves[moves.length - 1].ch, pct))}</p>` : ''}
     ${lDone.length ? `<p style="font-size:.85rem;margin:.25rem 0">Zrealizowane szczeble drabinki: ${lDone.join(', ')}.</p>` : ''}
-    ${partial ? `<p class="small muted" style="margin:.25rem 0 0">Zapisy zaczynają się ${fmtDate(startKey)} – pełne podsumowania będą od kolejnego miesiąca.</p>` : ''}`;
+    ${partial ? `<p class="small muted" style="margin:.25rem 0 0">Zapisy zaczynają się ${fmtDate(startKey)} – pełne podsumowania będą od kolejnego miesiąca.</p>` : ''}`);
 }
 
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
@@ -8065,6 +8066,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '36', date: '2026-10-29', title: 'Cel: scenariusze bez migania', items: [
+    'Zakładka Cel: tabela „Kiedy? Scenariusze”, podsumowanie miesiąca i paski etapów nie przebudowują się przy każdej zmianie ceny – zmieniają się tylko liczby, więc nic nie miga.']},
   {v: '35', date: '2026-10-29', title: 'Przegląd kodu: poprawki i szybsze działanie', items: [
     'Powiadomienia: zmiany progów, strategii, płatności i ważnych dat znów trafiają na serwer także przy cenach na żywo (wcześniej ciągłe odświeżanie cen blokowało wysyłkę).',
     'Prywatność: powiadomienie w dniu dopłaty nie zawiera już kwot – serwer dostaje tylko progi, wagi i nazwy, a kwotę i podział widzisz w aplikacji.',
