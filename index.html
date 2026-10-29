@@ -1206,7 +1206,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v39 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v40 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8102,6 +8102,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '40', date: '2026-10-29', title: 'Automat: suwak odstępu dokupu', items: [
+    'Przy każdej monecie suwak „Dokup”: przy jakim spadku (od najniższego zakupu) kupuje druga transza; trzecia i czwarta odpowiednio ×1,5 i ×2. Przycisk przywraca wartość zalecaną.']},
   {v: '39', date: '2026-10-29', title: 'Automat: suwaki udziału i większe transze', items: [
     'Przy każdej monecie suwak: jaki procent kapitału automatu na nią idzie, z podglądem kwoty i wielkości transzy. Reszta do 100% zostaje jako rezerwa.',
     'Zamiast 8 małych transz: całość od razu albo 2, 3 lub 4 duże transze (domyślnie 2), z wynikami historycznymi dla każdego wariantu.']},
@@ -8541,6 +8543,11 @@ const BOT_STEPS = {1: [], 2: [10], 3: [8, 12], 4: [6, 9, 12]};
 // symulacja 2021–2026, BTC i ETH po połowie, 1000 USD po 3 latach: [słaby start, typowo, najgorszy]
 const BOT_SIM = {1: [1310, 2280, 890], 2: [1270, 1900, 1020], 3: [1320, 1690, 1150], 4: [1330, 1810, 1170]};
 const botN = c => BOT_STEPS[c.tranches] ? +c.tranches : 2;
+// odstęp dokupu monety: suwak (x.dip) albo domyślny dla liczby transz i zmienności monety; kolejne transze ×1,5 i ×2
+const botDipDef = (c, sym) => +((BOT_STEPS[botN(c)][0] || 10) * botMult(sym)).toFixed(1);
+const botDipOf = (c, x) => +x.dip > 0 ? +x.dip : botDipDef(c, x.sym);
+const botSteps = (c, x) => [1, 1.5, 2].slice(0, botN(c) - 1).map(k => +(botDipOf(c, x) * k).toFixed(2));
+const botDipText = (c, x, d = botDipOf(c, x)) => [1, 1.5, 2].slice(0, botN(c) - 1).map((k, j) => `${['druga', 'trzecia', 'czwarta'][j]} przy −${upto(d * k, 1)}%`).join(', ');
 const botMult = sym => sym === 'BTC' ? 1 : sym === 'ETH' ? 1.5 : 2;                    // zmienniejsze monety: szersze odstępy (z symulacji)
 const BOT_DEFAULT = {v: 1, mode: 'off', quote: 'USD', budget: 1000, tranches: 2, tp: 5, trend: true, notify: true,
   coins: [{sym: 'BTC', share: 50, cap: null, exit: null}, {sym: 'ETH', share: 50, cap: null, exit: null}]};
@@ -8565,9 +8572,8 @@ async function botDec(s, aad) {
 }
 // ustawienia wysyłane do serwera: odstępy liczone z wybranego stylu, bez zbędnych pól
 function botServerCfg(c) {
-  const steps = BOT_STEPS[botN(c)];
   return {v: 1, mode: c.mode, paused: !!c.paused, quote: c.quote, budget: +c.budget || 0, trend: !!c.trend, notify: c.notify !== false, cmd: c.cmd || null,
-    coins: c.coins.filter(x => BOT_COINS.includes(x.sym)).map(x => ({sym: x.sym, share: +x.share || 0, tp: +c.tp || 5, steps: steps.map(s => +(s * botMult(x.sym)).toFixed(2)),
+    coins: c.coins.filter(x => BOT_COINS.includes(x.sym)).map(x => ({sym: x.sym, share: +x.share || 0, tp: +c.tp || 5, steps: botSteps(c, x),
       cap: +x.cap > 0 ? +x.cap : null, exit: +x.exit > 0 ? +x.exit : null})), updatedAt: Date.now()};
 }
 async function botPush(c) {
@@ -8635,6 +8641,7 @@ function botSlide(i, v) {
   const se = document.getElementById('botSum'); if (se) { se.textContent = botSumText(sum, c); se.className = 'small ' + (sum <= 100 ? 'muted' : 'negative'); }
   const b = document.getElementById('botSaveBtn'); if (b) b.disabled = !(sum <= 100 && sum > 0);
 }
+function botDipSlide(i, v) { const c = botCfg(), e = document.getElementById('botDipV' + i); if (e) e.textContent = botDipText(c, c.coins[i], +v); }
 function botField(k, v) { const c = botCfg(); c[k] = v; lsSet(LS.botCfg, c); renderBot(); }
 
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'przed chwilą' : m < 60 ? `${m} min temu` : m < 1440 ? `${Math.round(m / 60)} godz. temu` : `${Math.round(m / 1440)} dni temu`; };
@@ -8694,7 +8701,7 @@ function botSetupHtml(c, hasKey, step) {
 }
 
 function botCoinHtml(c, coin, cs, q) {
-  const steps = BOT_STEPS[botN(c)].map(s => s * botMult(coin.sym)), N = steps.length + 1;
+  const N = botN(c);
   const lots = cs?.lots || [], px = cs?.px || prices[coin.sym]?.usd || 0;
   const dots = Array.from({length: N}, (_, i) => `<i class="${i < lots.length ? 'on' : cs?.pend && i === lots.length ? 'wait' : ''}"></i>`).join('');
   const val = lots.reduce((a, l) => a + l.qty * px, 0), cost = lots.reduce((a, l) => a + l.cost, 0);
@@ -8724,7 +8731,7 @@ function botSettingsHtml(c, live) {
     </div>
     <div style="margin:.7rem 0"><span class="small muted">Na ile zakupów dzielić udział każdej monety</span><br>
       <span class="seg">${[1, 2, 3, 4].map(n => `<button class="${botN(c) === n ? 'on' : ''}" onclick="botField('tranches', ${n})">${n === 1 ? 'całość od razu' : n + ' transze'}</button>`).join('')}</span>
-      <p class="small muted" style="margin:.35rem 0 0">${botN(c) === 1 ? 'Cały udział kupowany od razu, sprzedaż przy +' + fixed(+c.tp, 1) + '%, potem znowu całość.' : `Pierwsza transza od razu, kolejne przy spadkach o ${BOT_STEPS[botN(c)].join('% i ')}% (BTC; ETH ×1,5, inne ×2).`}
+      <p class="small muted" style="margin:.35rem 0 0">${botN(c) === 1 ? 'Cały udział kupowany od razu, sprzedaż przy +' + fixed(+c.tp, 1) + '%, potem znowu całość.' : 'Pierwsza transza od razu, kolejne przy spadkach – odstęp ustawisz suwakiem „Dokup” przy każdej monecie (zalecane: BTC ' + upto(botDipDef(c, 'BTC'), 1) + '%, ETH ' + upto(botDipDef(c, 'ETH'), 1) + '%, inne ' + upto(botDipDef(c, 'SOL'), 1) + '%).'}
         Historycznie (BTC+ETH, 1000 USD, 3 lata): typowo ok. ${fixed(BOT_SIM[botN(c)][1], 0)} USD, słaby start ${fixed(BOT_SIM[botN(c)][0], 0)}, najgorszy ${fixed(BOT_SIM[botN(c)][2], 0)}. Mniej transz = więcej zysku w hossie, większe straty w krachu.</p></div>
     <div class="set-row" style="padding:.4rem 0"><div><strong class="small">Filtr trendu</strong><span class="small">Nowe zakupy tylko, gdy cena jest nad średnią z 200 dni.</span></div>
       <label class="switch"><input type="checkbox"${c.trend ? ' checked' : ''} onchange="botField('trend', this.checked)"><span></span></label></div>
@@ -8735,7 +8742,10 @@ function botSettingsHtml(c, live) {
       <select onchange="botSetCoin(${i},'sym',this.value)" aria-label="Moneta">${BOT_COINS.map(s => `<option${s === x.sym ? ' selected' : ''}>${s}</option>`).join('')}</select>
       <div class="bot-slider"><div class="small"><strong id="botShareV${i}">${x.share ?? 0}%</strong> kapitału · <span class="sens" id="botShareQ${i}">${qfmt((+c.budget || 0) * (+x.share || 0) / 100, c.quote)}</span>
           · transza <span class="sens" id="botShareT${i}">${qfmt((+c.budget || 0) * (+x.share || 0) / 100 / botN(c), c.quote)}</span></div>
-        <input type="range" min="0" max="100" step="5" value="${x.share ?? 0}" aria-label="Udział ${esc(x.sym)} w kapitale" oninput="botSlide(${i}, this.value)" onchange="botSetCoin(${i},'share',this.value)"></div>
+        <input type="range" min="0" max="100" step="5" value="${x.share ?? 0}" aria-label="Udział ${esc(x.sym)} w kapitale" oninput="botSlide(${i}, this.value)" onchange="botSetCoin(${i},'share',this.value)">
+        ${botN(c) > 1 ? `<div class="small" style="margin-top:.3rem">Dokup: <strong id="botDipV${i}">${botDipText(c, x)}</strong> <span class="muted">(od najniższego zakupu)</span></div>
+        <input type="range" min="2" max="40" step="1" value="${botDipOf(c, x)}" aria-label="Odstęp dokupu ${esc(x.sym)}" oninput="botDipSlide(${i}, this.value)" onchange="botSetCoin(${i},'dip',this.value)">
+        ${+x.dip > 0 && +x.dip !== botDipDef(c, x.sym) ? `<button class="link-btn" style="align-self:flex-start;font-size:.8rem" onclick="botSetCoin(${i},'dip',null)">przywróć zalecane (${upto(botDipDef(c, x.sym), 1)}%)</button>` : ''}` : ''}</div>
       <label><span class="small muted">nie kupuj powyżej</span><input type="number" min="0" step="any" value="${x.cap ?? ''}" placeholder="bez limitu" onchange="botSetCoin(${i},'cap',this.value)"></label>
       <label><span class="small muted">sprzedaj wszystko przy</span><input type="number" min="0" step="any" value="${x.exit ?? ''}" placeholder="—" onchange="botSetCoin(${i},'exit',this.value)"></label>
       <button class="icon-x" onclick="botDelCoin(${i})" aria-label="Usuń monetę">×</button></div>`).join('')}</div>
