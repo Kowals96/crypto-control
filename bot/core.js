@@ -116,6 +116,8 @@ async function stepCoin(ctx, coin, removed) {
   if (cs.pend) {
     const p = cs.pend;
     if (!p.oid) p.oid = await recover(p.cid);
+    // nie znaleziono: świeże zlecenie mogło jeszcze nie trafić na listy giełdy – czekamy 10 min, zanim uznamy, że go nie ma
+    if (!p.oid && now - p.at < 10 * 60000) { cs.why = 'czekam na potwierdzenie zlecenia przez giełdę'; return {}; }
     if (!p.oid) cs.pend = null;            // zlecenie nigdy nie dotarło na giełdę
     else {
       let o = await getOrder(p.oid);
@@ -130,7 +132,11 @@ async function stepCoin(ctx, coin, removed) {
 
   // 2) transze: zlecenia sprzedaży
   for (const lot of [...cs.lots]) {
-    if (!lot.sellOid && lot.sellCid) { lot.sellOid = await recover(lot.sellCid); if (!lot.sellOid) lot.sellCid = null; }
+    if (!lot.sellOid && lot.sellCid) {
+      lot.sellOid = await recover(lot.sellCid);
+      if (!lot.sellOid && now - (lot.sellAt || 0) < 10 * 60000) continue;    // jak wyżej: poczekaj, zanim wystawisz ponownie
+      if (!lot.sellOid) lot.sellCid = null;
+    }
     if (lot.sellOid) {
       let o = await getOrder(lot.sellOid);
       if (await isOpen(o)) {
@@ -147,7 +153,7 @@ async function stepCoin(ctx, coin, removed) {
     const qty = floorTo(lot.qty, info.baseStep), price = lot.exit ? exitPx : ceilTo(lot.buyPx * (1 + tp), info.quoteStep);
     if (!lot.exit && +price < lot.buyPx) throw new Error('Błąd bezpieczeństwa: cena sprzedaży poniżej zakupu');
     if (+qty < info.minBase || +qty * +price < info.minQuote) { dropLot(lot); continue; }     // pył – zostaje na koncie, transza zamknięta
-    lot.sellPx = +price;
+    lot.sellPx = +price; lot.sellAt = now;
     lot.sellOid = await place({side: 'sell', price, base: qty, onCid: c => { lot.sellCid = c; }});
   }
 
@@ -215,7 +221,8 @@ async function runBot({ex, cfg, st, job, now = Date.now(), notify = () => {}, sa
   st.createdAt = st.createdAt || now;
   // waluty nie zmieniamy, dopóki są transze lub zlecenia (inaczej zlecenia na starej parze zostałyby wystawione drugi raz)
   const busy = Object.values(st.coins || {}).some(c => c.lots?.length || c.pend);
-  const quote = busy && st.quote ? st.quote : (cfg.quote || 'USD');
+  const heldQuote = st.quote || Object.values(st.coins || {}).flatMap(c => [c.pend?.pair, ...(c.lots || []).map(l => l.pair)]).filter(Boolean).map(p => p.split('-')[1])[0];
+  const quote = busy && heldQuote ? heldQuote : (cfg.quote || 'USD');
   st.quote = quote;
   st.quoteNote = busy && cfg.quote && cfg.quote !== quote ? `Zmiana waluty na ${cfg.quote} zadziała, gdy automat sprzeda wszystkie transze (teraz ${quote}).` : '';
   const ctx = {ex, cfg, st, now, notify, save, sleep, quote, events: [],

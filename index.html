@@ -1204,7 +1204,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v37 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v38 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8100,6 +8100,10 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '38', date: '2026-10-29', title: 'Automat: dodatkowe zabezpieczenia po przeglądzie', items: [
+    'Anulowanie zleceń uznawane dopiero po potwierdzeniu giełdy, waluta automatu zablokowana przy otwartych transzach, sekret BOT_MAX_BUDGET jako twardy limit trybu na żywo.',
+    'Zlecenie zmienione ręcznie w Revolut X wstrzymuje automat; po „Wznów” automat oddaje je Tobie i go nie dubluje.',
+    'Transze z trybu na żywo można sprzedać także wtedy, gdy aplikacja jest w trybie próbnym.']},
   {v: '37', date: '2026-10-29', title: 'Automat transz z Revolut X', items: [
     'Nowa zakładka Portfel → Automat: kupuje w transzach przy spadkach, każdą transzę sprzedaje z zyskiem (domyślnie +5%) i zysk kupuje dalej.',
     'Tryb próbny na prawdziwych cenach (bez pieniędzy, bez klucza giełdy), potem tryb na żywo na Revolut X.',
@@ -8574,7 +8578,7 @@ async function botLoad(force) {
       try { BOT.beat = JSON.parse(d.fields?.botBeat?.stringValue || 'null'); } catch (e) { BOT.beat = null; }
       BOT.err = '';
       if (d.fields?.botState?.stringValue && botKeyB64()) {
-        try { BOT.state = await botDec(d.fields.botState.stringValue, a.uid + ':botState').catch(() => botDec(d.fields.botState.stringValue, 'botState')); }
+        try { BOT.state = await botDec(d.fields.botState.stringValue, a.uid + ':botState'); }
         catch (e) { BOT.err = 'Nie mogę odczytać stanu automatu – klucz automatu w aplikacji różni się od BOT_KEY w GitHubie.'; }
       }
     }

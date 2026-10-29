@@ -74,8 +74,7 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
     const beat = {at: Date.now(), v: VERSION, ok: true, mode: 'off', msg: ''};
     const writeBeat = () => patch(auth, doc.name, {botBeat: JSON.stringify(beat)}).catch(() => {});
     let cfg, root;
-    // zgodność wstecz: dane zaszyfrowane przed przypisaniem do konta (AAD bez identyfikatora) odczytujemy raz i zapisujemy już nowym sposobem
-    const decAny = (v, f) => { try { return dec(v, uid + ':' + f); } catch (e) { return dec(v, f); } };
+    const decAny = (v, f) => dec(v, uid + ':' + f);     // dane przypisane do konta (AAD = uid:pole)
     try { cfg = decAny(doc.fields.botCfg.stringValue, 'botCfg'); }
     catch (e) { beat.ok = false; beat.msg = 'Nie mogę odczytać ustawień – BOT_KEY w GitHubie nie pasuje do klucza w aplikacji.'; await writeBeat(); continue; }
     try { root = doc.fields.botState?.stringValue ? decAny(doc.fields.botState.stringValue, 'botState') : {}; }
