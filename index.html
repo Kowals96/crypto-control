@@ -1206,7 +1206,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v40 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v41 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8102,6 +8102,10 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '41', date: '2026-10-29', title: 'Automat: wpłaty od razu w transze, transze niezależne', items: [
+    '„Każda wpłata od razu do pracy”: kapitał automatu to jego transze plus wolne środki na giełdzie – nowa wpłata przy najbliższym przebiegu idzie w transze według suwaków (z limitem i BOT_MAX_BUDGET).',
+    'Kolejne transze „od razu, każda niezależnie”: kupiona transza nie blokuje następnej, każda sama sprzedaje się z zyskiem i od razu kupuje ponownie. Zmiana liczby transz od razu inwestuje wolną resztę.',
+    'Tryb „dopiero przy spadkach” (z suwakiem odstępu) zostaje do wyboru.']},
   {v: '40', date: '2026-10-29', title: 'Automat: suwak odstępu dokupu', items: [
     'Przy każdej monecie suwak „Dokup”: przy jakim spadku (od najniższego zakupu) kupuje druga transza; trzecia i czwarta odpowiednio ×1,5 i ×2. Przycisk przywraca wartość zalecaną.']},
   {v: '39', date: '2026-10-29', title: 'Automat: suwaki udziału i większe transze', items: [
@@ -8549,7 +8553,7 @@ const botDipOf = (c, x) => +x.dip > 0 ? +x.dip : botDipDef(c, x.sym);
 const botSteps = (c, x) => [1, 1.5, 2].slice(0, botN(c) - 1).map(k => +(botDipOf(c, x) * k).toFixed(2));
 const botDipText = (c, x, d = botDipOf(c, x)) => [1, 1.5, 2].slice(0, botN(c) - 1).map((k, j) => `${['druga', 'trzecia', 'czwarta'][j]} przy −${upto(d * k, 1)}%`).join(', ');
 const botMult = sym => sym === 'BTC' ? 1 : sym === 'ETH' ? 1.5 : 2;                    // zmienniejsze monety: szersze odstępy (z symulacji)
-const BOT_DEFAULT = {v: 1, mode: 'off', quote: 'USD', budget: 1000, tranches: 2, tp: 5, trend: true, notify: true,
+const BOT_DEFAULT = {v: 1, mode: 'off', quote: 'USD', budget: 1000, tranches: 2, buyMode: 'now', autoBudget: true, tp: 5, trend: true, notify: true,
   coins: [{sym: 'BTC', share: 50, cap: null, exit: null}, {sym: 'ETH', share: 50, cap: null, exit: null}]};
 LS.botCfg = 'ccBotCfg'; LS.botKey = 'ccBotKey';
 const BOT = {beat: null, state: null, loadedAt: 0, loading: false, msg: '', msgOk: true, keys: null, confirmLive: false, confirmSell: null, err: ''};
@@ -8572,7 +8576,7 @@ async function botDec(s, aad) {
 }
 // ustawienia wysyłane do serwera: odstępy liczone z wybranego stylu, bez zbędnych pól
 function botServerCfg(c) {
-  return {v: 1, mode: c.mode, paused: !!c.paused, quote: c.quote, budget: +c.budget || 0, trend: !!c.trend, notify: c.notify !== false, cmd: c.cmd || null,
+  return {v: 1, mode: c.mode, paused: !!c.paused, quote: c.quote, budget: +c.budget || 0, buyMode: c.buyMode === 'dip' ? 'dip' : 'now', autoBudget: !!c.autoBudget, trend: !!c.trend, notify: c.notify !== false, cmd: c.cmd || null,
     coins: c.coins.filter(x => BOT_COINS.includes(x.sym)).map(x => ({sym: x.sym, share: +x.share || 0, tp: +c.tp || 5, steps: botSteps(c, x),
       cap: +x.cap > 0 ? +x.cap : null, exit: +x.exit > 0 ? +x.exit : null})), updatedAt: Date.now()};
 }
@@ -8632,10 +8636,15 @@ function botCmd(type, sym, mode) { return botSave({cmd: {id: Date.now().toString
 function botSetCoin(i, k, v) { const c = botCfg(); c.coins = c.coins.map((x, j) => j === i ? {...x, [k]: k === 'sym' ? v : (parseFloat(String(v).replace(',', '.')) || null)} : x); lsSet(LS.botCfg, c); renderBot(); }
 function botAddCoin() { const c = botCfg(); const free = BOT_COINS.find(s => !c.coins.some(x => x.sym === s)); if (!free) return; c.coins.push({sym: free, share: 0, cap: null, exit: null}); lsSet(LS.botCfg, c); renderBot(); }
 function botDelCoin(i) { const c = botCfg(); c.coins.splice(i, 1); lsSet(LS.botCfg, c); renderBot(); }
-const botSumText = (sum, c) => sum > 100 ? `Razem ${sum}% – przekracza kapitał o ${sum - 100}%. Zmniejsz któryś suwak.` : sum === 100 ? 'Razem 100% kapitału.' : `Razem ${sum}% · ${100 - sum}% (${qfmt((+c.budget || 0) * (100 - sum) / 100, c.quote)}) zostaje jako rezerwa, której automat nie używa.`;
+function botCap(c) {
+  const st = BOT.state?.[c.mode === 'live' ? 'live' : 'paper'], lim = +c.budget > 0 ? +c.budget : Infinity;
+  if (!c.autoBudget) return +c.budget || 0;
+  return st?.capital > 0 ? Math.min(st.capital, lim) : (lim < Infinity ? lim : 0);
+}
+const botSumText = (sum, c) => sum > 100 ? `Razem ${sum}% – przekracza kapitał o ${sum - 100}%. Zmniejsz któryś suwak.` : sum === 100 ? 'Razem 100% kapitału.' : `Razem ${sum}% · ${100 - sum}% (${qfmt(botCap(c) * (100 - sum) / 100, c.quote)}) zostaje jako rezerwa, której automat nie używa.`;
 // suwak: podgląd na żywo bez przebudowy całego ekranu (zapis do ustawień po puszczeniu)
 function botSlide(i, v) {
-  const c = botCfg(), sh = c.coins.map((x, j) => j === i ? +v : +x.share || 0), sum = sh.reduce((a, b) => a + b, 0), amt = (+c.budget || 0) * +v / 100;
+  const c = botCfg(), sh = c.coins.map((x, j) => j === i ? +v : +x.share || 0), sum = sh.reduce((a, b) => a + b, 0), amt = botCap(c) * +v / 100;
   const set = (id, t) => { const e = document.getElementById(id); if (e) e.textContent = t; };
   set('botShareV' + i, v + '%'); set('botShareQ' + i, qfmt(amt, c.quote)); set('botShareT' + i, qfmt(amt / botN(c), c.quote));
   const se = document.getElementById('botSum'); if (se) { se.textContent = botSumText(sum, c); se.className = 'small ' + (sum <= 100 ? 'muted' : 'negative'); }
@@ -8725,14 +8734,21 @@ function botSettingsHtml(c, live) {
   const busyQ = Object.values(subSt?.coins || {}).some(x => x.lots?.length || x.pend);
   return `<div class="bd-box">
     <div class="form-row" style="margin:0">
-      <div><label class="small muted" for="botBudget">Budżet automatu</label><br><input type="number" id="botBudget" min="0" step="50" value="${c.budget}" onchange="botField('budget', +this.value || 0)" style="max-width:130px"></div>
+      <div><label class="small muted" for="botBudget">${c.autoBudget ? 'Limit kapitału (0 = bez limitu)' : 'Budżet automatu'}</label><br><input type="number" id="botBudget" min="0" step="50" value="${c.budget}" onchange="botField('budget', +this.value || 0)" style="max-width:130px"></div>
       <div><label class="small muted" for="botQuote">Waluta na giełdzie</label><br><select id="botQuote" ${busyQ ? 'disabled title="Zmiana waluty możliwa, gdy automat nie ma transz"' : ''} onchange="botField('quote', this.value)">${['USD', 'USDC', 'EUR'].map(x => `<option${x === c.quote ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
       <div><label class="small muted" for="botTp">Sprzedaż przy zysku (%)</label><br><input type="number" id="botTp" min="1" max="20" step="0.5" value="${c.tp}" onchange="botField('tp', +this.value || 5)" style="max-width:90px"></div>
     </div>
+    <div class="set-row" style="padding:.5rem 0"><div><strong class="small">Każda wpłata od razu do pracy</strong><span class="small">${c.autoBudget ? `Kapitał = transze automatu + wolne ${esc(c.quote)} na giełdzie${+c.budget > 0 ? ', najwyżej ' + qfmt(+c.budget, c.quote) : ''} (na żywo także najwyżej BOT_MAX_BUDGET). Wpłacasz – przy najbliższym przebiegu idzie w transze według suwaków.` : 'Wyłączone: automat pracuje stałym budżetem z pola obok (plus wypracowany zysk).'}</span></div>
+      <label class="switch"><input type="checkbox"${c.autoBudget ? ' checked' : ''} onchange="botField('autoBudget', this.checked)"><span></span></label></div>
+    ${c.autoBudget && BOT.state?.[c.mode === 'live' ? 'live' : 'paper']?.capital > 0 ? `<p class="small" style="margin:.2rem 0">Kapitał teraz: <strong class="sens">${qfmt(botCap(c), c.quote)}</strong> <span class="muted">(według ostatniego przebiegu)</span></p>` : ''}
+    <div style="margin:.7rem 0"><span class="small muted">Kolejne transze</span><br>
+      <span class="seg"><button class="${c.buyMode !== 'dip' ? 'on' : ''}" onclick="botField('buyMode','now')">od razu, każda niezależnie</button><button class="${c.buyMode === 'dip' ? 'on' : ''}" onclick="botField('buyMode','dip')">dopiero przy spadkach</button></span>
+      <p class="small muted" style="margin:.35rem 0 0">${c.buyMode !== 'dip' ? 'Cały udział monety od razu w transzach; każda transza sama sprzedaje się przy +' + fixed(+c.tp, 1) + '% i od razu kupuje ponownie. Wolny kapitał nigdy nie czeka.' : 'Pierwsza transza od razu, kolejne czekają na spadek (suwak „Dokup” przy monecie). Część kapitału czeka na okazję.'}</p></div>
     <div style="margin:.7rem 0"><span class="small muted">Na ile zakupów dzielić udział każdej monety</span><br>
       <span class="seg">${[1, 2, 3, 4].map(n => `<button class="${botN(c) === n ? 'on' : ''}" onclick="botField('tranches', ${n})">${n === 1 ? 'całość od razu' : n + ' transze'}</button>`).join('')}</span>
-      <p class="small muted" style="margin:.35rem 0 0">${botN(c) === 1 ? 'Cały udział kupowany od razu, sprzedaż przy +' + fixed(+c.tp, 1) + '%, potem znowu całość.' : 'Pierwsza transza od razu, kolejne przy spadkach – odstęp ustawisz suwakiem „Dokup” przy każdej monecie (zalecane: BTC ' + upto(botDipDef(c, 'BTC'), 1) + '%, ETH ' + upto(botDipDef(c, 'ETH'), 1) + '%, inne ' + upto(botDipDef(c, 'SOL'), 1) + '%).'}
-        Historycznie (BTC+ETH, 1000 USD, 3 lata): typowo ok. ${fixed(BOT_SIM[botN(c)][1], 0)} USD, słaby start ${fixed(BOT_SIM[botN(c)][0], 0)}, najgorszy ${fixed(BOT_SIM[botN(c)][2], 0)}. Mniej transz = więcej zysku w hossie, większe straty w krachu.</p></div>
+      ${c.buyMode === 'dip' ? `<p class="small muted" style="margin:.35rem 0 0">${botN(c) === 1 ? 'Cały udział kupowany od razu, sprzedaż przy +' + fixed(+c.tp, 1) + '%, potem znowu całość.' : 'Zalecane odstępy dokupu: BTC ' + upto(botDipDef(c, 'BTC'), 1) + '%, ETH ' + upto(botDipDef(c, 'ETH'), 1) + '%, inne ' + upto(botDipDef(c, 'SOL'), 1) + '%.'}
+        Historycznie (BTC+ETH, 1000 USD, 3 lata): typowo ok. ${fixed(BOT_SIM[botN(c)][1], 0)} USD, słaby start ${fixed(BOT_SIM[botN(c)][0], 0)}, najgorszy ${fixed(BOT_SIM[botN(c)][2], 0)}.</p>`
+        : `<p class="small muted" style="margin:.35rem 0 0">Więcej transz = sprzedaże i ponowne zakupy po różnych cenach, więc częstsze, mniejsze zyski. Historycznie (BTC+ETH, 1000 USD, 3 lata, cały kapitał od razu): typowo ok. ${fixed(BOT_SIM[1][1], 0)} USD, najgorszy ${fixed(BOT_SIM[1][2], 0)} – pełne zaangażowanie daje najwięcej w hossie i najwięcej traci w krachu.</p>`}</div>
     <div class="set-row" style="padding:.4rem 0"><div><strong class="small">Filtr trendu</strong><span class="small">Nowe zakupy tylko, gdy cena jest nad średnią z 200 dni.</span></div>
       <label class="switch"><input type="checkbox"${c.trend ? ' checked' : ''} onchange="botField('trend', this.checked)"><span></span></label></div>
     <div class="set-row" style="padding:.4rem 0"><div><strong class="small">Powiadomienia o transakcjach</strong><span class="small">Push przy każdym kupnie i sprzedaży (te same urządzenia co alerty cen).</span></div>
@@ -8740,10 +8756,10 @@ function botSettingsHtml(c, live) {
     <h3 style="margin:.8rem 0 .3rem;font-size:.92rem">Monety</h3>
     <div class="bot-coins-set">${c.coins.map((x, i) => `<div class="bot-cset">
       <select onchange="botSetCoin(${i},'sym',this.value)" aria-label="Moneta">${BOT_COINS.map(s => `<option${s === x.sym ? ' selected' : ''}>${s}</option>`).join('')}</select>
-      <div class="bot-slider"><div class="small"><strong id="botShareV${i}">${x.share ?? 0}%</strong> kapitału · <span class="sens" id="botShareQ${i}">${qfmt((+c.budget || 0) * (+x.share || 0) / 100, c.quote)}</span>
-          · transza <span class="sens" id="botShareT${i}">${qfmt((+c.budget || 0) * (+x.share || 0) / 100 / botN(c), c.quote)}</span></div>
+      <div class="bot-slider"><div class="small"><strong id="botShareV${i}">${x.share ?? 0}%</strong> kapitału · <span class="sens" id="botShareQ${i}">${qfmt(botCap(c) * (+x.share || 0) / 100, c.quote)}</span>
+          · transza <span class="sens" id="botShareT${i}">${qfmt(botCap(c) * (+x.share || 0) / 100 / botN(c), c.quote)}</span></div>
         <input type="range" min="0" max="100" step="5" value="${x.share ?? 0}" aria-label="Udział ${esc(x.sym)} w kapitale" oninput="botSlide(${i}, this.value)" onchange="botSetCoin(${i},'share',this.value)">
-        ${botN(c) > 1 ? `<div class="small" style="margin-top:.3rem">Dokup: <strong id="botDipV${i}">${botDipText(c, x)}</strong> <span class="muted">(od najniższego zakupu)</span></div>
+        ${botN(c) > 1 && c.buyMode === 'dip' ? `<div class="small" style="margin-top:.3rem">Dokup: <strong id="botDipV${i}">${botDipText(c, x)}</strong> <span class="muted">(od najniższego zakupu)</span></div>
         <input type="range" min="2" max="40" step="1" value="${botDipOf(c, x)}" aria-label="Odstęp dokupu ${esc(x.sym)}" oninput="botDipSlide(${i}, this.value)" onchange="botSetCoin(${i},'dip',this.value)">
         ${+x.dip > 0 && +x.dip !== botDipDef(c, x.sym) ? `<button class="link-btn" style="align-self:flex-start;font-size:.8rem" onclick="botSetCoin(${i},'dip',null)">przywróć zalecane (${upto(botDipDef(c, x.sym), 1)}%)</button>` : ''}` : ''}</div>
       <label><span class="small muted">nie kupuj powyżej</span><input type="number" min="0" step="any" value="${x.cap ?? ''}" placeholder="bez limitu" onchange="botSetCoin(${i},'cap',this.value)"></label>
@@ -8813,7 +8829,7 @@ function renderBot() {
       <strong class="small">Tryb</strong>
       <div style="margin:.4rem 0"><span class="seg"><button class="${c.mode === 'paper' ? 'on' : ''}" onclick="botSave({mode:'paper'}, 'Tryb próbny.')">Próbny</button><button class="${live ? 'on' : ''}" ${revxOk ? '' : 'disabled'} onclick="BOT.confirmLive=true;renderBot()">Na żywo</button></span></div>
       ${!revxOk ? '<p class="small muted" style="margin:0">„Na żywo” odblokuje się po połączeniu z Revolut X (krok 3 poniżej).</p>' : ''}
-      ${BOT.confirmLive && !live ? `<div class="warning"><p class="small" style="margin:0 0 .5rem">Automat zacznie składać prawdziwe zlecenia na Revolut X za maksymalnie <strong>${qfmt(+c.budget, q)}</strong> (plus zysk, który wypracuje). Upewnij się, że na Revolut X jest tyle ${q}. Zlecenia możesz w każdej chwili wstrzymać albo anulować w Revolut X.</p>
+      ${BOT.confirmLive && !live ? `<div class="warning"><p class="small" style="margin:0 0 .5rem">Automat zacznie składać prawdziwe zlecenia na Revolut X ${c.autoBudget ? `za wolne ${esc(q)} na giełdzie${+c.budget > 0 ? ', najwyżej ' + qfmt(+c.budget, q) : ''} (i nie więcej niż sekret BOT_MAX_BUDGET)` : `za maksymalnie <strong>${qfmt(+c.budget, q)}</strong> (plus zysk, który wypracuje)`}. Upewnij się, że na Revolut X jest tyle ${q}. Zlecenia możesz w każdej chwili wstrzymać albo anulować w Revolut X.</p>
         <label class="small"><input type="checkbox" id="botLiveOk"> Rozumiem, że to prawdziwe pieniądze i mogę stracić część środków</label>
         <div class="form-row" style="margin:.5rem 0 0"><button class="action" onclick="if(!document.getElementById('botLiveOk').checked){alert('Zaznacz potwierdzenie.');return;}BOT.confirmLive=false;botSave({mode:'live',paused:false}, 'Tryb na żywo włączony – pierwsza transza przy najbliższym przebiegu.')">Włącz na żywo</button><button class="action secondary" onclick="BOT.confirmLive=false;renderBot()">Anuluj</button></div></div>` : ''}
     </div>` : ''}

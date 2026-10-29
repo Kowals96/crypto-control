@@ -120,12 +120,13 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
       // „stary” stan (np. transze z trybu na żywo po przełączeniu na próbny): tylko rozliczenie sprzedaży, bez zakupów i bez poleceń
       // polecenia (np. „Sprzedaj wszystko” dla transz z trybu na żywo) działają tylko w stanie trybu, w którym je wydano – pilnuje tego core.js
       let jobCfg = job === cfg.mode ? cfg : {...cfg, mode: 'off'};
-      if (job === 'live' && cfg.mode === 'live' && !(MAX_BUDGET > 0 && +cfg.budget <= MAX_BUDGET)) {
+      // przy „każda wpłata od razu do pracy” budżet z aplikacji jest tylko górnym limitem – BOT_MAX_BUDGET i tak przycina kapitał w core.js
+      if (job === 'live' && cfg.mode === 'live' && !(MAX_BUDGET > 0 && (cfg.autoBudget || +cfg.budget <= MAX_BUDGET))) {
         errors.push(MAX_BUDGET > 0 ? 'Budżet w aplikacji jest wyższy niż sekret BOT_MAX_BUDGET w GitHubie – nowe zakupy wstrzymane.' : 'Ustaw w GitHubie sekret BOT_MAX_BUDGET (najwyższy dozwolony budżet automatu) – bez niego tryb na żywo nie kupuje.');
         jobCfg = {...cfg, mode: 'off'};
       }
       try {
-        const r = await runBot({ex, cfg: jobCfg, st, job, notify: (t, b) => notify(job === 'paper' ? '[próba] ' + t : t, b), save, trend});
+        const r = await runBot({ex, cfg: jobCfg, st, job, maxBudget: job === 'live' ? MAX_BUDGET : 0, notify: (t, b) => notify(job === 'paper' ? '[próba] ' + t : t, b), save, trend});
         errors.push(...r.errors); acted += r.events.length;
       } catch (e) { errors.push(clean(e.message)); }
       if (job === 'paper') {
