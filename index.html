@@ -1206,7 +1206,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v41 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v42 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -5514,6 +5514,7 @@ async function loadEurRate() {
   try { const r = await fetchJson('https://api.nbp.pl/api/exchangerates/rates/a/eur/?format=json'); eurPlnRate = r?.rates?.[0]?.mid || null; } catch (e) {}
   if (eurPlnRate && activeTab === 'savings' && isUnlocked()) renderSavings();
 }
+const daysTo = date => Math.ceil((Date.parse(date + 'T00:00:00') - Date.parse(todayStr() + 'T00:00:00')) / 86400000);   // dni do daty (koniec lokaty)
 const toPln = a => a.cur === 'USD' ? a.amount * usdPlnRate : a.cur === 'EUR' ? a.amount * (eurPlnRate || 4.25) : a.amount;
 const savCat = a => a.form === 'cash' ? 'cash' : (a.kind || 'free');
 const ymLabel = ym => monthName(ym);
@@ -8102,6 +8103,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '42', date: '2026-11-01', title: 'Naprawione logowanie do oszczędności', items: [
+    'Po wpisaniu poprawnego PIN-u (albo Face ID) zakładka Oszczędności znów się otwiera – błąd z porządkowania kodu w wersji 35 przerywał wyświetlanie.']},
   {v: '41', date: '2026-10-29', title: 'Automat: wpłaty od razu w transze, transze niezależne', items: [
     '„Każda wpłata od razu do pracy”: kapitał automatu to jego transze plus wolne środki na giełdzie – nowa wpłata przy najbliższym przebiegu idzie w transze według suwaków (z limitem i BOT_MAX_BUDGET).',
     'Kolejne transze „od razu, każda niezależnie”: kupiona transza nie blokuje następnej, każda sama sprzedaje się z zyskiem i od razu kupuje ponownie. Zmiana liczby transz od razu inwestuje wolną resztę.',
