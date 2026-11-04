@@ -1206,7 +1206,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v42 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v43 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -2500,8 +2500,10 @@ function renderBackupInfo() {
     : '<span style="color:var(--orange)">Nie zrobiono jeszcze kopii.</span>';
 }
 
-function collectData() {
-  return {app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
+function collectData(opts = {}) {
+  // klucz i ustawienia automatu jadą tylko w zaszyfrowanej chmurze (między Twoimi urządzeniami), nie w pliku kopii
+  const bot = opts.cloud && typeof botKeyB64 === 'function' && botKeyB64() ? {bot: {key: botKeyB64(), cfg: lsGet(LS.botCfg)}} : {};
+  return {...bot, app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
           vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
           pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom), fin: lsGet(LS.fin)};
 }
@@ -2523,6 +2525,10 @@ function applyData(d) {
   if (Array.isArray(d.alerts)) lsSet(LS.alertsCustom, d.alerts);
   if (d.fin && typeof d.fin === 'object') lsSet(LS.fin, d.fin);
   if ('strategy' in d) { lsSet(LS.strategy, d.strategy || null); applyStrategyOverrides(d.strategy); rebuildBnMap(); populateSymbols(); }
+  if (d.bot && typeof d.bot.key === 'string' && /^[A-Za-z0-9+/=]{40,48}$/.test(d.bot.key)) {
+    try { localStorage.setItem('ccBotKey', JSON.stringify(d.bot.key)); } catch (e) {}
+    if (d.bot.cfg && typeof d.bot.cfg === 'object') lsSet('ccBotCfg', d.bot.cfg);
+  }
   lockSav();
   lsSet(LS.holdingsVer, HOLDINGS_VERSION);
   lsSet(LS.patches, HOLDINGS_PATCHES.map(p => p.id));
@@ -7256,7 +7262,7 @@ async function cloudPush(opts = {}) {
       if (head && head.updatedAt > (meta.lastSync || 0)) { setCloudMeta({conflict: true}); cloudRenderStatus(); cloudShowConflict(); return false; }
     }
     const salt = meta.salt;
-    const enc = await cloudEncrypt(JSON.stringify(collectData()), localStorage.getItem(LS.cloudKey));
+    const enc = await cloudEncrypt(JSON.stringify(collectData({cloud: true})), localStorage.getItem(LS.cloudKey));
     const now = Date.now();
     await fsPut({...enc, salt, updatedAt: now});
     setCloudMeta({lastSync: now, dirty: false, conflict: false, err: ''});
@@ -8103,6 +8109,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '43', date: '2026-11-04', title: 'Automat widoczny na wszystkich urządzeniach', items: [
+    'Klucz i ustawienia automatu synchronizują się teraz przez zaszyfrowaną chmurę – telefon pokazuje stan automatu tak samo jak komputer (nie trafiają do pliku kopii zapasowej).']},
   {v: '42', date: '2026-11-01', title: 'Naprawione logowanie do oszczędności', items: [
     'Po wpisaniu poprawnego PIN-u (albo Face ID) zakładka Oszczędności znów się otwiera – błąd z porządkowania kodu w wersji 35 przerywał wyświetlanie.']},
   {v: '41', date: '2026-10-29', title: 'Automat: wpłaty od razu w transze, transze niezależne', items: [
@@ -8867,7 +8875,9 @@ updateEditForm();
 setCurrency(ui.defaultCur === 'PLN' ? 'PLN' : 'USD');
 fullRefresh();
 cloudStart();
-if (location.hash === '#bot') setTimeout(() => navTo('bot'), 300);      // powiadomienie z automatu otwiera jego zakładkę
+if (location.hash === '#bot') setTimeout(() => navTo('bot'), 300);
+// v43: klucz automatu wcześniej nie trafiał do chmury – urządzenie, które go ma, wysyła go raz (zaszyfrowane), żeby telefon też widział automat
+setTimeout(() => { try { if (botKeyB64() && !localStorage.getItem('ccBotSynced') && cloudReady() && CL.ready) { localStorage.setItem('ccBotSynced', '1'); cloudTouched(LS.botKey); } } catch (e) {} }, 8000);      // powiadomienie z automatu otwiera jego zakładkę
 
 /* Podsumowanie poprzedniego miesiąca przy pierwszym otwarciu w nowym miesiącu */
 LS.monthSeen = 'ccMonthSeen';
