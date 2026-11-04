@@ -1214,7 +1214,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v45 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v46 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -1295,6 +1295,32 @@
   </div>
 </div>
 
+<script>
+/* Strażnik startu: gdy aplikacja się nie uruchomi (np. błąd skryptu albo stara wersja w pamięci podręcznej),
+   zamiast pustej strony pokazuje komunikat, treść błędu i przycisk naprawy (czyści tylko pamięć podręczną, nie dane). */
+(function () {
+  var errs = [];
+  window.addEventListener('error', function (e) { errs.push((e.message || 'błąd') + (e.lineno ? ' (linia ' + e.lineno + ')' : '')); });
+  window.ccRepair = function () {
+    var done = function () { location.reload(); };
+    try {
+      Promise.all([
+        navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (r) { return Promise.all(r.map(function (x) { return x.unregister(); })); }) : 0,
+        window.caches ? caches.keys().then(function (k) { return Promise.all(k.map(function (x) { return caches.delete(x); })); }) : 0
+      ]).then(done, done);
+    } catch (e) { done(); }
+  };
+  setTimeout(function () {
+    if (window.__ccStarted) return;
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0b1120;color:#e2e8f0;font:16px system-ui,sans-serif;padding:24px;display:flex;flex-direction:column;gap:14px;justify-content:center';
+    d.innerHTML = '<h2 style="margin:0">Aplikacja nie uruchomiła się</h2><p style="margin:0">Twoje dane są bezpieczne. Stuknij „Napraw”, żeby pobrać najnowszą wersję.</p>'
+      + '<button onclick="ccRepair()" style="padding:14px;border-radius:12px;border:0;background:#38bdf8;color:#06101f;font-weight:700;font-size:16px">Napraw i odśwież</button>'
+      + '<p style="margin:0;font-size:12px;opacity:.7;word-break:break-word">' + (errs.join(' · ').replace(/</g, '&lt;') || 'brak szczegółów') + '</p>';
+    document.body.appendChild(d);
+  }, 6000);
+})();
+</script>
 <script>
 /* =========================================================
    STRATEGIA – jedyne źródło prawdy.
@@ -8118,6 +8144,9 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '46', date: '2026-11-04', title: 'Pewniejsze uruchamianie na telefonie', items: [
+    'Aplikacja zawsze pobiera najświeższą wersję strony (bez czekania na pamięć podręczną).',
+    'Gdyby coś przeszkodziło w uruchomieniu, zamiast pustej strony pojawi się komunikat z przyciskiem „Napraw i odśwież” – dane zostają nietknięte.']},
   {v: '45', date: '2026-11-04', title: 'Automat w głównym menu', items: [
     'Automat ma własną zakładkę w głównym menu: na komputerze w menu po lewej, na telefonie na dolnym pasku.',
     'Na telefonie „+” (dodaj transakcję) jest teraz okrągłym przyciskiem nad paskiem zakładek.']},
@@ -8887,6 +8916,7 @@ updateEditForm();
 setCurrency(ui.defaultCur === 'PLN' ? 'PLN' : 'USD');
 fullRefresh();
 cloudStart();
+window.__ccStarted = true;
 if (location.hash === '#bot') setTimeout(() => navTo('bot'), 300);
 // v43: klucz automatu wcześniej nie trafiał do chmury – urządzenie, które go ma, wysyła go raz (zaszyfrowane), żeby telefon też widział automat
 setTimeout(() => { try { if (botKeyB64() && !localStorage.getItem('ccBotSynced') && cloudReady() && CL.ready) { localStorage.setItem('ccBotSynced', '1'); cloudTouched(LS.botKey); } } catch (e) {} }, 8000);      // powiadomienie z automatu otwiera jego zakładkę
