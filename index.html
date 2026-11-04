@@ -240,6 +240,7 @@
   .bot-cset input{width:100%;min-width:0;max-width:none !important}
   .bot-cset select,#botAddSym{width:100%;min-width:0;max-width:none !important}
   .bot-slider{grid-column:span 2;display:flex;flex-direction:column;gap:.2rem;min-width:0}
+  .bot-sec{display:flex;flex-wrap:wrap;gap:.3rem .9rem;margin:.3rem 0}
   .bot-bench{display:grid;grid-template-columns:78px 1fr auto;gap:.5rem;align-items:center;margin:.45rem 0 0}
   .bot-bench>div{height:10px;border-radius:5px;background:color-mix(in srgb,var(--muted) 18%,transparent);overflow:hidden}
   .bot-bench i{display:block;height:100%;border-radius:5px;background:var(--accent)}
@@ -1219,7 +1220,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v48 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v49 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8149,6 +8150,9 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '49', date: '2026-11-05', title: 'Automat: lista kontrolna sekretów', items: [
+    'W kroku „Połączenie z Revolut X” widać, które sekrety GitHuba automat dostał przy ostatnim przebiegu (✓/✗), a komunikat mówi dokładnie, którego brakuje.',
+    'W kroku „Szybsze przebiegi” widać, czy ostatni przebieg uruchomił Cloudflare, czy harmonogram GitHuba.']},
   {v: '48', date: '2026-11-04', title: 'Automat: sejf zysków, porównanie z trzymaniem i więcej', items: [
     'Próg sprzedaży może zależeć od zmienności monety (średni dzienny ruch z 14 dni × mnożnik, 2–12%) – albo zostać stały.',
     'Sejf zysków: suwak, jaka część każdego zysku zostaje odłożona i nie wraca do obrotu. Po wypłacie stuknij „Wypłaciłem sejf”.',
@@ -8781,10 +8785,14 @@ function botSetupHtml(c, hasKey, step) {
         ${BOT.beat?.maxBudget ? '<span class="positive">Ustawiony ✓</span>' : ''}</p>
       <p class="small muted" style="margin:.3rem 0 0">Opcjonalnie sekret <code>BOT_UID</code> = <code>${esc(cloudAuth()?.uid || '')}</code> – automat obsłuży wtedy tylko Twoje konto. ${BOT.beat?.uid ? '<span class="positive">Ustawiony ✓</span>' : ''}</p>
       ${BOT.state?.revx ? `<p class="small ${BOT.state.revx.ok ? 'positive' : 'negative'}">Revolut X: ${BOT.state.revx.ok ? 'połączono ✓' : esc(BOT.state.revx.msg)} <span class="muted">(${ago(BOT.state.revx.at)})</span></p>` : ''}
+      ${BOT.beat?.sec && !BOT.state?.revx?.ok ? `<div class="small" style="margin:.4rem 0 0"><span class="muted">Sekrety, które automat widział przy ostatnim przebiegu (${ago(BOT.beat.at)}):</span>
+        <div class="bot-sec">${[['REVX_API_KEY', BOT.beat.sec.api], ['REVX_PRIVATE_KEY', BOT.beat.sec.priv], ['BOT_MAX_BUDGET', BOT.beat.sec.max], ['BOT_UID (opcjonalny)', BOT.beat.sec.uid]].map(([n, ok]) => `<span class="${ok ? 'positive' : 'negative'}">${ok ? '✓' : '✗'} <code>${n}</code></span>`).join('')}</div>
+        <span class="muted">Brakujący sekret dodaj w GitHubie: Settings → Secrets and variables → Actions → zakładka <strong>Secrets</strong> (nie Variables) → „New repository secret”. Po dodaniu uruchom przebieg (Actions → Automat transz → Run workflow) i odśwież tę stronę.</span></div>` : ''}
     </div>
     <div class="bot-step">
       <h3><span class="bot-n">4</span> Szybsze przebiegi <span class="small muted">(opcjonalnie)</span></h3>
       <p class="small">Harmonogram GitHuba bywa spóźniony o 10–30 minut. Darmowy Cloudflare Worker może uruchamiać automat punktualnie co 5 minut.</p>
+      ${BOT.beat?.ev ? `<p class="small ${BOT.beat.ev === 'workflow_dispatch' ? 'positive' : 'muted'}">Ostatni przebieg (${ago(BOT.beat.at)}) uruchomił: ${BOT.beat.ev === 'workflow_dispatch' ? 'Cloudflare albo ręczne „Run workflow” ✓' : 'harmonogram GitHuba – Cloudflare jeszcze nie działa'}</p>` : ''}
       <details class="small"><summary>Pokaż instrukcję (ok. 10 minut, raz)</summary>
         <ol class="bot-ol">
           <li>GitHub → <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained token</a>: Repository access → <em>Only select repositories</em> → <code>${BOT_REPO}</code>; Permissions → <strong>Actions: Read and write</strong> (nic więcej); ważność np. 1 rok → Generate → skopiuj token.</li>

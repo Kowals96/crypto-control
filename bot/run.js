@@ -97,7 +97,10 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
           root.revx = {at: Date.now(), ok: true, msg: '', bal: bal.filter(b => ['USD', 'USDC', 'EUR', 'GBP', 'USDT'].includes(b.cur) || (cfg.coins || []).some(c => c.sym === b.cur))};
         }
       } catch (e) { root.revx = {at: Date.now(), ok: false, msg: e.status === 401 ? 'Revolut X odrzucił klucz (401) – sprawdź REVX_API_KEY i klucz publiczny w Revolut X.' : e.status === 403 ? 'Revolut X: brak uprawnień klucza (403) – klucz musi mieć prawo do handlu.' : clean(e.message)}; rx = null; }
-    } else root.revx = {at: Date.now(), ok: false, msg: 'Brak sekretów REVX_API_KEY / REVX_PRIVATE_KEY w GitHubie.'};
+    } else {
+      const miss = [!REVX_API_KEY && 'REVX_API_KEY', !REVX_PRIVATE_KEY && 'REVX_PRIVATE_KEY'].filter(Boolean);
+      root.revx = {at: Date.now(), ok: false, msg: `GitHub nie przekazał automatowi sekretu ${miss.join(' ani ')} – dodaj go w Settings → Secrets and variables → Actions → zakładka Secrets → „New repository secret” (dokładnie ta nazwa).`};
+    }
 
     // trend: raz dziennie na monetę (Binance, dane publiczne)
     root.trend = root.trend || {};
@@ -158,6 +161,9 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
     beat.halt = !!(root.live?.halt || root.paper?.halt);
     beat.maxBudget = MAX_BUDGET > 0;
     beat.uid = !!ONLY_UID;
+    // które sekrety są ustawione (tylko tak/nie, bez wartości) – aplikacja pokazuje listę kontrolną
+    beat.sec = {api: !!REVX_API_KEY, priv: !!REVX_PRIVATE_KEY, max: MAX_BUDGET > 0, uid: !!ONLY_UID};
+    beat.ev = process.env.GITHUB_EVENT_NAME || '';
     await writeBeat();
     await push(subs, msgs);
   }
