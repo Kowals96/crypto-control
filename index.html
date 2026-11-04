@@ -1214,7 +1214,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v44 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v45 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -4310,8 +4310,8 @@ const GROUPS = [
   {id: 'today', label: 'Dziś', icon: ICON_SUN, items: [['today', 'Dziś']]},
   {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż']]},
   {id: 'mk', label: 'Rynek', icon: ICON_TREND, items: [['market', 'Rynek']]},
-  {id: 'fin', label: 'Finanse', icon: TAB_ICONS.savings, items: [['savings:sav', 'Oszczędności'], ['savings:subs', 'Subskrypcje i opłaty'], ['savings:dates', 'Ważne daty'], ['journal', 'Dziennik / PIT']]}
-  {id: 'bot', label: 'Automat', icon: ICON_BOT, items: [['bot', 'Automat']]},
+  {id: 'fin', label: 'Finanse', icon: TAB_ICONS.savings, items: [['savings:sav', 'Oszczędności'], ['savings:subs', 'Subskrypcje i opłaty'], ['savings:dates', 'Ważne daty'], ['journal', 'Dziennik / PIT']]},
+  {id: 'bot', label: 'Automat', icon: ICON_BOT, items: [['bot', 'Automat']]}
 ];
 const SET_GROUP = {id: 'set', label: 'Ustawienia', items: [['settings', 'Ustawienia']]};
 const itemKey = id => id === 'savings' ? 'savings:' + subGet('fin') : id;
@@ -8118,7 +8118,7 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
-  {v: '44', date: '2026-11-04', title: 'Automat w głównym menu', items: [
+  {v: '45', date: '2026-11-04', title: 'Automat w głównym menu', items: [
     'Automat ma własną zakładkę w głównym menu: na komputerze w menu po lewej, na telefonie na dolnym pasku.',
     'Na telefonie „+” (dodaj transakcję) jest teraz okrągłym przyciskiem nad paskiem zakładek.']},
   {v: '43', date: '2026-11-04', title: 'Automat widoczny na wszystkich urządzeniach', items: [
