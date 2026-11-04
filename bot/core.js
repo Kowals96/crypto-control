@@ -49,7 +49,9 @@ async function stepCoin(ctx, coin, removed) {
   if (!(t && t.bid > 0 && t.ask > 0) || t.ask / t.bid > 1.03) { cs.note = 'Brak wiarygodnej ceny (zbyt duży rozrzut) – pominięto ten przebieg.'; return {}; }
   cs.px = (t.bid + t.ask) / 2; cs.pxAt = now; cs.note = '';
   const N = Math.max(1, Math.min(12, (coin.steps || []).length + 1));
-  const tp = Math.max(0.5, Math.min(50, +coin.tp || 5)) / 100;
+  // próg sprzedaży: stały albo zależny od zmienności (średni dzienny zakres ceny z 14 dni × mnożnik, w granicach 2–12%)
+  const tp = cfg.tpMode === 'atr' && cs.atr > 0 ? Math.max(0.02, Math.min(0.12, (+cfg.atrK || 2) * cs.atr)) : Math.max(0.5, Math.min(50, +coin.tp || 5)) / 100;
+  cs.tpNow = tp;
   const dustBase = Math.max(info.baseStep, info.minBase);
 
   const place = async (o) => {             // zapisuje client_order_id PRZED wysłaniem (odzyskanie po awarii)
@@ -101,8 +103,12 @@ async function stepCoin(ctx, coin, removed) {
     const soldQty = Math.min(lot.qty, o.filledQty);
     let proceeds = o.filledAmount; if (o.fee > 0 && o.feeCur === quote) proceeds -= o.fee;
     const costPart = lot.cost * soldQty / lot.qty, pnl = proceeds - costPart;
-    cs.realized += pnl; cs.cycles++; st.cycles = (st.cycles || 0) + 1;
-    ctx.events.push({t: now, sym, side: 'sell', px: o.filledAmount / o.filledQty, qty: soldQty, quote: proceeds, pnl, reason: lot.exit ? 'exit' : 'tp'});
+    // sejf: część zysku nie wraca do obrotu (zostaje jako wolne środki, automat jej nie używa)
+    const toVault = pnl > 0 && !lot.exit ? pnl * Math.max(0, Math.min(90, +cfg.vaultPct || 0)) / 100 : 0;
+    cs.vault = (cs.vault || 0) + toVault;
+    if (cfg.autoBudget && toVault) ctx.capital = Math.max(0, ctx.capital - toVault);   // kapitał policzony na starcie przebiegu zawierał już całą kwotę ze sprzedaży
+    cs.realized += pnl - toVault; cs.cycles++; st.cycles = (st.cycles || 0) + 1;
+    ctx.events.push({t: now, sym, side: 'sell', px: o.filledAmount / o.filledQty, qty: soldQty, quote: proceeds, pnl, vault: toVault || undefined, reason: lot.exit ? 'exit' : 'tp'});
     notify(pnl >= 0 ? `Automat sprzedał ${sym} z zyskiem` : `Automat sprzedał ${sym}`, `${pnl >= 0 ? '+' : '−'}${fmt(Math.abs(pnl), 2)} ${quote} (${fmt(pnl / costPart * 100, 1)}%).${lot.exit ? '' : ' Zysk wraca do puli i kupuje dalej.'}`);
     lot.cost -= costPart; lot.qty -= soldQty;
     if (lot.qty < dustBase * 1.0001 || lot.qty * t.bid < info.minQuote) { dropLot(lot); return true; }
@@ -118,7 +124,7 @@ async function stepCoin(ctx, coin, removed) {
     if (!p.oid) p.oid = await recover(p.cid);
     // nie znaleziono: świeże zlecenie mogło jeszcze nie trafić na listy giełdy – czekamy 10 min, zanim uznamy, że go nie ma
     if (!p.oid && now - p.at < 10 * 60000) { cs.why = 'czekam na potwierdzenie zlecenia przez giełdę'; return {}; }
-    if (!p.oid) cs.pend = null;            // zlecenie nigdy nie dotarło na giełdę
+    if (!p.oid) { if (p.maker) cs.makerMiss = (cs.makerMiss || 0) + 1; cs.pend = null; }   // zlecenie nigdy nie dotarło na giełdę (np. odrzucone post-only)
     else {
       let o = await getOrder(p.oid);
       let open = await isOpen(o);
@@ -126,7 +132,10 @@ async function stepCoin(ctx, coin, removed) {
       // pierwsza transza ma się wykonać od razu; jeśli po 5 min wisi (cena uciekła) – anuluj i policz to, co się wykonało
       const stale = p.kind === 'first' && open && now - p.at > 5 * 60000;
       if (open && (stale || liq || removed)) { o = await cancelConfirm(p.oid); open = false; }
-      if (!open) { addLot(p, o); cs.pend = null; }      // przejęte ręcznie: liczymy tylko to, co się wykonało
+      if (!open) {
+        cs.makerMiss = p.maker && !(o.filledQty > 0) ? (cs.makerMiss || 0) + 1 : 0;   // zlecenie bez prowizji nie weszło – po 2 próbach kupimy po rynku
+        addLot(p, o); cs.pend = null;      // przejęte ręcznie: liczymy tylko to, co się wykonało
+      }
     }
   }
 
@@ -194,18 +203,20 @@ async function stepCoin(ctx, coin, removed) {
       let amt = Math.min(pool / N, free, ctx.globalRoom());
       if (Math.min(free, ctx.globalRoom()) - amt < minQ) amt = Math.min(free, ctx.globalRoom());   // resztka dołącza do tej transzy
       if (!(amt >= minQ)) { if (!cs.lots.length) cs.why = ctx.globalRoom() < minQ ? 'cały kapitał automatu jest zaangażowany' : 'za mało kapitału na transzę (min. 10)'; break; }
-      const avail = await ex.available(quote);
+      const avail = await ex.available(quote) - vaultNow(st);   // sejf nigdy nie idzie na zakupy
       if (avail < amt * 1.002 && avail >= minQ * 1.002) amt = avail / 1.002;
       if (!(avail >= amt * 1.002)) { cs.why = `za mało ${quote} na giełdzie`; break; }
-      const price = ceilTo(t.ask * 1.003, info.quoteStep), base = floorTo(amt / +price, info.baseStep);
+      // bez prowizji: zlecenie oczekujące po najlepszej ofercie kupna (post_only); po 2 nieudanych próbach – po rynku
+      const maker = cfg.makerBuy !== false && (cs.makerMiss || 0) < 2;
+      const price = maker ? floorTo(t.bid, info.quoteStep) : ceilTo(t.ask * 1.003, info.quoteStep), base = floorTo(amt / +price, info.baseStep);
       if (+base < info.minBase || +base * +price < info.minQuote) { cs.why = 'transza poniżej minimalnej wielkości zlecenia'; break; }
-      const pend = {kind: 'first', px: +price, base: +base, quote: +base * +price, at: now, cross: true, pair, cid: null, oid: null};
+      const pend = {kind: 'first', px: +price, base: +base, quote: +base * +price, at: now, cross: !maker, maker, pair, cid: null, oid: null};
       cs.pend = pend;
-      pend.oid = await place({side: 'buy', price, base, onCid: c => { pend.cid = c; }});
+      pend.oid = await place({side: 'buy', price, base, postOnly: maker, onCid: c => { pend.cid = c; }});
       // zlecenie przecina rynek – zwykle wykonuje się od razu; sprawdzamy i od razu wystawiamy sprzedaż
       for (let i = 0; i < 3 && cs.pend; i++) {
         const o = await getOrder(pend.oid);
-        if (!(await isOpen(o))) { addLot(pend, o); cs.pend = null; } else await sleep(1000);
+        if (!(await isOpen(o))) { cs.makerMiss = maker && !(o.filledQty > 0) ? (cs.makerMiss || 0) + 1 : 0; addLot(pend, o); cs.pend = null; } else await sleep(maker ? 300 : 1000);
       }
       if (cs.pend) break;                  // dokończymy w następnym przebiegu
       for (const lot of cs.lots) if (!lot.sellOid && !lot.sellCid && !lot.exit) await placeTp(lot);
@@ -231,7 +242,7 @@ async function stepCoin(ctx, coin, removed) {
   const freeQ = pool - cs.lots.reduce((a, l) => a + l.cost, 0);
   let amt = Math.min(freeQ / slots, freeQ, ctx.globalRoom());          // limit całkowity: budżet + zysk – wszystko, co już zaangażowane
   if (!(amt >= Math.max(MIN_QUOTE, info.minQuote))) { cs.why = ctx.globalRoom() < freeQ / slots ? 'cały budżet automatu jest już zaangażowany' : 'za mało środków w puli na kolejną transzę'; return {}; }
-  const avail = await ex.available(quote);
+  const avail = await ex.available(quote) - vaultNow(st);   // sejf nigdy nie idzie na zakupy
   // drobna różnica (prowizje) – kupujemy za tyle, ile jest; większy brak = ktoś wypłacił środki albo budżet jest za wysoki
   if (avail < amt * 1.002 && avail >= amt * 0.9) amt = avail / 1.002;
   if (!(avail >= amt * 1.002) || amt < Math.max(MIN_QUOTE, info.minQuote)) { cs.why = `za mało ${quote} na giełdzie`; return {}; }
@@ -246,6 +257,7 @@ async function stepCoin(ctx, coin, removed) {
 }
 
 // trend: dzienne zamknięcie (wczorajsze) powyżej średniej 200 dni
+const vaultNow = st => Object.values(st.coins || {}).reduce((a, c) => a + (c.vault || 0), 0);
 function trendUp(closes) {
   if (!closes || closes.length < 201) return null;
   const c = closes.slice(0, -1), last = c[c.length - 1], sma = c.slice(-200).reduce((a, b) => a + b, 0) / 200;
@@ -269,6 +281,7 @@ async function runBot({ex, cfg, st, job, now = Date.now(), notify = () => {}, sa
   if (cmdValid) {
     if (cmd.type === 'liquidate') ctx.liquidate = cmd.sym || '*';
     if (cmd.type === 'resetHalt') { st.halt = null; ctx.acceptReplaced = true; st.cmdDone = cmd.id; }
+    if (cmd.type === 'vaultReset') { Object.values(st.coins || {}).forEach(c => { c.vault = 0; }); st.cmdDone = cmd.id; }
     if (cmd.type === 'resetExit') { Object.values(st.coins || {}).forEach(c => { c.exited = false; }); st.cmdDone = cmd.id; }
   }
   const committed = () => Object.values(st.coins || {}).reduce((a, c) => a + c.lots.reduce((x, l) => x + l.cost, 0) + (c.pend ? c.pend.quote : 0), 0);
@@ -276,15 +289,25 @@ async function runBot({ex, cfg, st, job, now = Date.now(), notify = () => {}, sa
   if (cfg.autoBudget) {
     // kapitał = to, co już pracuje + wolne środki na giełdzie (każda wpłata od razu do pracy), najwyżej do limitu z ustawień i BOT_MAX_BUDGET
     let avail = 0; try { avail = Math.max(0, await ex.available(ctx.quote)); } catch (e) {}
-    ctx.capital = Math.min(committed() + avail, +cfg.budget > 0 ? +cfg.budget : Infinity, maxB);
+    const vaultAll = Object.values(st.coins || {}).reduce((a, c) => a + (c.vault || 0), 0);
+    // sprzedaże wykonane od ostatniego przebiegu: pieniądze są już w wolnych środkach, a transza jeszcze nierozliczona – nie liczymy jej dwa razy
+    let settledAway = 0; const act = {};
+    for (const c of Object.values(st.coins || {})) for (const l of c.lots || []) {
+      if (!l.pair || !(l.sellOid || l.sellCid)) continue;
+      if (!l.sellOid) { settledAway += l.cost; continue; }                        // sprzedaż wysłana bez potwierdzenia – ostrożnie jak rozliczona
+      if (!(l.pair in act)) { try { act[l.pair] = await ex.activeIds(l.pair); } catch (e) { act[l.pair] = null; } }
+      if (!act[l.pair] || !act[l.pair].has(l.sellOid)) settledAway += l.cost;     // brak danych = ostrożnie (mniejszy kapitał)
+    }
+    ctx.capital = Math.max(0, Math.min(committed() - settledAway + Math.max(0, avail - vaultAll), +cfg.budget > 0 ? +cfg.budget : Infinity, maxB));
     ctx.pool = (coin) => ctx.capital * (+coin.share || 0) / 100;
   } else {
-    const realizedAll = Object.values(st.coins || {}).reduce((a, c) => a + (c.realized || 0), 0);
-    ctx.capital = Math.min((+cfg.budget || 0) + realizedAll, maxB + realizedAll);
+    const realizedAll = () => Object.values(st.coins || {}).reduce((a, c) => a + (c.realized || 0), 0);
+    ctx.capFn = () => Math.min(+cfg.budget || 0, maxB) + realizedAll();     // zysk ze sprzedaży w tym przebiegu od razu w obrocie
+    ctx.capital = ctx.capFn();
     ctx.pool = (coin, cs) => Math.min(+cfg.budget || 0, maxB) * (+coin.share || 0) / 100 + (cs.realized || 0);
   }
   st.capital = ctx.capital;
-  ctx.globalRoom = () => ctx.capital - committed();
+  ctx.globalRoom = () => (ctx.capFn ? (ctx.capital = ctx.capFn()) : ctx.capital) - committed();
   const errors = [];
   const valid = c => /^[A-Z0-9]{2,10}$/.test(c.sym);
   const list = (cfg.coins || []).filter(valid).map(c => ({coin: c, removed: false}));
@@ -298,6 +321,7 @@ async function runBot({ex, cfg, st, job, now = Date.now(), notify = () => {}, sa
     const cs = coinState(st, coin.sym);
     if (!removed) cs.conf = {tp: coin.tp, steps: coin.steps};
     cs.trendUp = trend[coin.sym] ? trend[coin.sym].up : null; cs.sma = trend[coin.sym]?.sma || null;   // brak danych = bez blokady
+    cs.atr = trend[coin.sym]?.atr > 0 ? trend[coin.sym].atr : null;
     try {
       const r = await stepCoin(ctx, coin, removed);
       if (ctx.liquidate && (ctx.liquidate === '*' || ctx.liquidate === coin.sym) && (cs.lots.length || cs.pend) && !r.liqDone) liqAll = false;
@@ -310,14 +334,35 @@ async function runBot({ex, cfg, st, job, now = Date.now(), notify = () => {}, sa
   }
   // polecenie „Sprzedaj wszystko” uznajemy za wykonane dopiero, gdy każda transza ma wystawioną sprzedaż wyjścia
   if (cmdValid && cmd.type === 'liquidate' && liqAll && !halted) st.cmdDone = cmd.id;
-  st.history = [...(st.history || []), ...ctx.events].slice(-300);
-  let value = 0, cost = 0, realized = 0, pendQ = 0;
+  if (ctx.capFn) ctx.capital = ctx.capFn();
+  st.capital = ctx.capital;
+  st.history = [...(st.history || []), ...ctx.events].slice(-800);
+  let value = 0, cost = 0, realized = 0, pendQ = 0, vault = 0;
   for (const c of Object.values(st.coins || {})) {
-    realized += c.realized || 0; pendQ += c.pend ? c.pend.quote : 0;
+    realized += c.realized || 0; pendQ += c.pend ? c.pend.quote : 0; vault += c.vault || 0;
     for (const l of c.lots) { value += l.qty * (c.px || l.buyPx); cost += l.cost; }
   }
-  st.totals = {realized, invested: cost, value, pending: pendQ, cash: Math.max(0, ctx.capital - cost - pendQ), capital: ctx.capital, cycles: st.cycles || 0};
-  const d = ymd(now); st.equity = (st.equity || []).filter(x => x.d !== d); st.equity.push({d, v: +(st.totals.cash + pendQ + value).toFixed(2)}); st.equity = st.equity.slice(-400);
+  st.totals = {realized: realized + vault, reinvested: realized, vault, invested: cost, value, pending: pendQ, cash: Math.max(0, ctx.capital - cost - pendQ), capital: ctx.capital, cycles: st.cycles || 0};
+  const botValue = st.totals.cash + pendQ + value + vault;
+  // porównanie z trzymaniem: te same wpłaty kupione według suwaków w chwili wpłaty i trzymane bez sprzedaży
+  const base = Math.max(0, ctx.capital - realized);                 // wpłacony kapitał (bez wypracowanego zysku)
+  const px = sym => st.coins?.[sym]?.px || 0;
+  const buyHodl = (h, add) => {
+    const coins = (cfg.coins || []).filter(c => +c.share > 0 && px(c.sym) > 0);
+    let used = 0;
+    for (const c of coins) { const a = add * +c.share / 100; h.units[c.sym] = (h.units[c.sym] || 0) + a / px(c.sym); used += a; }
+    h.cash += add - used;
+  };
+  // start porównania (także dla automatu, który już pracował): „trzymanie” startuje z bieżącą wartością automatu
+  if (!st.hodl) { st.hodl = {base, units: {}, cash: 0, at: now}; if (botValue > 0) buyHodl(st.hodl, botValue); }
+  const h = st.hodl;
+  if (base - h.base >= 1) { buyHodl(h, base - h.base); h.base = base; }
+  else if (h.base - base >= 1 && h.base > 0) {                    // wypłata: pomniejsz proporcjonalnie
+    const k = base / h.base; Object.keys(h.units).forEach(s => { h.units[s] *= k; }); h.cash *= k; h.base = base;
+  }
+  const hodlValue = h.cash + Object.entries(h.units).reduce((a, [s, u]) => a + u * (px(s) || 0), 0);
+  st.totals.value_all = botValue; st.totals.hodl = hodlValue;
+  const d = ymd(now); st.equity = (st.equity || []).filter(x => x.d !== d); st.equity.push({d, v: +botValue.toFixed(2), h: +hodlValue.toFixed(2)}); st.equity = st.equity.slice(-400);
   st.lastRun = now; st.mode = cfg.mode;
   return {errors, events: ctx.events};
 }

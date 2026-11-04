@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const {runBot, trendUp} = require('./core.js');
 const {RevX} = require('./revx.js');
-const {Paper, dailyCloses} = require('./paper.js');
+const {Paper, dailyData} = require('./paper.js');
 
 const SA = JSON.parse(process.env.FIREBASE_SA || '{}');
 const BOT_KEY = Buffer.from((process.env.BOT_KEY || '').trim(), 'base64');
@@ -55,7 +55,8 @@ async function push(subs, msgs) {
   const webpush = require('web-push');
   webpush.setVapidDetails('https://kowals96.github.io/crypto-control/', VAPID_PUBLIC, VAPID_PRIVATE);
   // przy wielu zdarzeniach w jednym przebiegu: jedno zbiorcze powiadomienie
-  const list = msgs.length > 3 ? [{title: `Automat: ${msgs.length} zdarzeń`, body: msgs.map(m => m.title).join(' · ').slice(0, 300)}] : msgs;
+  const ev = msgs.filter(m => !m.keep);
+  const list = [...(ev.length > 3 ? [{title: `Automat: ${ev.length} zdarzeń`, body: ev.map(m => m.title).join(' · ').slice(0, 300)}] : ev), ...msgs.filter(m => m.keep)];
   for (const m of list) for (const sub of subs) {
     try { await webpush.sendNotification(sub, JSON.stringify({title: m.title, body: m.body, tag: 'bot-' + Date.now() + Math.random(), url: './#bot'}), {TTL: 6 * 3600}); } catch (e) {}
   }
@@ -103,7 +104,9 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
     const today = new Date().toISOString().slice(0, 10), trend = {};
     for (const c of cfg.coins || []) {
       if (!/^[A-Z0-9]{2,10}$/.test(c.sym)) continue;
-      if (root.trend[c.sym]?.d !== today) { try { const t = trendUp(await dailyCloses(c.sym)); if (t) root.trend[c.sym] = {d: today, ...t}; } catch (e) {} }
+      if (root.trend[c.sym]?.d !== today || !('atr' in root.trend[c.sym])) {
+        try { const dd = await dailyData(c.sym), t = trendUp(dd.closes); root.trend[c.sym] = {d: today, ...(t || {up: null}), atr: dd.atr}; } catch (e) {}
+      }
       if (root.trend[c.sym]) trend[c.sym] = root.trend[c.sym];
     }
 
@@ -133,6 +136,20 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
         const refs = new Set(); Object.values(st.coins || {}).forEach(c => { if (c.pend?.oid) refs.add(c.pend.oid); (c.lots || []).forEach(l => { if (l.sellOid) refs.add(l.sellOid); if (l.buyOid) refs.add(l.buyOid); }); });
         ex.prune(refs);
       }
+    }
+    // podsumowanie tygodnia: niedziela od 19:00 (czas polski), raz w tygodniu
+    const pl = new Date(new Date().toLocaleString('en-US', {timeZone: 'Europe/Warsaw'}));
+    const wk = `${pl.getFullYear()}-${String(pl.getMonth() + 1).padStart(2, '0')}-${String(pl.getDate()).padStart(2, '0')}`;
+    if (cfg.weekly !== false && pl.getDay() === 0 && pl.getHours() >= 19 && root.weekly !== wk) {
+      const st = root[cfg.mode === 'live' ? 'live' : cfg.mode === 'paper' ? 'paper' : ''];
+      if (st && st.totals) {
+        const weekAgo = Date.now() - 7 * 86400000, q = cfg.quote || 'USD';
+        const sells = (st.history || []).filter(h => h.side === 'sell' && h.t >= weekAgo), buys = (st.history || []).filter(h => h.side === 'buy' && h.t >= weekAgo);
+        const pnl = sells.reduce((a, h) => a + (h.pnl || 0), 0), T = st.totals, f = n => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',');
+        const vs = T.hodl > 0 ? ` · trzymanie: ${f(T.hodl)} ${q} (${T.value_all >= T.hodl ? '+' : '−'}${f(Math.abs(T.value_all - T.hodl))})` : '';
+        msgs.push({title: (cfg.mode === 'paper' ? '[próba] ' : '') + 'Automat – podsumowanie tygodnia', body: `Zakupy: ${buys.length}, sprzedaże: ${sells.length}, zysk tygodnia: ${pnl >= 0 ? '+' : '−'}${f(Math.abs(pnl))} ${q}. Wartość: ${f(T.value_all || 0)} ${q}${vs}.`, keep: true});
+      }
+      root.weekly = wk;
     }
     root.updatedAt = Date.now();
     await save();

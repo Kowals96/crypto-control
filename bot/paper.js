@@ -21,6 +21,18 @@ async function dailyCloses(sym) {
   const d = await getJson(`${BN}/klines?symbol=${sym}USDT&interval=1d&limit=230`);
   return d.map(k => +k[4]);
 }
+// dane dzienne: zamknięcia (filtr trendu) i zmienność – średni „prawdziwy zakres” 14 zamkniętych dni jako ułamek ceny (ATR%)
+async function dailyData(sym) {
+  const d = await getJson(`${BN}/klines?symbol=${sym}USDT&interval=1d&limit=230`);
+  const k = d.map(x => ({h: +x[2], l: +x[3], c: +x[4]}));
+  const done = k.slice(0, -1);                                  // bez dzisiejszej, niezamkniętej świecy
+  let atr = null;
+  if (done.length >= 15) {
+    const tr = done.slice(-14).map((x, i, arr) => { const pc = (i ? arr[i - 1] : done[done.length - 15]).c; return Math.max(x.h - x.l, Math.abs(x.h - pc), Math.abs(x.l - pc)) / x.c; });
+    atr = tr.reduce((a, b) => a + b, 0) / tr.length;
+  }
+  return {closes: k.map(x => x.c), atr};
+}
 
 class Paper {
   constructor(book, quote, budget) {
@@ -94,4 +106,4 @@ class Paper {
   }
 }
 
-module.exports = {Paper, dailyCloses, getJson};
+module.exports = {Paper, dailyCloses, dailyData, getJson};
