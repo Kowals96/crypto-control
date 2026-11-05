@@ -703,6 +703,9 @@
   .td-ic svg{width:18px;height:18px}
   .td-when{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
   .td-when.soon{color:var(--accent)}
+  .tx-y{display:block;font-size:.62rem;color:var(--muted);line-height:1}
+  .tx-sell{color:var(--orange, #f59e0b)}
+  .tx-src{white-space:nowrap}
   .td-day{width:42px;flex:0 0 42px;text-align:center}
   .td-day strong{display:block;font-size:1.1rem;line-height:1.1}
   .td-day span{font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase}
@@ -1043,6 +1046,12 @@
   </section>
 
   <!-- ===================== EDYCJA ===================== -->
+  <section id="history">
+    <div class="card">
+      <h2 style="margin-top:0">Historia kupna i sprzedaży</h2>
+      <div id="historyBody"></div>
+    </div>
+  </section>
   <section id="edit">
     <div class="card">
       <h2>Kupno / sprzedaż – ręcznie</h2>
@@ -1220,7 +1229,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v49 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v50 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -2545,7 +2554,7 @@ function collectData(opts = {}) {
   const bot = opts.cloud && typeof botKeyB64 === 'function' && botKeyB64() ? {bot: {key: botKeyB64(), cfg: lsGet(LS.botCfg)}} : {};
   return {...bot, app:'crypto-control', version:12, created:new Date().toISOString(), holdings, journal, goal, layout, ui,
           vault: lsGet(LS.vault), savingsPlain: lsGet(LS.savPlain), market: lsGet(LS.mkt), plan: planState,
-          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom), fin: lsGet(LS.fin)};
+          pit: FILED_PIT, ladder, snapshots: snaps, strategy: lsGet(LS.strategy), importState: lsGet(LS.imp), alerts: lsGet(LS.alertsCustom), fin: lsGet(LS.fin), txlog};
 }
 const validData = d => ['plan-portfela-crypto', 'crypto-control'].includes(d?.app) && d.holdings && typeof d.holdings === 'object' && !Array.isArray(d.holdings) && Array.isArray(d.journal);
 function applyData(d) {
@@ -2564,6 +2573,9 @@ function applyData(d) {
   if (d.importState && typeof d.importState === 'object') lsSet(LS.imp, d.importState);
   if (Array.isArray(d.alerts)) lsSet(LS.alertsCustom, d.alerts);
   if (d.fin && typeof d.fin === 'object') lsSet(LS.fin, d.fin);
+  // historia operacji: łączymy (nic nie ginie przy synchronizacji między urządzeniami)
+  if (Array.isArray(d.txlog)) { const ids = new Set(txlog.map(x => x.id)); d.txlog.filter(validTx).forEach(x => { if (!ids.has(x.id)) { txlog.push(x); ids.add(x.id); } }); }
+  txFromJournal(); saveTxlog();
   if ('strategy' in d) { lsSet(LS.strategy, d.strategy || null); applyStrategyOverrides(d.strategy); rebuildBnMap(); populateSymbols(); }
   if (d.bot && typeof d.bot.key === 'string' && /^[A-Za-z0-9+/=]{40,48}$/.test(d.bot.key)) {
     try { localStorage.setItem('ccBotKey', JSON.stringify(d.bot.key)); } catch (e) {}
@@ -2631,6 +2643,7 @@ function openModal(sym) {
       <button class="action" style="flex:1" onclick="closeModal();quickAdd('${sym}')">Kup / Sprzedaj</button>
       <button class="action secondary" style="flex:1" onclick="closeModal();openTab('market');setSub('market','quotes');setTimeout(()=>{try{mkSelect('${sym}',true)}catch(e){}},300)">Wykres w Rynku</button>
     </div>
+    ${txCoinHtml(sym)}
     <details${wasOpen ? ' open' : ''}><summary><strong>Więcej szczegółów</strong></summary><div style="padding:.3rem .2rem">${
       row('Średnia USD', usd(r.pos.avg)) +
       row('Średnia PLN', (plnApprox(r.pos) ? '≈ ' : '') + pln(avgPlnOf(r.pos)) + (plnApprox(r.pos) ? ' <span class="muted small">(bieżący kurs)</span>' : '')) +
@@ -3510,6 +3523,7 @@ function impSetOps(ops, srcLabel) {
     .map(o => ({...o, done: !!st.done[o.id], old: o.ts < from, dup: possibleDup(o)}))
     .map(o => ({...o, sel: !o.done && !o.old && !o.dup}))
     .sort((a, b) => b.ts - a.ts);
+  if (txFromOps(impOps.filter(o => !o.dup))) { saveTxlog(); txEnrich(); }
   const fresh = impOps.filter(o => !o.done && !o.old).length;
   impMsg = impOps.length ? `${srcLabel}: znalazłem ${txN(impOps.length)}, w tym nowych od ${fmtDate(impFrom())}: ${fresh}. Sprawdź listę i kliknij „Dodaj zaznaczone”.` : `${srcLabel}: nie znalazłem transakcji kupna ani sprzedaży.`;
   impMsgOk = true;
@@ -3547,13 +3561,16 @@ async function bnSigned(path, params = {}) {
   }
   return d;
 }
-async function bnFetch() {
+async function bnFetch(opts = {}) {
   if (impBusy) return;
   if (!bnApi()) { impMsg = 'Najpierw zapisz klucz API.'; impMsgOk = false; renderImport(); return; }
-  impBusy = true; impOps = [];
-  const prog = t => { impMsg = t; impMsgOk = true; const el = document.getElementById('impMsg'); if (el) { el.textContent = t; el.style.color = 'var(--muted)'; } };
-  prog('Łączę się z Binance…'); renderImport();
-  const from = Date.parse(impFrom() + 'T00:00:00'), now = Date.now(), ops = [];
+  const full = !!opts.full;            // cała historia – tylko do podglądu w zakładce Historia
+  impBusy = true; if (!full) impOps = [];
+  if (full) { TXH.busy = true; TXH.msg = 'Łączę się z Binance…'; TXH.msgOk = true; renderHistory(); }
+  const prog = t => { impMsg = t; impMsgOk = true; const el = document.getElementById('impMsg'); if (el) { el.textContent = t; el.style.color = 'var(--muted)'; }
+    if (full) { TXH.msg = t; const m = document.querySelector('#historyBody .positive, #historyBody .negative'); if (m) m.textContent = t; } };
+  prog('Łączę się z Binance…'); if (!full) renderImport();
+  const from = full ? Date.parse('2017-07-01T00:00:00') : Date.parse(impFrom() + 'T00:00:00'), now = Date.now(), ops = [];
   try {
     try { const t = await fetchJson('https://api.binance.com/api/v3/time'); bnOffset = t.serverTime - Date.now(); } catch (e) {}
     const acc = await bnSigned('/api/v3/account', {omitZeroBalances: 'true'});
@@ -3577,13 +3594,14 @@ async function bnFetch() {
     prog('Pobieram zakupy kartą i przelewem…');
     for (const tt of ['0', '1']) {
       try {
-        const f = await bnSigned('/sapi/v1/fiat/payments', {transactionType: tt, beginTime: String(from), endTime: String(now), rows: '500'});
+        const f = await bnSigned('/sapi/v1/fiat/payments', {transactionType: tt, beginTime: String(full ? Date.parse('2020-01-01T00:00:00') : from), endTime: String(now), rows: '500'});
         (f.data || []).filter(x => /complet|success/i.test(x.status)).forEach(x => ops.push({id: `bn:f:${x.orderNo}`, src: 'Binance API', ts: +x.createTime, base: normAsset(x.cryptoCurrency), quote: normAsset(x.fiatCurrency),
           side: tt === '0' ? 'buy' : 'sell', qty: tt === '0' ? +x.obtainAmount : +x.sourceAmount, total: tt === '0' ? +x.sourceAmount : +x.obtainAmount, fee: 0}));   // kwota z Binance zawiera już prowizję
       } catch (e) { if (e.cors) throw e; }
     }
     prog('Pobieram wymiany „Convert”…');
-    for (let t0 = from; t0 < now; t0 += 30 * 86400000) {
+    for (let t0 = full ? Date.parse('2021-06-01T00:00:00') : from; t0 < now; t0 += 30 * 86400000) {
+      if (full) await sleep(400);
       try {
         const c = await bnSigned('/sapi/v1/convert/tradeFlow', {startTime: String(t0), endTime: String(Math.min(now, t0 + 30 * 86400000 - 1)), limit: '1000'});
         (c.list || []).filter(x => x.orderStatus === 'SUCCESS').forEach(x => {
@@ -3594,11 +3612,17 @@ async function bnFetch() {
         });
       } catch (e) { if (e.cors) throw e; }
     }
-    const s = impState(); s.lastSync = Date.now(); saveImpState(s);
     impBusy = false;
+    if (full) {
+      const n = txFromOps(ops); saveTxlog();
+      TXH.busy = false; TXH.msg = `Binance: ${txN(ops.length)} w historii konta, nowych w podglądzie: ${n}.`; TXH.msgOk = true;
+      renderHistory(); txEnrich(400); return;
+    }
+    const s = impState(); s.lastSync = Date.now(); saveImpState(s);
     impSetOps(ops, 'Binance');
   } catch (e) {
     impBusy = false;
+    if (full) { TXH.busy = false; TXH.msg = e.cors ? 'Binance nie pozwolił na połączenie z tej strony. Użyj „Wczytaj plik z giełdy”.' : e.message; TXH.msgOk = false; renderHistory(); return; }
     impMsg = e.cors ? 'Binance nie pozwolił na połączenie z tej strony (blokada przeglądarki). Użyj zakładki „Plik z giełdy” – wyeksportuj historię transakcji z Binance i wczytaj plik.' : e.message;
     impMsgOk = false; renderImport();
   }
@@ -3839,6 +3863,23 @@ function editMsg(text, ok = true) {
   el.style.color = ok ? 'var(--green)' : 'var(--red)';
 }
 
+// zapis ręcznej operacji do historii (przed zapisem formularza payCalc() ma jeszcze dane zapłaty)
+let txPay = null;
+function txLogEdit(sym, mode, qty, f) {
+  const t = Date.now();
+  if (mode === 'sell') {
+    const px = f.sellPln > 0 ? f.sellPln / qty / usdPlnRate : prices[sym]?.usd || null;
+    txAdd({id: txId(), t, sym, side: 'sell', qty, px, est: !(f.sellPln > 0) || null, quote: f.sellPln > 0 ? 'PLN' : null, total: f.sellPln > 0 ? f.sellPln : null, pln: f.sellPln > 0 ? f.sellPln : null, src: 'ręcznie'});
+  } else if (mode === 'set') {
+    txAdd({id: txId(), t, sym, side: 'set', qty, px: f.pUsdIn > 0 ? f.pUsdIn : null, src: 'ręcznie', note: 'nowy stan i średnia cena'});
+  } else {
+    const c = txPay || {};
+    const quote = c.payCoin || (c.usdPay ? 'USD' : 'PLN');
+    txAdd({id: txId(), t, sym, side: 'buy', qty, px: c.pUsd || null, quote, total: c.payCoin ? c.payAmt : c.usdPay ? c.totUsd : c.totPln, pln: c.payCoin ? null : c.totPln, src: 'ręcznie'});
+    if (c.payCoin) txAdd({id: txId(), t, sym: c.payCoin, side: 'sell', qty: c.payAmt, px: c.payAmt > 0 ? c.totUsd / c.payAmt : null, quote: sym, total: qty, src: 'ręcznie', note: 'zapłata za ' + sym});
+  }
+  txPay = null; saveTxlog();
+}
 function applyEdit() {
   const sym = document.getElementById('editSymbol').value;
   const mode = document.getElementById('editMode').value;
@@ -3868,7 +3909,7 @@ function applyEdit() {
   } else {
     let pUsdX = pUsdIn, pPlnX = pPlnIn, paid = null;
     if (mode === 'buy') {
-      const c = payCalc();
+      const c = payCalc(); txPay = c;
       if (!c) return editMsg('Podaj, ile zapłaciłeś (w złotówkach, dolarach albo kryptowalutą z portfela).', false);
       if (c.payCoin) {
         if (c.payCoin === sym) return editMsg('Wybierz inną monetę do zapłaty niż kupowana.', false);
@@ -3910,6 +3951,7 @@ function applyEdit() {
     }
   }
   saveHoldings();
+  txLogEdit(sym, mode, qty, {pUsdIn, pPlnIn, sellPln});
   if (entry) {
     const je = {id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry};
     journal.push(je);
@@ -4340,7 +4382,7 @@ function setHtmlKeepIcons(el, html) {
 
 const GROUPS = [
   {id: 'today', label: 'Dziś', icon: ICON_SUN, items: [['today', 'Dziś']]},
-  {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż']]},
+  {id: 'pf', label: 'Portfel', icon: TAB_ICONS.portfolio, items: [['portfolio', 'Monety'], ['risk', 'Zyski i ryzyko'], ['plan', 'Plan'], ['goal', 'Cel'], ['budget', 'Dopłata'], ['edit', 'Kupno / Sprzedaż'], ['history', 'Historia']]},
   {id: 'mk', label: 'Rynek', icon: ICON_TREND, items: [['market', 'Rynek']]},
   {id: 'fin', label: 'Finanse', icon: TAB_ICONS.savings, items: [['savings:sav', 'Oszczędności'], ['savings:subs', 'Subskrypcje i opłaty'], ['savings:dates', 'Ważne daty'], ['journal', 'Dziennik / PIT']]},
   {id: 'bot', label: 'Automat', icon: ICON_BOT, items: [['bot', 'Automat']]}
@@ -4639,6 +4681,7 @@ function openTab(id) {
   else if (prevTab === 'market') mkLeave();
   if (id === 'settings') { applySub('settings'); renderSettings(); }
   if (id === 'bot') { renderBot(); botLoad(true); }
+  if (id === 'history') { renderHistory(); if (cloudReady() && typeof botLoad === 'function') botLoad().then(() => activeTab === 'history' && renderHistory()).catch(() => {}); }
   if (id === 'goal') { syncMonthlyInput(); renderMonth(); if (!benchState.busy && (!benchState.res || Date.now() - benchState.at > 600000)) runBench(); else renderBench(); }
 }
 
@@ -8150,6 +8193,11 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '50', date: '2026-11-05', title: 'Historia kupna i sprzedaży każdej monety', items: [
+    'Nowa zakładka Portfel → Historia: każde kupno i sprzedaż z datą, ilością, ceną i tym, czym zapłacono; filtr po monecie, podsumowanie (ile kupiono, średnia cena, ile wydano) i eksport CSV.',
+    'Zapisuje się automatycznie przy „Kupno / Sprzedaż” i przy pobieraniu transakcji z Binance lub z pliku. Wcześniejsze operacje zostały odtworzone z dziennika transakcji.',
+    'Przycisk „Pobierz całą historię z Binance” uzupełnia dawne transakcje tylko do podglądu – portfel i PIT się nie zmieniają.',
+    'W oknie monety widać ostatnie operacje i skrót do całej historii. Transakcje Automatu też są na liście.']},
   {v: '49', date: '2026-11-05', title: 'Automat: lista kontrolna sekretów', items: [
     'W kroku „Połączenie z Revolut X” widać, które sekrety GitHuba automat dostał przy ostatnim przebiegu (✓/✗), a komunikat mówi dokładnie, którego brakuje.',
     'W kroku „Szybsze przebiegi” widać, czy ostatni przebieg uruchomił Cloudflare, czy harmonogram GitHuba.']},
@@ -8988,8 +9036,152 @@ function botCsv() {
 function botTick() { if (activeTab === 'bot' && document.visibilityState === 'visible') botLoad(); }
 setInterval(botTick, 30000);
 
+/* ---------- HISTORIA KUPNA I SPRZEDAŻY (każda operacja na monecie) ---------- */
+// wpis: {id, t, sym, side:'buy'|'sell'|'set', qty, px (USD za 1 szt.), quote (czym zapłacono), total (kwota w quote), pln, src, est, note}
+LS.txlog = 'ccTxLog';
+let txlog = [];
+const TXH = {sym: '', side: '', bot: true, n: 60, busy: false, msg: '', msgOk: true, enriching: false};
+const validTx = x => x && typeof x.id === 'string' && /^[A-Z0-9]{1,15}$/.test(x.sym) && ['buy', 'sell', 'set'].includes(x.side) && Number.isFinite(+x.t) && +x.qty >= 0;
+function loadTxlog() { const t = lsGet(LS.txlog); txlog = Array.isArray(t) ? t.filter(validTx) : []; }
+function saveTxlog() { txlog.sort((a, b) => a.t - b.t); if (txlog.length > 6000) txlog = txlog.slice(-6000); lsSet(LS.txlog, txlog); }
+function txAdd(e) {
+  if (!validTx(e) || txlog.some(x => x.id === e.id)) return false;
+  txlog.push(Object.fromEntries(Object.entries(e).filter(([, v]) => v != null && v !== '' && !(typeof v === 'number' && !Number.isFinite(v)))));
+  return true;
+}
+const txId = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const isUsdQ = q => q === 'USD' || USD_STABLE.has(q);
+// operacje z giełdy (API lub plik): zapisujemy wszystkie, także starsze niż data importu – to tylko podgląd, portfela nie zmieniają
+function txFromOps(ops) {
+  let n = 0;
+  for (const o of ops || []) {
+    if (!o || !o.base || !(o.qty > 0) || !(o.total > 0) || !Number.isFinite(o.ts)) continue;
+    n += txAdd({id: o.id, t: o.ts, sym: o.base, side: o.side, qty: o.qty, px: isUsdQ(o.quote) ? o.total / o.qty : null, quote: o.quote, total: o.total,
+      pln: o.quote === 'PLN' ? o.total : null, src: String(o.src || 'import').split(' ')[0], fee: o.fee > 0 ? o.fee : null, feeAsset: o.fee > 0 ? o.feeAsset : null}) ? 1 : 0;
+  }
+  return n;
+}
+// wpisy dziennika z nazwą monety („Dokup 0,5 SOL”, „Kupno 0,01 BTC (import)”, „Sprzedaż 2 ETH”) – historia od początku aplikacji
+function txFromJournal() {
+  let n = 0;
+  for (const e of journal) {
+    const m = /^(Dokup|Kupno|Sprzedaż)\s+([\d\s  .,]+?)\s+([A-Z][A-Z0-9]{0,14})\b/.exec(e.note || '');
+    if (!m) continue;
+    const qty = parseFloat(m[2].replace(/[\s  ]/g, '').replace(',', '.'));
+    if (!(qty > 0)) continue;
+    const orig = e.orig ? parseFloat(String(e.orig).replace(/[\s ]/g, '').replace(',', '.')) : null;
+    const q = e.cur && orig > 0 ? e.cur : 'PLN', total = q === 'PLN' ? e.pln : orig;
+    n += txAdd({id: e.ext || 'j:' + (e.id || e.date + ':' + e.note + ':' + e.pln), t: Date.parse(e.date + 'T12:00:00'), sym: m[3], side: m[1] === 'Sprzedaż' ? 'sell' : 'buy', qty,
+      px: isUsdQ(q) ? total / qty : null, quote: q, total, pln: e.pln, src: e.ext ? (e.exch || 'import') : 'dziennik'}) ? 1 : 0;
+  }
+  return n;
+}
+// cena w USD dla wpisów zapłaconych złotówkami, euro albo inną kryptowalutą (kurs NBP z dnia przed / zamknięcie dnia na Binance)
+async function txEnrich(limit = 150) {
+  if (TXH.enriching) return;
+  TXH.enriching = true;
+  let n = 0, changed = false;
+  try {
+    for (const x of txlog) {
+      if (n >= limit) break;
+      if (x.px > 0 || !(x.total > 0) || !x.quote || x.side === 'set') continue;
+      const d = ymd(x.t);
+      if (FIAT.has(x.quote)) {
+        n++;
+        const r = await nbpBefore(x.quote, d), ru = await nbpBefore('USD', d);
+        if (r > 0 && ru > 0) { x.px = x.total * r / ru / x.qty; if (!(x.pln > 0)) x.pln = x.total * r; changed = true; }
+      } else {
+        n++;
+        const u = await usdOfAsset(x.quote, x.t);
+        if (u > 0) { x.px = x.total * u / x.qty; x.est = true; changed = true; }
+      }
+    }
+  } catch (e) {}
+  TXH.enriching = false;
+  if (changed) { saveTxlog(); if (activeTab === 'history') renderHistory(); }
+}
+// transakcje Automatu (Revolut X, tryb na żywo) – z zaszyfrowanego stanu automatu, tylko do podglądu
+function txBot() {
+  const st = typeof BOT !== 'undefined' && BOT.state?.live;
+  if (!st?.history?.length) return [];
+  const q = st.quote || 'USD';
+  return st.history.map(h => ({id: `bot:${h.t}:${h.sym}:${h.side}:${h.qty}`, t: h.t, sym: h.sym, side: h.side, qty: h.qty, px: isUsdQ(q) ? h.px : null, quote: q, total: h.quote, src: 'Automat', pnlQ: h.pnl}));
+}
+const txAll = () => [...txlog, ...(TXH.bot ? txBot() : [])].sort((a, b) => b.t - a.t);
+const TX_SIDE = {buy: 'Kupno', sell: 'Sprzedaż', set: 'Ustawienie stanu'};
+const txPrice = x => x.px > 0 ? (x.est ? '≈ ' : '') + usd(x.px) : x.total > 0 && x.qty > 0 ? `${upto(x.total / x.qty, 8)} ${esc(x.quote)}` : '—';
+const txPaid = x => x.total > 0 && x.quote ? (x.quote === 'PLN' ? zl2(x.total) : isUsdQ(x.quote) ? `${fixed(x.total, 2)} ${esc(x.quote)}` : `${upto(x.total, 8)} ${esc(x.quote)}`) : x.px > 0 ? usd(x.px * x.qty) : '';
+const txSrc = x => ({dziennik: 'ręcznie', 'ręcznie': 'ręcznie'}[x.src] || x.src || '');
+function txRowHtml(x, showSym = true) {
+  const d = new Date(x.t), mon = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'][d.getMonth()];
+  return `<div class="td-row"><div class="td-day"><strong>${d.getDate()}</strong><span>${mon}</span><span class="tx-y">${d.getFullYear()}</span></div>
+    <div style="flex:1;min-width:0"><strong class="${x.side === 'buy' ? '' : x.side === 'sell' ? 'tx-sell' : 'muted'}">${TX_SIDE[x.side]}${showSym ? ' ' + esc(x.sym) : ''}</strong>
+      <div class="small muted"><span class="sens">${fmtQty(x.qty)} ${esc(x.sym)}</span> · cena ${txPrice(x)}${txSrc(x) ? ` · <span class="tx-src">${esc(txSrc(x))}</span>` : ''}${x.note ? ' · ' + esc(x.note) : ''}</div></div>
+    <div style="text-align:right"><strong class="sens">${txPaid(x)}</strong>${x.pnlQ != null ? `<div class="small sens ${x.pnlQ >= 0 ? 'positive' : 'negative'}">${signed(x.pnlQ, v => fixed(v, 2) + ' ' + esc(x.quote))}</div>`
+      : x.side === 'buy' && x.px > 0 && prices[x.sym]?.usd > 0 ? `<div class="small sens ${prices[x.sym].usd >= x.px ? 'positive' : 'negative'}">${signed((prices[x.sym].usd / x.px - 1) * 100, pct)} od zakupu</div>` : ''}</div></div>`;
+}
+function txSummary(list, sym) {
+  const buys = list.filter(x => x.side === 'buy'), sells = list.filter(x => x.side === 'sell');
+  const bq = buys.reduce((a, x) => a + x.qty, 0), withPx = buys.filter(x => x.px > 0);
+  const cost = withPx.reduce((a, x) => a + x.px * x.qty, 0), cq = withPx.reduce((a, x) => a + x.qty, 0);
+  const sq = sells.reduce((a, x) => a + x.qty, 0), plnIn = buys.reduce((a, x) => a + (x.pln > 0 ? x.pln : 0), 0);
+  const first = list.length ? Math.min(...list.map(x => x.t)) : null;
+  return `<div class="kv" style="margin:.6rem 0">
+    <div><span>Kupiono łącznie</span><strong class="sens">${fmtQty(bq)} ${esc(sym)}</strong><span class="small muted">${buys.length} ${buys.length === 1 ? 'zakup' : buys.length % 10 >= 2 && buys.length % 10 <= 4 && (buys.length % 100 < 10 || buys.length % 100 >= 20) ? 'zakupy' : 'zakupów'}</span></div>
+    <div><span>Średnia cena zakupu (z historii)</span><strong class="sens">${cq > 0 ? usd(cost / cq) : '—'}</strong>${holdings[sym] ? `<span class="small muted">w portfelu: ${usd(holdings[sym].avg)}</span>` : ''}</div>
+    <div><span>Wydano</span><strong class="sens">${cq > 0 ? usdM(cost) : '—'}</strong>${plnIn > 0 ? `<span class="small muted sens">w tym za złotówki ${zl(plnIn)}</span>` : ''}</div>
+    <div><span>Sprzedano</span><strong class="sens">${fmtQty(sq)} ${esc(sym)}</strong><span class="small muted">${first ? 'od ' + new Date(first).toLocaleDateString('pl-PL') : ''}</span></div>
+  </div>`;
+}
+function renderHistory() {
+  const el = document.getElementById('historyBody');
+  if (!el) return;
+  const all = txAll(), syms = [...new Set(all.map(x => x.sym))].sort((a, b) => (holdings[b] ? 1 : 0) - (holdings[a] ? 1 : 0) || a.localeCompare(b));
+  if (TXH.sym && !syms.includes(TXH.sym)) TXH.sym = '';
+  const list = all.filter(x => (!TXH.sym || x.sym === TXH.sym) && (!TXH.side || x.side === TXH.side));
+  const bnOk = typeof bnApi === 'function' && !!bnApi(), botN = txBot().length;
+  el.innerHTML = `
+    <p class="small muted" style="margin:0 0 .6rem">Każde kupno i sprzedaż monety: data, ilość, cena i czym zapłacono. Zapisuje się automatycznie przy „Kupno / Sprzedaż”, przy pobieraniu transakcji z Binance lub z pliku. Wcześniejsze operacje pochodzą z dziennika transakcji.</p>
+    <div class="form-row" style="margin:0 0 .4rem;align-items:flex-end">
+      <div><label class="small muted" for="txSym">Moneta</label><br><select id="txSym" onchange="TXH.sym=this.value;TXH.n=60;renderHistory()"><option value="">Wszystkie (${all.length})</option>${syms.map(s => `<option value="${s}"${s === TXH.sym ? ' selected' : ''}>${s} (${all.filter(x => x.sym === s).length})</option>`).join('')}</select></div>
+      <div><span class="small muted">Rodzaj</span><br><span class="seg">${[['', 'wszystko'], ['buy', 'kupno'], ['sell', 'sprzedaż']].map(([k, l]) => `<button class="${TXH.side === k ? 'on' : ''}" onclick="TXH.side='${k}';TXH.n=60;renderHistory()">${l}</button>`).join('')}</span></div>
+      ${botN ? `<label class="check" style="margin:0 0 .3rem"><input type="checkbox"${TXH.bot ? ' checked' : ''} onchange="TXH.bot=this.checked;renderHistory()"><span class="small">transakcje Automatu (${botN})</span></label>` : ''}
+    </div>
+    ${TXH.sym ? txSummary(all.filter(x => x.sym === TXH.sym), TXH.sym) : ''}
+    ${TXH.msg ? `<p class="small ${TXH.msgOk ? 'positive' : 'negative'}" style="margin:.4rem 0">${esc(TXH.msg)}</p>` : ''}
+    ${list.length ? `<div class="cal-list">${list.slice(0, TXH.n).map(x => txRowHtml(x, !TXH.sym)).join('')}</div>
+      ${list.length > TXH.n ? `<button class="action secondary" style="margin-top:.6rem" onclick="TXH.n+=100;renderHistory()">Pokaż więcej (${list.length - TXH.n})</button>` : ''}`
+      : `<div class="info" style="margin:.6rem 0">${all.length ? 'Brak operacji dla wybranych filtrów.' : 'Historia jest jeszcze pusta. Dodaj zakup w „Kupno / Sprzedaż” albo pobierz transakcje z Binance przyciskiem niżej.'}</div>`}
+    <div class="bd-box" style="margin-top:1rem">
+      <strong class="small">Uzupełnij historię z giełdy</strong>
+      <p class="small muted" style="margin:.3rem 0 .5rem">Pobiera wszystkie dawne transakcje tylko do podglądu – portfel, średnie ceny i dziennik PIT się nie zmieniają. Powtórzone transakcje nie dublują się.</p>
+      <div class="form-row" style="margin:0">
+        ${bnOk ? `<button class="action" ${TXH.busy ? 'disabled' : ''} onclick="bnFetch({full:true})">${TXH.busy ? 'Pobieram…' : 'Pobierz całą historię z Binance'}</button>` : `<button class="action secondary" onclick="openTab('edit');setTimeout(()=>document.getElementById('impCard')?.scrollIntoView({behavior:'smooth'}),200)">Połącz z Binance (klucz tylko do odczytu)</button>`}
+        <button class="action secondary" onclick="openTab('edit');setTimeout(()=>document.getElementById('impCard')?.scrollIntoView({behavior:'smooth'}),200)">Wczytaj plik z giełdy</button>
+        ${all.length ? `<button class="action secondary" onclick="txCsv()">Eksport CSV</button>` : ''}
+      </div>
+      <p class="small muted" style="margin:.5rem 0 0">Plik: na Binance Portfel → Historia transakcji → Eksportuj, potem w aplikacji Kupno / Sprzedaż → „Plik z giełdy”. Wszystkie transakcje z pliku trafią do historii (do portfela tylko te, które zaznaczysz).</p>
+    </div>`;
+  if (txlog.some(x => !(x.px > 0) && x.total > 0 && x.side !== 'set')) txEnrich();
+}
+function txCsv() {
+  const list = txAll().filter(x => !TXH.sym || x.sym === TXH.sym).sort((a, b) => a.t - b.t);
+  const num = n => n == null || !Number.isFinite(+n) ? '' : String(+(+n).toFixed(8)).replace('.', ',');
+  const rows = [['data', 'moneta', 'operacja', 'ilość', 'cena USD', 'zapłacono', 'waluta zapłaty', 'zł', 'źródło']];
+  list.forEach(x => rows.push([new Date(x.t).toLocaleString('sv-SE').slice(0, 16), x.sym, TX_SIDE[x.side], num(x.qty), num(x.px), num(x.total), x.quote || '', num(x.pln), txSrc(x)]));
+  downloadFile(`historia-transakcji${TXH.sym ? '-' + TXH.sym : ''}-${todayStr()}.csv`, '﻿' + rows.map(r => r.map(v => /[;"\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v).join(';')).join('\n'), 'text/csv;charset=utf-8');
+}
+// skrót w oknie monety
+function txCoinHtml(sym) {
+  const list = txAll().filter(x => x.sym === sym);
+  if (!list.length) return `<p class="small muted" style="margin:.4rem 0">Historia operacji ${esc(sym)} pojawi się po pierwszym zakupie lub pobraniu transakcji z giełdy.</p>`;
+  return `<div class="bd-top" style="margin:.6rem 0 .2rem"><strong class="small">Historia operacji (${list.length})</strong><button class="link-btn" onclick="closeModal();TXH.sym='${sym}';TXH.side='';TXH.n=60;navTo('history')">Cała historia ${esc(sym)} →</button></div>
+    <div class="cal-list">${list.slice(0, 4).map(x => txRowHtml(x, false)).join('')}</div>`;
+}
+
 /* ---------- start ---------- */
 loadState();
+loadTxlog(); if (txFromJournal()) saveTxlog();
 fillMonthSelect();
 try { localStorage.removeItem('cryptoTrading'); localStorage.removeItem('ccOffersProfile'); } catch (e) {}
 loadUi();
