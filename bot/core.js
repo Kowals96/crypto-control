@@ -76,12 +76,22 @@ async function stepCoin(ctx, coin, removed) {
     if (o.status === 'partially_filled') return (await ex.activeIds(pair)).has(o.oid);   // po anulowaniu stan „partially_filled” bywa końcowy
     return false;
   };
-  const getOrder = async (oid) => checkReplaced(await ex.getOrder(oid));
+  // Revolut X nie zwraca po ID zleceń odrzuconych (np. post-only, które przecięłoby rynek) – szukamy wtedy po client_order_id w historii;
+  // null = giełda nie zna zlecenia (decyzję, co dalej, podejmuje wywołujący)
+  const getOrder = async (oid, cid) => {
+    try { return checkReplaced(await ex.getOrder(oid)); }
+    catch (e) {
+      if (e.status !== 404) throw e;
+      const o = cid ? await ex.findByCid(pair, cid) : null;
+      return o ? checkReplaced(o) : null;
+    }
+  };
   // anuluj i poczekaj na potwierdzenie; bez potwierdzenia przerywamy (nic nie zastępujemy – ponowimy w następnym przebiegu)
-  const cancelConfirm = async (oid) => {
+  const cancelConfirm = async (oid, cid) => {
     await ex.cancel(oid);
     for (let i = 0; i < 6; i++) {
-      const o = await getOrder(oid);
+      const o = await getOrder(oid, cid);
+      if (!o) return {oid, status: 'cancelled', filledQty: 0, filledAmount: 0, fee: 0, feeCur: null};
       if (!(await isOpen(o))) return o;
       await sleep(1000);
     }
@@ -107,7 +117,7 @@ async function stepCoin(ctx, coin, removed) {
     const toVault = pnl > 0 && !lot.exit ? pnl * Math.max(0, Math.min(90, +cfg.vaultPct || 0)) / 100 : 0;
     cs.vault = (cs.vault || 0) + toVault;
     if (cfg.autoBudget && toVault) ctx.capital = Math.max(0, ctx.capital - toVault);   // kapitał policzony na starcie przebiegu zawierał już całą kwotę ze sprzedaży
-    cs.realized += pnl - toVault; cs.cycles++; st.cycles = (st.cycles || 0) + 1;
+    cs.realized += pnl - toVault; if (pnl > 0 && !lot.exit) { cs.cycles++; st.cycles = (st.cycles || 0) + 1; }
     ctx.events.push({t: now, sym, side: 'sell', px: o.filledAmount / o.filledQty, qty: soldQty, quote: proceeds, pnl, vault: toVault || undefined, reason: lot.exit ? 'exit' : 'tp'});
     notify(pnl >= 0 ? `Automat sprzedał ${sym} z zyskiem` : `Automat sprzedał ${sym}`, `${pnl >= 0 ? '+' : '−'}${fmt(Math.abs(pnl), 2)} ${quote} (${fmt(pnl / costPart * 100, 1)}%).${lot.exit ? '' : ' Zysk wraca do puli i kupuje dalej.'}`);
     lot.cost -= costPart; lot.qty -= soldQty;
@@ -126,12 +136,16 @@ async function stepCoin(ctx, coin, removed) {
     if (!p.oid && now - p.at < 10 * 60000) { cs.why = 'czekam na potwierdzenie zlecenia przez giełdę'; return {}; }
     if (!p.oid) { if (p.maker) cs.makerMiss = (cs.makerMiss || 0) + 1; cs.pend = null; }   // zlecenie nigdy nie dotarło na giełdę (np. odrzucone post-only)
     else {
-      let o = await getOrder(p.oid);
-      let open = await isOpen(o);
-      if (!open && o.status === 'partially_filled' && !o.abandoned) { o = await cancelConfirm(p.oid); }
+      let o = await getOrder(p.oid, p.cid);
+      if (!o) {                            // giełda nie zna zlecenia (odrzucone) – po 2 min uznajemy, że nic się nie kupiło
+        if (now - p.at < 2 * 60000) { cs.why = 'czekam na potwierdzenie zlecenia przez giełdę'; return {}; }
+        o = {oid: p.oid, status: 'rejected', filledQty: 0, filledAmount: 0, fee: 0, feeCur: null};
+      }
+      let open = o.status === 'rejected' ? false : await isOpen(o);
+      if (!open && o.status === 'partially_filled' && !o.abandoned) { o = await cancelConfirm(p.oid, p.cid); }
       // pierwsza transza ma się wykonać od razu; jeśli po 5 min wisi (cena uciekła) – anuluj i policz to, co się wykonało
       const stale = p.kind === 'first' && open && now - p.at > 5 * 60000;
-      if (open && (stale || liq || removed)) { o = await cancelConfirm(p.oid); open = false; }
+      if (open && (stale || liq || removed)) { o = await cancelConfirm(p.oid, p.cid); open = false; }
       if (!open) {
         cs.makerMiss = p.maker && !(o.filledQty > 0) ? (cs.makerMiss || 0) + 1 : 0;   // zlecenie bez prowizji nie weszło – po 2 próbach kupimy po rynku
         addLot(p, o); cs.pend = null;      // przejęte ręcznie: liczymy tylko to, co się wykonało
@@ -155,12 +169,13 @@ async function stepCoin(ctx, coin, removed) {
       if (!lot.sellOid) lot.sellCid = null;
     }
     if (lot.sellOid) {
-      let o = await getOrder(lot.sellOid);
+      let o = await getOrder(lot.sellOid, lot.sellCid);
+      if (!o) { lot.sellOid = null; lot.sellCid = null; lot.sellAt = now; continue; }   // sprzedaż odrzucona – wystawimy ponownie za 10 min
       if (await isOpen(o)) {
         const reprice = lot.exit && lot.sellPx > t.bid * 1.01;     // sprzedaż wyjścia, a rynek spadł – przestaw niżej
         if (!(liq && !lot.exit) && !reprice) continue;             // czeka na giełdzie
-        o = await cancelConfirm(lot.sellOid);                      // przy wyjściu: zdejmij sprzedaż +tp i wystaw sprzedaż po rynku
-      } else if (o.status === 'partially_filled' && !o.abandoned) o = await cancelConfirm(lot.sellOid);
+        o = await cancelConfirm(lot.sellOid, lot.sellCid);         // przy wyjściu: zdejmij sprzedaż +tp i wystaw sprzedaż po rynku
+      } else if (o.status === 'partially_filled' && !o.abandoned) o = await cancelConfirm(lot.sellOid, lot.sellCid);
       if (settleSell(lot, o)) continue;
       if (o.abandoned) { dropLot(lot, 'handover'); continue; }    // reszta należy już do właściciela – nie sprzedajemy jej
       lot.sellOid = null; lot.sellCid = null;
@@ -190,7 +205,7 @@ async function stepCoin(ctx, coin, removed) {
   const capOk = !(coin.cap > 0) || t.ask <= coin.cap;
   const allowed = ctx.active && trendOk && capOk && !st.halt && +coin.share > 0;
   cs.why = !ctx.active ? 'wstrzymany' : st.halt ? 'bezpiecznik' : !(+coin.share > 0) ? 'udział 0%' : !trendOk ? 'cena pod średnią 200 dni' : !capOk ? 'cena powyżej limitu' : '';
-  const cancelPend = async () => { const p = cs.pend; if (!p) return; const o = p.oid ? await cancelConfirm(p.oid) : null; if (o) addLot(p, o); cs.pend = null; };
+  const cancelPend = async () => { const p = cs.pend; if (!p) return; const o = p.oid ? await cancelConfirm(p.oid, p.cid) : null; if (o) addLot(p, o); cs.pend = null; };
   if (!allowed) { if (cs.pend) await cancelPend(); return {}; }
 
   // tryb „od razu”: wolny kapitał monety od razu w transze (każda transza żyje niezależnie: kupno → sprzedaż +tp → kupno)
@@ -215,7 +230,8 @@ async function stepCoin(ctx, coin, removed) {
       pend.oid = await place({side: 'buy', price, base, postOnly: maker, onCid: c => { pend.cid = c; }});
       // zlecenie przecina rynek – zwykle wykonuje się od razu; sprawdzamy i od razu wystawiamy sprzedaż
       for (let i = 0; i < 3 && cs.pend; i++) {
-        const o = await getOrder(pend.oid);
+        const o = await getOrder(pend.oid, pend.cid);
+        if (!o) break;                     // giełda jeszcze nie zna zlecenia albo je odrzuciła – rozstrzygnie następny przebieg
         if (!(await isOpen(o))) { cs.makerMiss = maker && !(o.filledQty > 0) ? (cs.makerMiss || 0) + 1 : 0; addLot(pend, o); cs.pend = null; } else await sleep(maker ? 300 : 1000);
       }
       if (cs.pend) break;                  // dokończymy w następnym przebiegu
