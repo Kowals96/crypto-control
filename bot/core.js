@@ -100,7 +100,13 @@ async function stepCoin(ctx, coin, removed) {
   const addLot = (p, o) => {
     const lot = o.filledQty > 0 ? lotFromOrder(o, sym, quote, p.cross) : null;
     if (!lot) return;
-    cs.lots.push({id: p.cid, buyOid: p.oid, pair, at: now, ...lot});
+    const into = p.merge && cs.lots.find(l => l.id === p.merge && !l.exit);
+    cs.lots.push({id: p.cid, buyOid: p.oid, pair, at: now, ...lot, ...(into ? {mergeInto: into.id} : {})});
+    if (into) {
+      ctx.events.push({t: now, sym, side: 'buy', px: lot.buyPx, qty: lot.qty, quote: lot.cost, n: cs.lots.indexOf(into) + 1, of: N, merge: true});
+      notify(`Automat dokupił ${sym} do transzy`, `Cena ${fmt(lot.buyPx)} ${quote} · ${fmt(lot.cost, 2)} ${quote}. Reszta kapitału dołączona do istniejącej transzy – sprzedaż przeliczona.`);
+      return;
+    }
     ctx.events.push({t: now, sym, side: 'buy', px: lot.buyPx, qty: lot.qty, quote: lot.cost, n: cs.lots.length, of: N});
     notify(`Automat kupił ${sym} (transza ${cs.lots.length}/${N})`, `Cena ${fmt(lot.buyPx)} ${quote} · ${fmt(lot.cost, 2)} ${quote}. Sprzedaż przy +${(tp * 100).toFixed(1).replace('.', ',')}%.`);
     if (cs.lots.length === N) notify(`Automat: wszystkie transze ${sym} kupione`, 'Nowe dokupy wrócą, gdy któraś transza sprzeda się z zyskiem.');
@@ -161,8 +167,40 @@ async function stepCoin(ctx, coin, removed) {
     lot.sellOid = await place({side: 'sell', price, base: qty, onCid: c => { lot.sellCid = c; }});
   };
 
+  // scalenie dokupionej reszty z transzą docelową (jedna transza = jedna sprzedaż)
+  async function doMerges() {
+    // transz więcej niż w planie (z wcześniejszych wersji): najmniejszą łączymy z kolejną najmniejszą
+    if (!liq && cfg.buyMode !== 'dip') {
+      const act = cs.lots.filter(l => !l.exit && !l.mergeInto);
+      if (act.length > N && !cs.lots.some(l => l.mergeInto)) { const [a, b] = [...act].sort((x, y) => x.cost - y.cost); a.mergeInto = b.id; }
+    }
+    for (const m of [...cs.lots]) {
+      if (!m.mergeInto) continue;
+      const tg = cs.lots.find(l => l.id === m.mergeInto && l !== m);
+      if (!tg || tg.exit || m.exit || liq) { delete m.mergeInto; continue; }          // brak celu / wyjście – zostaje osobną transzą
+      // sprzedaż dołączanej transzy (gdy już miała własną) – zdejmujemy najpierw
+      if (m.sellCid && !m.sellOid) { m.sellOid = await recover(m.sellCid); if (!m.sellOid) { if (now - (m.sellAt || 0) < 10 * 60000) continue; m.sellCid = null; } }
+      if (m.sellOid) {
+        const o = await cancelConfirm(m.sellOid, m.sellCid);
+        if (settleSell(m, o)) { delete tg.mergeInto; continue; }
+        m.sellOid = null; m.sellCid = null;
+      }
+      if (tg.sellCid && !tg.sellOid) { tg.sellOid = await recover(tg.sellCid); if (!tg.sellOid) { if (now - (tg.sellAt || 0) < 10 * 60000) continue; tg.sellCid = null; } }
+      if (tg.sellOid) {
+        const o = await cancelConfirm(tg.sellOid, tg.sellCid);
+        if (settleSell(tg, o)) { delete m.mergeInto; continue; }                       // cel zdążył się sprzedać – dokupiona reszta zostaje osobną transzą
+        tg.sellOid = null; tg.sellCid = null;
+      }
+      tg.qty += m.qty; tg.cost += m.cost; tg.buyPx = tg.cost / tg.qty;
+      cs.lots = cs.lots.filter(x => x !== m);
+      await placeTp(tg);
+    }
+  }
+  await doMerges();
+
   // 2) transze: zlecenia sprzedaży
   for (const lot of [...cs.lots]) {
+    if (lot.mergeInto) continue;           // czeka na scalenie
     if (!lot.sellOid && lot.sellCid) {
       lot.sellOid = await recover(lot.sellCid);
       if (!lot.sellOid && now - (lot.sellAt || 0) < 10 * 60000) continue;    // jak wyżej: poczekaj, zanim wystawisz ponownie
@@ -215,7 +253,10 @@ async function stepCoin(ctx, coin, removed) {
     const pool = ctx.pool(coin, cs), minQ = Math.max(MIN_QUOTE, info.minQuote);
     for (let k = 0; k < N + 2; k++) {
       const free = pool - cs.lots.reduce((a, l) => a + l.cost, 0);
-      let amt = Math.min(pool / N, free, ctx.globalRoom());
+      // nigdy więcej transz niż w planie: reszta (np. po częściowo wykonanym zakupie) dokupuje się do najmniejszej transzy
+      const full = cs.lots.length >= N, into = full ? cs.lots.filter(l => !l.exit && !l.mergeInto).sort((a, b) => a.cost - b.cost)[0] : null;
+      if (full && (!into || cs.lots.some(l => l.mergeInto))) break;
+      let amt = full ? Math.min(free, ctx.globalRoom()) : Math.min(pool / N, free, ctx.globalRoom());
       if (Math.min(free, ctx.globalRoom()) - amt < minQ) amt = Math.min(free, ctx.globalRoom());   // resztka dołącza do tej transzy
       if (!(amt >= minQ)) { if (!cs.lots.length) cs.why = ctx.globalRoom() < minQ ? 'cały kapitał automatu jest zaangażowany' : 'za mało kapitału na transzę (min. 10)'; break; }
       const avail = await ex.available(quote) - vaultNow(st);   // sejf nigdy nie idzie na zakupy
@@ -225,7 +266,7 @@ async function stepCoin(ctx, coin, removed) {
       const maker = cfg.makerBuy !== false && (cs.makerMiss || 0) < 2;
       const price = maker ? floorTo(t.bid, info.quoteStep) : ceilTo(t.ask * 1.003, info.quoteStep), base = floorTo(amt / +price, info.baseStep);
       if (+base < info.minBase || +base * +price < info.minQuote) { cs.why = 'transza poniżej minimalnej wielkości zlecenia'; break; }
-      const pend = {kind: 'first', px: +price, base: +base, quote: +base * +price, at: now, cross: !maker, maker, pair, cid: null, oid: null};
+      const pend = {kind: 'first', px: +price, base: +base, quote: +base * +price, at: now, cross: !maker, maker, pair, cid: null, oid: null, merge: into ? into.id : undefined};
       cs.pend = pend;
       pend.oid = await place({side: 'buy', price, base, postOnly: maker, onCid: c => { pend.cid = c; }});
       // zlecenie przecina rynek – zwykle wykonuje się od razu; sprawdzamy i od razu wystawiamy sprzedaż
@@ -235,7 +276,8 @@ async function stepCoin(ctx, coin, removed) {
         if (!(await isOpen(o))) { cs.makerMiss = maker && !(o.filledQty > 0) ? (cs.makerMiss || 0) + 1 : 0; addLot(pend, o); cs.pend = null; } else await sleep(maker ? 300 : 1000);
       }
       if (cs.pend) break;                  // dokończymy w następnym przebiegu
-      for (const lot of cs.lots) if (!lot.sellOid && !lot.sellCid && !lot.exit) await placeTp(lot);
+      await doMerges();
+      for (const lot of cs.lots) if (!lot.sellOid && !lot.sellCid && !lot.exit && !lot.mergeInto) await placeTp(lot);
     }
     return {};
   }
