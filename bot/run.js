@@ -154,6 +154,7 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
       }
       root.weekly = wk;
     }
+    if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') root.lastDispatch = Date.now();   // Cloudflare (albo ręczne „Run workflow”)
     root.updatedAt = Date.now();
     await save();
     beat.ok = !errors.length; beat.msg = errors.length ? clean(errors.join(' · ')) : '';
@@ -164,6 +165,7 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
     // które sekrety są ustawione (tylko tak/nie, bez wartości) – aplikacja pokazuje listę kontrolną
     beat.sec = {api: !!REVX_API_KEY, priv: !!REVX_PRIVATE_KEY, max: MAX_BUDGET > 0, uid: !!ONLY_UID};
     beat.ev = process.env.GITHUB_EVENT_NAME || '';
+    beat.disp = root.lastDispatch || 0;
     await writeBeat();
     await push(subs, msgs);
   }
