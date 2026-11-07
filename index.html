@@ -1229,7 +1229,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v52 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v53 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8193,6 +8193,10 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '53', date: '2026-11-07', title: 'Automat: zgodny podgląd transz', items: [
+    'Kwadraciki pokazują każdą faktycznie kupioną transzę i czekające zlecenie kupna – także gdy jest ich więcej niż w planie.',
+    'Kafelek pokazuje trzy części: w transzach / czeka na zakup / wolne – suma zgadza się z wartością automatu.',
+    'Monety usunięte z ustawień, które mają jeszcze transze lub zlecenie, nadal mają swoją kartę.']},
   {v: '52', date: '2026-11-07', title: 'Automat: poprawny status Cloudflare', items: [
     'Krok „Szybsze przebiegi” pokazuje, kiedy Cloudflare ostatnio uruchomił automat – nie myli go już z przebiegami z harmonogramu GitHuba, które działają równolegle jako zapas.']},
   {v: '51', date: '2026-11-07', title: 'Automat: jasne kwoty przy monetach', items: [
@@ -8871,12 +8875,13 @@ function botSetupHtml(c, hasKey, step) {
 function botCoinHtml(c, coin, cs, q) {
   const N = botN(c);
   const lots = cs?.lots || [], px = cs?.px || prices[coin.sym]?.usd || 0;
-  const dots = Array.from({length: N}, (_, i) => `<i class="${i < lots.length ? 'on' : cs?.pend && i === lots.length ? 'wait' : ''}"></i>`).join('');
+  const slots = Math.max(N, lots.length + (cs?.pend ? 1 : 0));
+  const dots = Array.from({length: slots}, (_, i) => `<i class="${i < lots.length ? 'on' : cs?.pend && i === lots.length ? 'wait' : ''}"></i>`).join('');
   const val = lots.reduce((a, l) => a + l.qty * px, 0), cost = lots.reduce((a, l) => a + l.cost, 0);
   const trend = cs?.trendUp === true ? '<span class="chip-s pos">nad średnią 200 dni</span>' : cs?.trendUp === false ? '<span class="chip-s neg">pod średnią 200 dni</span>' : '';
   return `<div class="bot-coin">
     <div class="bot-coin-h"><span class="pf-sym">${coinIcon(esc(coin.sym), 'sm')}<strong>${esc(coin.sym)}</strong></span><span class="muted small">${px ? pfmt(px) + ' ' + q : ''}</span>${c.trend ? trend : ''}</div>
-    <div class="bot-dots" title="Transze: kupione / czeka / wolne">${dots}<span class="small muted">${lots.length}/${N} transz${c.tpMode === 'atr' && cs?.tpNow ? ` · próg teraz +${fixed(cs.tpNow * 100, 1)}%` : ''}</span></div>
+    <div class="bot-dots" title="Transze: kupione / czeka / wolne">${dots}<span class="small muted">${lots.length} kupion${lots.length === 1 ? 'a' : lots.length >= 2 && lots.length <= 4 ? 'e' : 'ych'}${cs?.pend ? ' + 1 czeka' : ''} (plan: ${N})${c.tpMode === 'atr' && cs?.tpNow ? ` · próg teraz +${fixed(cs.tpNow * 100, 1)}%` : ''}</span></div>
     ${lots.length ? `<div class="small" style="margin:.35rem 0">W transzach: <strong class="sens">${qfmt(cost, q)}</strong> · teraz <strong class="sens ${val >= cost ? 'positive' : 'negative'}">${qfmt(val, q)}</strong></div>` : ''}
     ${lots.map((l, i) => `<div class="bot-lot"><span>#${i + 1}</span><span>kupno ${pfmt(l.buyPx)}</span><span>→ sprzedaż ${l.sellPx ? pfmt(l.sellPx) : '…'}${l.exit ? ' (wyjście)' : ''}</span>
       <span class="${px >= l.buyPx ? 'positive' : 'negative'}">${l.sellPx && px ? (px >= l.sellPx ? 'na progu' : 'brakuje ' + pct((l.sellPx / px - 1) * 100)) : ''}</span></div>`).join('')}
@@ -8996,7 +9001,7 @@ function renderBot() {
       <div><span>Wartość automatu</span><strong class="sens">${qfmt(t.value_all ?? (t.cash + t.value + (t.pending || 0)), q)}</strong></div>
       <div><span>Zysk zrealizowany</span><strong class="sens ${t.realized >= 0 ? 'positive' : 'negative'}">${signed(t.realized, v => qfmt(v, q))}</strong></div>
       <div><span>Cykle (sprzedaże z zyskiem)</span><strong>${t.cycles}</strong></div>
-      <div><span>W transzach / wolne</span><strong class="sens">${qfmt(t.invested, q)} / ${qfmt(Math.max(0, t.cash), q)}</strong></div>
+      <div><span>W transzach / czeka na zakup / wolne</span><strong class="sens">${qfmt(t.invested, q)} / ${qfmt(t.pending || 0, q)} / ${qfmt(Math.max(0, t.cash), q)}</strong></div>
       ${t.vault > 0 || +c.vaultPct > 0 ? `<div><span>Sejf zysków (nie pracuje)</span><strong class="sens">${qfmt(t.vault || 0, q)}</strong></div>` : ''}
     </div>
     ${t.vault > 0 ? `<div class="form-row" style="margin:.4rem 0 0;align-items:center"><span class="small muted" style="flex:1 1 220px">Sejf leży jako wolne ${esc(q)} na giełdzie – możesz go wypłacić. Po wypłacie stuknij przycisk, żeby automat wyzerował licznik (bez tego wypłata wyglądałaby jak strata kapitału).</span>
@@ -9012,7 +9017,8 @@ function renderBot() {
     </div>` : ''}
 
     <h3 style="margin:1.1rem 0 .4rem;font-size:.95rem">Monety</h3>
-    <div class="bot-coin-list">${c.coins.map(coin => botCoinHtml(c, coin, sub?.coins?.[coin.sym], q)).join('')}</div>
+    <div class="bot-coin-list">${[...c.coins, ...Object.entries(sub?.coins || {}).filter(([s, x]) => !c.coins.some(k => k.sym === s) && (x.lots?.length || x.pend)).map(([s]) => ({sym: s, share: 0, removed: true}))]
+      .map(coin => botCoinHtml(c, coin, sub?.coins?.[coin.sym], q)).join('')}</div>
 
     ${hist.length ? `<div class="bd-top" style="margin:1.1rem 0 .4rem"><h3 style="margin:0;font-size:.95rem">Ostatnie transakcje${live ? '' : ' (próba)'}</h3><button class="action secondary" onclick="botCsv()">Eksport CSV (${(sub?.history || []).length})</button></div>
       <div class="cal-list">${hist.map(h => `<div class="td-row"><div class="td-day"><strong>${new Date(h.t).getDate()}</strong><span>${['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'][new Date(h.t).getMonth()]}</span></div>
