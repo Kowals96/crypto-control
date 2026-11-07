@@ -1229,7 +1229,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v50 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v51 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8193,6 +8193,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '51', date: '2026-11-07', title: 'Automat: jasne kwoty przy monetach', items: [
+    'Nad suwakami monet widać, od jakiego kapitału liczone są kwoty: próbnego (pieniądze na niby) czy prawdziwego z Revolut X.']},
   {v: '50', date: '2026-11-05', title: 'Historia kupna i sprzedaży każdej monety', items: [
     'Nowa zakładka Portfel → Historia: każde kupno i sprzedaż z datą, ilością, ceną i tym, czym zapłacono; filtr po monecie, podsumowanie (ile kupiono, średnia cena, ile wydano) i eksport CSV.',
     'Zapisuje się automatycznie przy „Kupno / Sprzedaż” i przy pobieraniu transakcji z Binance lub z pliku. Wcześniejsze operacje zostały odtworzone z dziennika transakcji.',
@@ -8764,6 +8766,14 @@ function botAddCoin(sym) {
 }
 const botOpt = (s, sel) => `<option value="${s}"${sel ? ' selected' : ''}>${s} – ${esc(BOT_NAMES[s] || s)}</option>`;
 function botDelCoin(i) { const c = botCfg(); c.coins.splice(i, 1); lsSet(LS.botCfg, c); renderBot(); }
+// skąd się biorą kwoty przy suwakach – żeby nie myliły się kwoty próbne z prawdziwymi
+function botCapNote(c) {
+  const live = c.mode === 'live', st = BOT.state?.[live ? 'live' : 'paper'], cap = botCap(c), q = c.quote;
+  if (!c.autoBudget) return `Kwoty liczone od budżetu automatu: <strong class="sens">${qfmt(cap, q)}</strong>${live ? ' (na żywo najwyżej BOT_MAX_BUDGET).' : ' – pieniądze próbne.'}`;
+  if (live) return st?.capital > 0 ? `Kwoty liczone od kapitału na Revolut X z ostatniego przebiegu: <strong class="sens">${qfmt(cap, q)}</strong> (wolne ${esc(q)} + transze, najwyżej BOT_MAX_BUDGET).`
+    : `Kwoty pojawią się po pierwszym przebiegu na żywo – automat policzy je z wolnych ${esc(q)} na Revolut X (najwyżej BOT_MAX_BUDGET).`;
+  return `Teraz pokazuję kwoty <strong>trybu próbnego</strong> (pieniądze na niby: <span class="sens">${qfmt(cap, q)}</span>). Po włączeniu „Na żywo” kwoty policzą się z Twoich wolnych ${esc(q)} na Revolut X, najwyżej do BOT_MAX_BUDGET – procenty zostają te same.`;
+}
 function botCap(c) {
   const st = BOT.state?.[c.mode === 'live' ? 'live' : 'paper'], lim = +c.budget > 0 ? +c.budget : Infinity;
   if (!c.autoBudget) return +c.budget || 0;
@@ -8932,6 +8942,7 @@ function botSettingsHtml(c, live) {
     <div class="set-row" style="padding:.4rem 0"><div><strong class="small">Podsumowanie tygodnia</strong><span class="small">W niedzielę wieczorem: liczba transakcji, zysk tygodnia i porównanie z trzymaniem.</span></div>
       <label class="switch"><input type="checkbox"${c.weekly !== false ? ' checked' : ''} onchange="botField('weekly', this.checked)"><span></span></label></div>
     <h3 style="margin:.8rem 0 .3rem;font-size:.92rem">Monety</h3>
+    <p class="small muted" style="margin:0 0 .4rem">${botCapNote(c)}</p>
     <div class="bot-coins-set">${c.coins.map((x, i) => `<div class="bot-cset">
       <select onchange="botSetCoin(${i},'sym',this.value)" aria-label="Moneta">${BOT_COINS.filter(s => s === x.sym || !c.coins.some(y => y.sym === s)).map(s => botOpt(s, s === x.sym)).join('')}</select>
       <div class="bot-slider"><div class="small"><strong id="botShareV${i}">${x.share ?? 0}%</strong> kapitału · <span class="sens" id="botShareQ${i}">${qfmt(botCap(c) * (+x.share || 0) / 100, c.quote)}</span>
