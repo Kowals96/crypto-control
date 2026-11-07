@@ -124,7 +124,7 @@ async function stepCoin(ctx, coin, removed) {
     cs.vault = (cs.vault || 0) + toVault;
     if (cfg.autoBudget && toVault) ctx.capital = Math.max(0, ctx.capital - toVault);   // kapitał policzony na starcie przebiegu zawierał już całą kwotę ze sprzedaży
     cs.realized += pnl - toVault; if (pnl > 0 && !lot.exit) { cs.cycles++; st.cycles = (st.cycles || 0) + 1; }
-    ctx.events.push({t: now, sym, side: 'sell', px: o.filledAmount / o.filledQty, qty: soldQty, quote: proceeds, pnl, vault: toVault || undefined, reason: lot.exit ? 'exit' : 'tp'});
+    ctx.events.push({t: now, sym, side: 'sell', px: o.filledAmount / o.filledQty, qty: soldQty, quote: proceeds, pnl, vault: toVault || undefined, reason: lot.exit ? 'exit' : lot.trailSell ? 'trail' : 'tp'});
     notify(pnl >= 0 ? `Automat sprzedał ${sym} z zyskiem` : `Automat sprzedał ${sym}`, `${pnl >= 0 ? '+' : '−'}${fmt(Math.abs(pnl), 2)} ${quote} (${fmt(pnl / costPart * 100, 1)}%).${lot.exit ? '' : ' Zysk wraca do puli i kupuje dalej.'}`);
     lot.cost -= costPart; lot.qty -= soldQty;
     if (lot.qty < dustBase * 1.0001 || lot.qty * t.bid < info.minQuote) { dropLot(lot); return true; }
@@ -159,7 +159,12 @@ async function stepCoin(ctx, coin, removed) {
     }
   }
 
+  // sprzedaż „podążająca”: po osiągnięciu progu automat śledzi szczyt i sprzedaje po spadku o trail% od szczytu (nigdy poniżej +1% od zakupu)
+  const trailMode = cfg.sellMode === 'trail';
+  const trail = Math.max(0.01, Math.min(0.10, (+cfg.trailPct || 3) / 100));
+  const MIN_PROFIT = 0.01;
   const placeTp = async (lot) => {
+    if (trailMode && !lot.exit) { lot.armPx = lot.armPx || lot.buyPx * (1 + tp); return; }     // bez zlecenia na giełdzie – pilnuje automat
     const qty = floorTo(lot.qty, info.baseStep), price = ceilTo(lot.buyPx * (1 + tp), info.quoteStep);
     if (+price < lot.buyPx) throw new Error('Błąd bezpieczeństwa: cena sprzedaży poniżej zakupu');
     if (+qty < info.minBase || +qty * +price < info.minQuote) { dropLot(lot); return; }
@@ -192,6 +197,7 @@ async function stepCoin(ctx, coin, removed) {
         tg.sellOid = null; tg.sellCid = null;
       }
       tg.qty += m.qty; tg.cost += m.cost; tg.buyPx = tg.cost / tg.qty;
+      tg.armPx = null; tg.armed = false; tg.peak = 0; tg.trailSell = false;   // nowa średnia – próg liczony od nowa
       cs.lots = cs.lots.filter(x => x !== m);
       await placeTp(tg);
     }
@@ -211,14 +217,33 @@ async function stepCoin(ctx, coin, removed) {
       if (!o) { lot.sellOid = null; lot.sellCid = null; lot.sellAt = now; continue; }   // sprzedaż odrzucona – wystawimy ponownie za 10 min
       if (await isOpen(o)) {
         const reprice = lot.exit && lot.sellPx > t.bid * 1.01;     // sprzedaż wyjścia, a rynek spadł – przestaw niżej
-        if (!(liq && !lot.exit) && !reprice) continue;             // czeka na giełdzie
+        const toTrail = trailMode && !lot.exit && !lot.trailSell && !liq;   // przejście na sprzedaż podążającą: zdejmij zwykłe zlecenie +próg
+        if (!(liq && !lot.exit) && !reprice && !toTrail) continue;  // czeka na giełdzie
         o = await cancelConfirm(lot.sellOid, lot.sellCid);         // przy wyjściu: zdejmij sprzedaż +tp i wystaw sprzedaż po rynku
       } else if (o.status === 'partially_filled' && !o.abandoned) o = await cancelConfirm(lot.sellOid, lot.sellCid);
       if (settleSell(lot, o)) continue;
       if (o.abandoned) { dropLot(lot, 'handover'); continue; }    // reszta należy już do właściciela – nie sprzedajemy jej
-      lot.sellOid = null; lot.sellCid = null;
+      lot.sellOid = null; lot.sellCid = null; lot.trailSell = false;
     }
     if (liq) lot.exit = true;
+    if (trailMode && !lot.exit) {
+      lot.armPx = lot.armPx || lot.sellPx || lot.buyPx * (1 + tp);
+      const floorPx = lot.buyPx * (1 + MIN_PROFIT);
+      if (!lot.armed) {
+        if (t.bid >= lot.armPx) { lot.armed = true; lot.peak = t.bid; notify(`Automat: ${sym} osiągnął próg`, `Cena ${fmt(t.bid)} ${quote} (+${fmt((t.bid / lot.buyPx - 1) * 100, 1)}%). Podążam za ceną – sprzedam po spadku o ${fmt(trail * 100, 1)}% od szczytu.`); }
+        continue;
+      }
+      lot.peak = Math.max(lot.peak || 0, t.bid);
+      const stop = Math.max(lot.armPx, lot.peak * (1 - trail));
+      if (t.bid > stop) continue;                                  // cena dalej wysoko – podążamy
+      if (t.bid < floorPx) { lot.armed = false; lot.peak = 0; continue; }   // gwałtowny spadek pod +1% – nie sprzedajemy ze stratą, czekamy na ponowny próg
+      const qty = floorTo(lot.qty, info.baseStep), price = floorTo(Math.max(t.bid * 0.998, floorPx), info.quoteStep);
+      if (+price < lot.buyPx) throw new Error('Błąd bezpieczeństwa: cena sprzedaży poniżej zakupu');
+      if (+qty < info.minBase || +qty * +price < info.minQuote) { dropLot(lot); continue; }
+      lot.sellPx = +price; lot.sellAt = now; lot.trailSell = true;
+      lot.sellOid = await place({side: 'sell', price, base: qty, onCid: c => { lot.sellCid = c; }});
+      continue;
+    }
     const exitPx = floorTo(t.bid * 0.995, info.quoteStep);
     const qty = floorTo(lot.qty, info.baseStep), price = lot.exit ? exitPx : ceilTo(lot.buyPx * (1 + tp), info.quoteStep);
     if (!lot.exit && +price < lot.buyPx) throw new Error('Błąd bezpieczeństwa: cena sprzedaży poniżej zakupu');

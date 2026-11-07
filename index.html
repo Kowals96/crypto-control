@@ -1229,7 +1229,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v53 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v54 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -8193,6 +8193,10 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '54', date: '2026-11-07', title: 'Automat: sprzedaż podążająca', items: [
+    'Nowy sposób sprzedaży: po dojściu do progu automat podąża za ceną i sprzedaje dopiero po spadku o wybrany % od szczytu (domyślnie 3%). Nigdy poniżej +1% od zakupu.',
+    'Transz nigdy nie jest więcej niż w planie – reszta po częściowym zakupie dokupuje się do najmniejszej transzy.',
+    'Zlecenia odrzucone przez Revolut X nie blokują już automatu.']},
   {v: '53', date: '2026-11-07', title: 'Automat: zgodny podgląd transz', items: [
     'Kwadraciki pokazują każdą faktycznie kupioną transzę i czekające zlecenie kupna – także gdy jest ich więcej niż w planie.',
     'Kafelek pokazuje trzy części: w transzach / czeka na zakup / wolne – suma zgadza się z wartością automatu.',
@@ -8682,7 +8686,7 @@ const botDipOf = (c, x) => +x.dip > 0 ? +x.dip : botDipDef(c, x.sym);
 const botSteps = (c, x) => [1, 1.5, 2].slice(0, botN(c) - 1).map(k => +(botDipOf(c, x) * k).toFixed(2));
 const botDipText = (c, x, d = botDipOf(c, x)) => [1, 1.5, 2].slice(0, botN(c) - 1).map((k, j) => `${['druga', 'trzecia', 'czwarta'][j]} przy −${upto(d * k, 1)}%`).join(', ');
 const botMult = sym => sym === 'BTC' ? 1 : sym === 'ETH' ? 1.5 : 2;                    // zmienniejsze monety: szersze odstępy (z symulacji)
-const BOT_DEFAULT = {v: 1, mode: 'off', quote: 'USD', budget: 1000, tranches: 2, buyMode: 'now', autoBudget: true, tp: 5, tpMode: 'fixed', atrK: 2, vaultPct: 0, makerBuy: true, weekly: true, trend: true, notify: true,
+const BOT_DEFAULT = {v: 1, mode: 'off', quote: 'USD', budget: 1000, tranches: 2, buyMode: 'now', autoBudget: true, tp: 5, tpMode: 'fixed', atrK: 2, sellMode: 'tp', trailPct: 3, vaultPct: 0, makerBuy: true, weekly: true, trend: true, notify: true,
   coins: [{sym: 'BTC', share: 50, cap: null, exit: null}, {sym: 'ETH', share: 50, cap: null, exit: null}]};
 LS.botCfg = 'ccBotCfg'; LS.botKey = 'ccBotKey';
 const BOT = {beat: null, state: null, loadedAt: 0, loading: false, msg: '', msgOk: true, keys: null, confirmLive: false, confirmSell: null, err: ''};
@@ -8706,6 +8710,7 @@ async function botDec(s, aad) {
 // ustawienia wysyłane do serwera: odstępy liczone z wybranego stylu, bez zbędnych pól
 function botServerCfg(c) {
   return {v: 1, mode: c.mode, paused: !!c.paused, quote: c.quote, budget: +c.budget || 0, buyMode: c.buyMode === 'dip' ? 'dip' : 'now', autoBudget: !!c.autoBudget, trend: !!c.trend, notify: c.notify !== false, cmd: c.cmd || null,
+    sellMode: c.sellMode === 'trail' ? 'trail' : 'tp', trailPct: Math.max(1, Math.min(10, +c.trailPct || 3)),
     tpMode: c.tpMode === 'atr' ? 'atr' : 'fixed', atrK: Math.max(1, Math.min(4, +c.atrK || 2)), vaultPct: Math.max(0, Math.min(90, +c.vaultPct || 0)), makerBuy: c.makerBuy !== false, weekly: c.weekly !== false,
     coins: c.coins.filter(x => BOT_COINS.includes(x.sym)).map(x => ({sym: x.sym, share: +x.share || 0, tp: +c.tp || 5, steps: botSteps(c, x),
       cap: +x.cap > 0 ? +x.cap : null, exit: +x.exit > 0 ? +x.exit : null})), updatedAt: Date.now()};
@@ -8872,6 +8877,16 @@ function botSetupHtml(c, hasKey, step) {
   </div>`;
 }
 
+function botLotHtml(l, i, c, px) {
+  const head = `<span>#${i + 1}</span><span>kupno ${pfmt(l.buyPx)}</span>`;
+  if (c.sellMode === 'trail' && !l.exit && !l.trailSell) {
+    const arm = l.armPx || l.sellPx || l.buyPx * (1 + (+c.tp || 5) / 100), tr = (+c.trailPct || 3) / 100;
+    if (l.armed && l.peak) { const stop = Math.max(arm, l.peak * (1 - tr)); return `<div class="bot-lot">${head}<span>podąża · szczyt ${pfmt(l.peak)}</span><span class="positive">sprzeda przy ≤ ${pfmt(stop)}</span></div>`; }
+    return `<div class="bot-lot">${head}<span>→ próg ${pfmt(arm)}</span><span class="${px >= l.buyPx ? 'positive' : 'negative'}">${px ? (px >= arm ? 'na progu' : 'brakuje ' + pct((arm / px - 1) * 100)) : ''}</span></div>`;
+  }
+  return `<div class="bot-lot">${head}<span>→ sprzedaż ${l.sellPx ? pfmt(l.sellPx) : '…'}${l.exit ? ' (wyjście)' : l.trailSell ? ' (po szczycie)' : ''}</span>
+    <span class="${px >= l.buyPx ? 'positive' : 'negative'}">${l.sellPx && px ? (px >= l.sellPx ? 'na progu' : 'brakuje ' + pct((l.sellPx / px - 1) * 100)) : ''}</span></div>`;
+}
 function botCoinHtml(c, coin, cs, q) {
   const N = botN(c);
   const lots = cs?.lots || [], px = cs?.px || prices[coin.sym]?.usd || 0;
@@ -8883,8 +8898,7 @@ function botCoinHtml(c, coin, cs, q) {
     <div class="bot-coin-h"><span class="pf-sym">${coinIcon(esc(coin.sym), 'sm')}<strong>${esc(coin.sym)}</strong></span><span class="muted small">${px ? pfmt(px) + ' ' + q : ''}</span>${c.trend ? trend : ''}</div>
     <div class="bot-dots" title="Transze: kupione / czeka / wolne">${dots}<span class="small muted">${lots.length} kupion${lots.length === 1 ? 'a' : lots.length >= 2 && lots.length <= 4 ? 'e' : 'ych'}${cs?.pend ? ' + 1 czeka' : ''} (plan: ${N})${c.tpMode === 'atr' && cs?.tpNow ? ` · próg teraz +${fixed(cs.tpNow * 100, 1)}%` : ''}</span></div>
     ${lots.length ? `<div class="small" style="margin:.35rem 0">W transzach: <strong class="sens">${qfmt(cost, q)}</strong> · teraz <strong class="sens ${val >= cost ? 'positive' : 'negative'}">${qfmt(val, q)}</strong></div>` : ''}
-    ${lots.map((l, i) => `<div class="bot-lot"><span>#${i + 1}</span><span>kupno ${pfmt(l.buyPx)}</span><span>→ sprzedaż ${l.sellPx ? pfmt(l.sellPx) : '…'}${l.exit ? ' (wyjście)' : ''}</span>
-      <span class="${px >= l.buyPx ? 'positive' : 'negative'}">${l.sellPx && px ? (px >= l.sellPx ? 'na progu' : 'brakuje ' + pct((l.sellPx / px - 1) * 100)) : ''}</span></div>`).join('')}
+    ${lots.map((l, i) => botLotHtml(l, i, c, px)).join('')}
     ${cs?.pend ? `<div class="small muted">${cs.pend.kind === 'first' ? 'Kupuje pierwszą transzę' : `Czeka dokup przy <strong>${pfmt(cs.pend.px)}</strong> ${q} (${px ? pct((cs.pend.px / px - 1) * 100) : ''})`} · ${qfmt(cs.pend.quote, q)}</div>` : ''}
     ${cs?.why ? `<div class="small muted">Nowe zakupy stoją: ${esc(cs.why)}.</div>` : ''}
     ${cs?.note || cs?.err ? `<div class="small negative">${esc(cs.note || cs.err)}</div>` : ''}
@@ -8921,7 +8935,13 @@ function botSettingsHtml(c, live) {
       <div><label class="small muted" for="botQuote">Waluta na giełdzie</label><br><select id="botQuote" ${busyQ ? 'disabled title="Zmiana waluty możliwa, gdy automat nie ma transz"' : ''} onchange="botField('quote', this.value)">${['USD', 'USDC', 'EUR'].map(x => `<option${x === c.quote ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
       ${c.tpMode !== 'atr' ? `<div><label class="small muted" for="botTp">Sprzedaż przy zysku (%)</label><br><input type="number" id="botTp" min="1" max="20" step="0.5" value="${c.tp}" onchange="botField('tp', +this.value || 5)" style="max-width:90px"></div>` : ''}
     </div>
-    <div style="margin:.7rem 0"><span class="small muted">Próg sprzedaży</span><br>
+    <div style="margin:.7rem 0"><span class="small muted">Sposób sprzedaży</span><br>
+      <span class="seg"><button class="${c.sellMode !== 'trail' ? 'on' : ''}" onclick="botField('sellMode','tp')">od razu przy progu</button><button class="${c.sellMode === 'trail' ? 'on' : ''}" onclick="botField('sellMode','trail')">podążająca (zalecana)</button></span>
+      ${c.sellMode === 'trail' ? `<div class="bot-slider" style="margin-top:.4rem"><div class="small">Sprzedaj po spadku od szczytu o: <strong id="botTrailV">${fixed(+c.trailPct || 3, 1)}%</strong></div>
+        <input type="range" min="2" max="6" step="0.5" value="${+c.trailPct || 3}" aria-label="Spadek od szczytu" oninput="document.getElementById('botTrailV').textContent=(+this.value).toFixed(1).replace('.',',')+'%'" onchange="botField('trailPct', +this.value)"></div>
+        <p class="small muted" style="margin:.35rem 0 0">Gdy cena dojdzie do progu (np. +5%), automat nie sprzedaje od razu, tylko podąża za ceną i sprzedaje dopiero, gdy spadnie o ${fixed(+c.trailPct || 3, 1)}% od najwyższego punktu – w hossie łapie większe ruchy. Nigdy nie sprzedaje poniżej +1% od zakupu. W tym trybie na Revolut X nie widać zleceń sprzedaży – pilnuje ich automat co 5 minut. W symulacji BTC+SOL (2021–2026, 3 lata) typowo ok. 5 370 $ z 1000 $ wobec 3 860 $ przy sprzedaży od razu; to przeszłość, nie prognoza.</p>`
+      : `<p class="small muted" style="margin:.35rem 0 0">Każda transza ma na giełdzie zlecenie sprzedaży przy progu i sprzedaje się od razu, gdy cena go dotknie.</p>`}</div>
+    <div style="margin:.7rem 0"><span class="small muted">Próg sprzedaży${c.sellMode === 'trail' ? ' (od niego zaczyna się podążanie)' : ''}</span><br>
       <span class="seg"><button class="${c.tpMode !== 'atr' ? 'on' : ''}" onclick="botField('tpMode','fixed')">stały %</button><button class="${c.tpMode === 'atr' ? 'on' : ''}" onclick="botField('tpMode','atr')">zależny od zmienności</button></span>
       ${c.tpMode === 'atr' ? `<div class="bot-slider" style="margin-top:.4rem"><div class="small">Mnożnik dziennego ruchu: <strong id="botAtrV">${esc(botAtrText(c, +c.atrK || 2))}</strong></div>
         <input type="range" min="1" max="4" step="0.5" value="${+c.atrK || 2}" aria-label="Mnożnik zmienności" oninput="botAtrSlide(this.value)" onchange="botField('atrK', +this.value)"></div>
@@ -9041,7 +9061,7 @@ function renderBot() {
 
     <h3 style="margin:1.1rem 0 .4rem;font-size:.95rem">Konfiguracja</h3>
     ${botSetupHtml(c, hasKey, step)}
-    <p class="small muted" style="margin:.8rem 0 0">Zasada: każda transza sprzedaje się przy ${c.tpMode === 'atr' ? 'progu zależnym od zmienności monety (2–12%)' : '+' + fixed(+c.tp, 1) + '%'} od własnej ceny zakupu, nigdy ze stratą (poza „Sprzedaj wszystko” i ceną wyjścia). Kolejne transze czekają na giełdzie jako zlecenia przy spadkach. Automat sprzedaje tylko to, co sam kupił. Wyniki historyczne przy wyborze liczby transz to przeszłość, nie prognoza i nie porada inwestycyjna.</p>`);
+    <p class="small muted" style="margin:.8rem 0 0">Zasada: każda transza ${c.sellMode === 'trail' ? 'po dojściu do' : 'sprzedaje się przy'} ${c.tpMode === 'atr' ? 'progu zależnym od zmienności monety (2–12%)' : '+' + fixed(+c.tp, 1) + '%'} od własnej ceny zakupu${c.sellMode === 'trail' ? ` podąża za ceną i sprzedaje się po spadku o ${fixed(+c.trailPct || 3, 1)}% od szczytu` : ''}, nigdy ze stratą (poza „Sprzedaj wszystko” i ceną wyjścia). Kolejne transze czekają na giełdzie jako zlecenia przy spadkach. Automat sprzedaje tylko to, co sam kupił. Wyniki historyczne przy wyborze liczby transz to przeszłość, nie prognoza i nie porada inwestycyjna.</p>`);
 }
 // eksport transakcji automatu (plik tylko na tym urządzeniu)
 function botCsv() {
