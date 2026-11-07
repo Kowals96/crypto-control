@@ -135,6 +135,16 @@ const clean = s => String(s || '').replace(/\d[\d.,]{3,}/g, '…').slice(0, 160)
         const r = await runBot({ex, cfg: jobCfg, st, job, maxBudget: job === 'live' ? MAX_BUDGET : 0, notify: (t, b) => notify(job === 'paper' ? '[próba] ' + t : t, b), save, trend});
         errors.push(...r.errors); acted += r.events.length;
       } catch (e) { errors.push(clean(e.message)); }
+      // diagnostyka do publicznego logu: tylko liczby zleceń i tak/nie – bez kwot, cen i sald
+      if (job === 'live' && process.env.BOT_DIAG !== '0') {
+        try {
+          const coins = Object.entries(st.coins || {}), pairs = [...new Set(coins.flatMap(([, c]) => (c.lots || []).map(l => l.pair)).filter(Boolean))];
+          let act = new Set(); for (const pr of pairs) { try { (await ex.activeIds(pr)).forEach(x => act.add(x)); } catch (e) {} }
+          const lots = coins.flatMap(([, c]) => c.lots || []), withSell = lots.filter(l => l.sellOid), seen = withSell.filter(l => act.has(l.sellOid)).length;
+          let freeGap = false; try { const av = await ex.available(st.quote || cfg.quote); freeGap = av - (st.totals?.cash || 0) > 1; } catch (e) {}
+          console.log(`diag live: transze ${lots.length}, ze sprzedażą ${withSell.length}, widoczne jako aktywne ${seen}, aktywnych zleceń na parach ${act.size}, oczekujące kupna ${coins.filter(([, c]) => c.pend).length}, wolne na giełdzie > wolne w automacie: ${freeGap ? 'TAK' : 'nie'}`);
+        } catch (e) { console.log('diag live: błąd ' + clean(e.message).slice(0, 80)); }
+      }
       if (job === 'paper') {
         const refs = new Set(); Object.values(st.coins || {}).forEach(c => { if (c.pend?.oid) refs.add(c.pend.oid); (c.lots || []).forEach(l => { if (l.sellOid) refs.add(l.sellOid); if (l.buyOid) refs.add(l.buyOid); }); });
         ex.prune(refs);
