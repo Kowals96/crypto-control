@@ -1229,7 +1229,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v54 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v55 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -3864,21 +3864,60 @@ function editMsg(text, ok = true) {
 }
 
 // zapis ręcznej operacji do historii (przed zapisem formularza payCalc() ma jeszcze dane zapłaty)
-let txPay = null;
+let txPay = null, txPrev = null;
 function txLogEdit(sym, mode, qty, f) {
-  const t = Date.now();
+  const t = Date.now(), prev = txPrev, link = {prev, jid: f.jid || null};
+  const add = e => txAdd({...e, ...link});
   if (mode === 'sell') {
     const px = f.sellPln > 0 ? f.sellPln / qty / usdPlnRate : prices[sym]?.usd || null;
-    txAdd({id: txId(), t, sym, side: 'sell', qty, px, est: !(f.sellPln > 0) || null, quote: f.sellPln > 0 ? 'PLN' : null, total: f.sellPln > 0 ? f.sellPln : null, pln: f.sellPln > 0 ? f.sellPln : null, src: 'ręcznie'});
+    add({id: txId(), t, sym, side: 'sell', qty, px, est: !(f.sellPln > 0) || null, quote: f.sellPln > 0 ? 'PLN' : null, total: f.sellPln > 0 ? f.sellPln : null, pln: f.sellPln > 0 ? f.sellPln : null, src: 'ręcznie'});
   } else if (mode === 'set') {
-    txAdd({id: txId(), t, sym, side: 'set', qty, px: f.pUsdIn > 0 ? f.pUsdIn : null, src: 'ręcznie', note: 'nowy stan i średnia cena'});
+    add({id: txId(), t, sym, side: 'set', qty, px: f.pUsdIn > 0 ? f.pUsdIn : null, src: 'ręcznie', note: 'nowy stan i średnia cena'});
   } else {
     const c = txPay || {};
     const quote = c.payCoin || (c.usdPay ? 'USD' : 'PLN');
-    txAdd({id: txId(), t, sym, side: 'buy', qty, px: c.pUsd || null, quote, total: c.payCoin ? c.payAmt : c.usdPay ? c.totUsd : c.totPln, pln: c.payCoin ? null : c.totPln, src: 'ręcznie'});
-    if (c.payCoin) txAdd({id: txId(), t, sym: c.payCoin, side: 'sell', qty: c.payAmt, px: c.payAmt > 0 ? c.totUsd / c.payAmt : null, quote: sym, total: qty, src: 'ręcznie', note: 'zapłata za ' + sym});
+    const bid = txId();
+    add({id: bid, t, sym, side: 'buy', qty, px: c.pUsd || null, quote, total: c.payCoin ? c.payAmt : c.usdPay ? c.totUsd : c.totPln, pln: c.payCoin ? null : c.totPln, src: 'ręcznie'});
+    if (c.payCoin) txAdd({id: txId(), t, sym: c.payCoin, side: 'sell', qty: c.payAmt, px: c.payAmt > 0 ? c.totUsd / c.payAmt : null, quote: sym, total: qty, src: 'ręcznie', note: 'zapłata za ' + sym, payFor: bid});
   }
-  txPay = null; saveTxlog();
+  txPay = null; txPrev = null; saveTxlog();
+}
+// cofnięcie ostatniego ręcznego zakupu monety: przywraca stan portfela sprzed zakupu, usuwa wpis z dziennika PIT i z historii
+const TXU = {ask: null, msg: ''};
+function txUndoable(x) {
+  if (x.side !== 'buy' || !['ręcznie', 'dziennik'].includes(x.src) || x.payFor) return false;
+  const last = txlog.filter(y => y.sym === x.sym && !y.payFor).sort((a, b) => b.t - a.t)[0];   // tylko najnowsza operacja tej monety – wtedy rachunek jest dokładny
+  return last && last.id === x.id && holdings[x.sym] && holdings[x.sym].qty >= x.qty * (1 - 1e-9);
+}
+function txJournalOf(x) {
+  if (x.jid) return journal.find(e => e.id === x.jid);
+  if (String(x.id).startsWith('j:')) { const jid = x.id.slice(2); return journal.find(e => e.id === jid || ('j:' + (e.id || e.date + ':' + e.note + ':' + e.pln)) === x.id); }
+  const d = ymd(x.t);
+  return journal.find(e => e.date === d && e.type === 'buy' && /^Dokup\s/.test(e.note || '') && e.note.endsWith(' ' + x.sym) && Math.abs(parseFloat(e.note.split(/\s+/).slice(1, -1).join('').replace(',', '.')) - x.qty) <= x.qty * 1e-6);
+}
+function txUndo(id) {
+  const x = txlog.find(y => y.id === id);
+  if (!x || !txUndoable(x)) { TXU.msg = 'Tej operacji nie da się już cofnąć (po niej były kolejne operacje tej monety).'; renderHistory(); return; }
+  const cur = holdings[x.sym];
+  if (x.prev && Object.prototype.hasOwnProperty.call(x.prev, x.sym)) {
+    for (const [k, v] of Object.entries(x.prev)) { if (v) holdings[k] = {...v}; else delete holdings[k]; }
+  } else {
+    // starszy wpis bez migawki – odwracamy średnią ważoną
+    const left = cur.qty - x.qty;
+    if (left <= cur.qty * 1e-9) delete holdings[x.sym];
+    else {
+      const px = x.px > 0 ? x.px : cur.avg, pln = x.pln > 0 ? x.pln / x.qty : px * usdPlnRate;
+      const avg = (cur.qty * cur.avg - x.qty * px) / left, avgPln = (cur.qty * avgPlnOf(cur) - x.qty * pln) / left;
+      holdings[x.sym] = {...cur, qty: +left.toPrecision(12), avg: avg > 0 ? avg : cur.avg, avgPln: avgPln > 0 ? avgPln : avgPlnOf(cur)};
+    }
+  }
+  const je = txJournalOf(x);
+  if (je) { journal = journal.filter(e => e !== je); saveJournal(); }
+  txlog = txlog.filter(y => y.id !== x.id && y.payFor !== x.id);
+  saveHoldings(); saveTxlog();
+  TXU.ask = null; TXU.msg = `Cofnięto zakup ${fmtQty(x.qty)} ${x.sym}${je ? ' (usunięty też z dziennika PIT)' : ''}. ${holdings[x.sym] ? `Teraz ${fmtQty(holdings[x.sym].qty)} ${x.sym} @ średnia ${usd(holdings[x.sym].avg)}.` : `Pozycja ${x.sym} usunięta.`}`;
+  try { renderAll(); } catch (e) {}
+  renderHistory();
 }
 function applyEdit() {
   const sym = document.getElementById('editSymbol').value;
@@ -3889,6 +3928,7 @@ function applyEdit() {
   const sellPln = parseFloat(document.getElementById('editSellPln').value);
   const toJournal = document.getElementById('editJournal').checked;
   const cur = holdings[sym];
+  txPrev = {[sym]: cur ? {...cur} : null};
   const isNew = !cur;
   let entry = null, usdTot = 0;
 
@@ -3943,6 +3983,7 @@ function applyEdit() {
       const h = holdings[sym];
       editMsg(`Dokupiono ${fmtQty(qty)} ${sym}. Teraz ${fmtQty(h.qty)} @ średnia ${usd(h.avg)}.`);
       if (paid) {
+        txPrev[paid.payCoin] = {...holdings[paid.payCoin]};
         const ph = holdings[paid.payCoin], left = ph.qty - paid.payAmt;
         if (left <= ph.qty * 1e-9) delete holdings[paid.payCoin]; else ph.qty = +left.toPrecision(12);
         document.getElementById('editMessage').textContent += ` Z portfela ubyło ${fmtQty(paid.payAmt)} ${paid.payCoin}${holdings[paid.payCoin] ? ` (zostało ${fmtQty(holdings[paid.payCoin].qty)})` : ''}.`;
@@ -3951,9 +3992,10 @@ function applyEdit() {
     }
   }
   saveHoldings();
-  txLogEdit(sym, mode, qty, {pUsdIn, pPlnIn, sellPln});
+  const jid = entry ? 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) : null;
+  txLogEdit(sym, mode, qty, {pUsdIn, pPlnIn, sellPln, jid});
   if (entry) {
-    const je = {id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry};
+    const je = {id: jid, ...entry};
     journal.push(je);
     // zapłata w USD: do PIT liczy się kurs NBP z dnia roboczego przed transakcją – poprawiamy wpis, gdy NBP odpowie
     if (entry.type === 'buy' && usdTot > 0) nbpBefore('USD', je.date).then(r => {
@@ -8193,6 +8235,8 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '55', date: '2026-11-09', title: 'Cofanie zakupu', items: [
+    'W Portfel → Historia przy ostatnim ręcznie dodanym zakupie monety jest przycisk „Cofnij”: przywraca ilość i średnią sprzed zakupu oraz usuwa wpis z dziennika PIT.']},
   {v: '54', date: '2026-11-07', title: 'Automat: sprzedaż podążająca', items: [
     'Nowy sposób sprzedaży: po dojściu do progu automat podąża za ceną i sprzedaje dopiero po spadku o wybrany % od szczytu (domyślnie 3%). Nigdy poniżej +1% od zakupu.',
     'Transz nigdy nie jest więcej niż w planie – reszta po częściowym zakupie dokupuje się do najmniejszej transzy.',
@@ -9153,12 +9197,18 @@ const txPrice = x => x.px > 0 ? (x.est ? '≈ ' : '') + usd(x.px) : x.total > 0 
 const txPaid = x => x.total > 0 && x.quote ? (x.quote === 'PLN' ? zl2(x.total) : isUsdQ(x.quote) ? `${fixed(x.total, 2)} ${esc(x.quote)}` : `${upto(x.total, 8)} ${esc(x.quote)}`) : x.px > 0 ? usd(x.px * x.qty) : '';
 const txSrc = x => ({dziennik: 'ręcznie', 'ręcznie': 'ręcznie'}[x.src] || x.src || '');
 function txRowHtml(x, showSym = true) {
+  const undo = txlog.includes(x) && txUndoable(x) ? (TXU.ask === x.id
+    ? `<div class="form-row" style="margin:.3rem 0 0;justify-content:flex-end"><span class="small">Cofnąć ten zakup?</span><button class="action danger" onclick="txUndo('${x.id}')">Tak, cofnij</button><button class="action secondary" onclick="TXU.ask=null;renderHistory()">Nie</button></div>`
+    : `<button class="link-btn small" onclick="TXU.ask='${x.id}';TXU.msg='';renderHistory()">Cofnij</button>`) : '';
+  return txRowInner(x, showSym, undo);
+}
+function txRowInner(x, showSym, undo) {
   const d = new Date(x.t), mon = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'][d.getMonth()];
   return `<div class="td-row"><div class="td-day"><strong>${d.getDate()}</strong><span>${mon}</span><span class="tx-y">${d.getFullYear()}</span></div>
     <div style="flex:1;min-width:0"><strong class="${x.side === 'buy' ? '' : x.side === 'sell' ? 'tx-sell' : 'muted'}">${TX_SIDE[x.side]}${showSym ? ' ' + esc(x.sym) : ''}</strong>
       <div class="small muted"><span class="sens">${fmtQty(x.qty)} ${esc(x.sym)}</span> · cena ${txPrice(x)}${txSrc(x) ? ` · <span class="tx-src">${esc(txSrc(x))}</span>` : ''}${x.note ? ' · ' + esc(x.note) : ''}</div></div>
     <div style="text-align:right"><strong class="sens">${txPaid(x)}</strong>${x.pnlQ != null ? `<div class="small sens ${x.pnlQ >= 0 ? 'positive' : 'negative'}">${signed(x.pnlQ, v => fixed(v, 2) + ' ' + esc(x.quote))}</div>`
-      : x.side === 'buy' && x.px > 0 && prices[x.sym]?.usd > 0 ? `<div class="small sens ${prices[x.sym].usd >= x.px ? 'positive' : 'negative'}">${signed((prices[x.sym].usd / x.px - 1) * 100, pct)} od zakupu</div>` : ''}</div></div>`;
+      : x.side === 'buy' && x.px > 0 && prices[x.sym]?.usd > 0 ? `<div class="small sens ${prices[x.sym].usd >= x.px ? 'positive' : 'negative'}">${signed((prices[x.sym].usd / x.px - 1) * 100, pct)} od zakupu</div>` : ''}${undo && !undo.startsWith('<div') ? undo : ''}</div></div>${undo.startsWith('<div') ? undo : ''}`;
 }
 function txSummary(list, sym) {
   const buys = list.filter(x => x.side === 'buy'), sells = list.filter(x => x.side === 'sell');
@@ -9189,6 +9239,7 @@ function renderHistory() {
     </div>
     ${TXH.sym ? txSummary(all.filter(x => x.sym === TXH.sym), TXH.sym) : ''}
     ${TXH.msg ? `<p class="small ${TXH.msgOk ? 'positive' : 'negative'}" style="margin:.4rem 0">${esc(TXH.msg)}</p>` : ''}
+    ${TXU.msg ? `<p class="small positive" style="margin:.4rem 0">${esc(TXU.msg)}</p>` : ''}
     ${list.length ? `<div class="cal-list">${list.slice(0, TXH.n).map(x => txRowHtml(x, !TXH.sym)).join('')}</div>
       ${list.length > TXH.n ? `<button class="action secondary" style="margin-top:.6rem" onclick="TXH.n+=100;renderHistory()">Pokaż więcej (${list.length - TXH.n})</button>` : ''}`
       : `<div class="info" style="margin:.6rem 0">${all.length ? 'Brak operacji dla wybranych filtrów.' : 'Historia jest jeszcze pusta. Dodaj zakup w „Kupno / Sprzedaż” albo pobierz transakcje z Binance przyciskiem niżej.'}</div>`}
