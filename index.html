@@ -1229,7 +1229,7 @@
   </section>
 </div>
 
-<footer>Crypto Control v55 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
+<footer>Crypto Control v56 · Dane: urządzenie + zaszyfrowana chmura · Ceny: Binance (na żywo), CoinGecko / CryptoCompare (zapasowo) · Kurs USD/PLN: NBP · Nie jest to porada inwestycyjna ani podatkowa</footer>
 </div><!-- .main -->
 </div><!-- .shell -->
 
@@ -2575,7 +2575,7 @@ function applyData(d) {
   if (d.fin && typeof d.fin === 'object') lsSet(LS.fin, d.fin);
   // historia operacji: łączymy (nic nie ginie przy synchronizacji między urządzeniami)
   if (Array.isArray(d.txlog)) { const ids = new Set(txlog.map(x => x.id)); d.txlog.filter(validTx).forEach(x => { if (!ids.has(x.id)) { txlog.push(x); ids.add(x.id); } }); }
-  txFromJournal(); saveTxlog();
+  txClean(); txFromJournal(); saveTxlog();
   if ('strategy' in d) { lsSet(LS.strategy, d.strategy || null); applyStrategyOverrides(d.strategy); rebuildBnMap(); populateSymbols(); }
   if (d.bot && typeof d.bot.key === 'string' && /^[A-Za-z0-9+/=]{40,48}$/.test(d.bot.key)) {
     try { localStorage.setItem('ccBotKey', JSON.stringify(d.bot.key)); } catch (e) {}
@@ -3911,9 +3911,12 @@ function txUndo(id) {
       holdings[x.sym] = {...cur, qty: +left.toPrecision(12), avg: avg > 0 ? avg : cur.avg, avgPln: avgPln > 0 ? avgPln : avgPlnOf(cur)};
     }
   }
+  const pays = txlog.filter(y => y.payFor === x.id || (!y.payFor && y.side === 'sell' && /^zapłata za /.test(y.note || '') && txPayMatch(y, x)));
+  if (!(x.prev && Object.prototype.hasOwnProperty.call(x.prev, x.sym)))     // bez migawki: oddaj monetę użytą do zapłaty
+    for (const y of pays) { const h = holdings[y.sym]; if (h) h.qty = +(h.qty + y.qty).toPrecision(12); else holdings[y.sym] = {qty: y.qty, avg: y.px || 1, avgPln: (y.px || 1) * usdPlnRate}; }
   const je = txJournalOf(x);
   if (je) { journal = journal.filter(e => e !== je); saveJournal(); }
-  txlog = txlog.filter(y => y.id !== x.id && y.payFor !== x.id);
+  txlog = txlog.filter(y => y.id !== x.id && !pays.includes(y));
   saveHoldings(); saveTxlog();
   TXU.ask = null; TXU.msg = `Cofnięto zakup ${fmtQty(x.qty)} ${x.sym}${je ? ' (usunięty też z dziennika PIT)' : ''}. ${holdings[x.sym] ? `Teraz ${fmtQty(holdings[x.sym].qty)} ${x.sym} @ średnia ${usd(holdings[x.sym].avg)}.` : `Pozycja ${x.sym} usunięta.`}`;
   try { renderAll(); } catch (e) {}
@@ -8235,6 +8238,9 @@ function renderBriefCard() {
    ========================================================= */
 function appVersion() { return +((document.querySelector('footer')?.textContent.match(/v(\d+)/) || [])[1] || 0); }
 const CHANGELOG = [
+  {v: '56', date: '2026-11-10', title: 'Historia: bez duplikatów', items: [
+    'Zakup za złotówki nie pojawia się już w Historii dwa razy (raz z formularza, raz z dziennika PIT).',
+    'Usunięte osierocone wiersze „zapłata za …” po cofniętym zakupie; cofnięcie starszego zakupu oddaje też monetę, którą zapłacono.']},
   {v: '55', date: '2026-11-09', title: 'Cofanie zakupu', items: [
     'W Portfel → Historia przy ostatnim ręcznie dodanym zakupie monety jest przycisk „Cofnij”: przywraca ilość i średnią sprzed zakupu oraz usuwa wpis z dziennika PIT.']},
   {v: '54', date: '2026-11-07', title: 'Automat: sprzedaż podążająca', items: [
@@ -9126,7 +9132,23 @@ LS.txlog = 'ccTxLog';
 let txlog = [];
 const TXH = {sym: '', side: '', bot: true, n: 60, busy: false, msg: '', msgOk: true, enriching: false};
 const validTx = x => x && typeof x.id === 'string' && /^[A-Z0-9]{1,15}$/.test(x.sym) && ['buy', 'sell', 'set'].includes(x.side) && Number.isFinite(+x.t) && +x.qty >= 0;
-function loadTxlog() { const t = lsGet(LS.txlog); txlog = Array.isArray(t) ? t.filter(validTx) : []; }
+function loadTxlog() {
+  const t = lsGet(LS.txlog); txlog = Array.isArray(t) ? t.filter(validTx) : [];
+  if (txClean()) lsSet(LS.txlog, txlog);
+}
+function txClean() {
+  const n0 = txlog.length, jids = new Set(txlog.map(x => x.jid).filter(Boolean));
+  txlog = txlog.filter(x => !(String(x.id).startsWith('j:') && jids.has(x.id.slice(2))));      // ten sam zakup z dziennika drugi raz
+  txlog = txlog.filter(x => !txOrphanPay(x));                                                       // zapłata za zakup, który został cofnięty
+  return txlog.length !== n0;
+}
+// wiersz „zapłata za X” bez odpowiadającego mu zakupu X (np. po cofnięciu zakupu sprzed wersji 55)
+function txPayMatch(pay, buy) { return buy.side === 'buy' && buy.sym === pay.quote && Math.abs(buy.t - pay.t) < 120000 && Math.abs(buy.qty - pay.total) <= Math.max(1e-9, pay.total * 1e-6); }
+function txOrphanPay(x) {
+  if (x.side !== 'sell' || !/^zapłata za /.test(x.note || '')) return false;
+  if (x.payFor) return !txlog.some(y => y.id === x.payFor);
+  return !txlog.some(y => txPayMatch(x, y));
+}
 function saveTxlog() { txlog.sort((a, b) => a.t - b.t); if (txlog.length > 6000) txlog = txlog.slice(-6000); lsSet(LS.txlog, txlog); }
 function txAdd(e) {
   if (!validTx(e) || txlog.some(x => x.id === e.id)) return false;
@@ -9148,7 +9170,9 @@ function txFromOps(ops) {
 // wpisy dziennika z nazwą monety („Dokup 0,5 SOL”, „Kupno 0,01 BTC (import)”, „Sprzedaż 2 ETH”) – historia od początku aplikacji
 function txFromJournal() {
   let n = 0;
+  const linked = new Set(txlog.map(x => x.jid).filter(Boolean));
   for (const e of journal) {
+    if (e.id && linked.has(e.id)) continue;
     const m = /^(Dokup|Kupno|Sprzedaż)\s+([\d\s  .,]+?)\s+([A-Z][A-Z0-9]{0,14})\b/.exec(e.note || '');
     if (!m) continue;
     const qty = parseFloat(m[2].replace(/[\s  ]/g, '').replace(',', '.'));
